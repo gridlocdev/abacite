@@ -195,6 +195,33 @@ test.describe('Tape', () => {
     await page.getByRole('button', { name: 'Undo' }).click();
     await expect(tape(page).getByRole('listitem')).toHaveCount(1);
   });
+
+  test('a line’s menu deletes it, and ⌘Z puts it back', async ({ page }) => {
+    await page.keyboard.press('ControlOrMeta+KeyT');
+    for (const line of ['x = 4', 'x * 2']) {
+      await page.keyboard.type(line);
+      await page.keyboard.press('Enter');
+    }
+    const lines = tape(page).getByRole('listitem');
+    await lines.first().getByRole('button').click({ button: 'right' });
+    const menu = page.getByRole('menu', { name: 'Tape line' });
+    await expect(menu.getByRole('menuitem')).toHaveText([
+      'Copy Result',
+      'Copy Expression',
+      'Insert Result',
+      'Insert Expression',
+      'Delete Line',
+    ]);
+    await page.keyboard.press('ArrowUp');
+    await page.keyboard.press('Enter');
+    await expect(menu).toBeHidden();
+    await expect(lines).toHaveText([/x \* 2\s*`x` isn’t defined\./]);
+    await expect(expression(page)).toBeFocused();
+    await page.keyboard.press('ControlOrMeta+KeyZ');
+    await expect(lines).toHaveText([/x = 4/, /x \* 2\s*8/]);
+    await page.keyboard.press('ControlOrMeta+Shift+KeyZ');
+    await expect(lines).toHaveCount(1);
+  });
 });
 
 test.describe('Commands and shortcuts', () => {

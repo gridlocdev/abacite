@@ -13,6 +13,7 @@ export {
   type ClassicState,
 } from './app/classic.ts';
 export { buildCommands } from './app/commands.ts';
+export { MAX_UNDO, UndoStack } from './app/undo.ts';
 export { menuSender, nativeMenu } from './app/nativeMenu.ts';
 export { shortcutGroups, type ShortcutGroup, type ShortcutLine } from './app/shortcuts.ts';
 export { ALL_KEYS, BASIC_ROWS, SCIENTIFIC_ROWS, type KeyAction, type KeyDef } from './app/keyDefs.ts';

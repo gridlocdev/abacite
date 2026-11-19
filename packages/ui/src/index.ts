@@ -45,7 +45,13 @@ export {
   type Theme,
 } from './settings.ts';
 export { after, debounce, every, nextFrame, wait } from './schedule.ts';
-export { useFieldSelection, useFieldValue, useFocusWhen, useScrollToEnd } from './components/domHooks.ts';
+export {
+  useFieldSelection,
+  useFieldValue,
+  useFocusWhen,
+  usePopupFocus,
+  useScrollToEnd,
+} from './components/domHooks.ts';
 export { Dialog } from './components/Dialog.tsx';
 export { focusables, trapIndex, trapTab } from './components/focusTrap.ts';
 export { Icon } from './components/Icon.tsx';

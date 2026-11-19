@@ -4,6 +4,7 @@ import {
   EMPTY_TAPE,
   commit,
   defaultRandom,
+  deleteLine,
   evaluate,
   expandInput,
   formatDecimal,
@@ -16,14 +17,7 @@ import {
   type Env,
   type Tape,
 } from '@abacite/core';
-import {
-  type Angle,
-  type Entry,
-  type Mode,
-  type Settings,
-  type SettingsStorage,
-  type Theme,
-} from '@abacite/ui';
+import { type Angle, type Entry, type Mode, type Settings, type SettingsStorage } from '@abacite/ui';
 import {
   EMPTY_CLASSIC,
   classicBackspace,
@@ -38,7 +32,8 @@ import {
 } from './classic.ts';
 import { ALL_KEYS, type KeyDef } from './keyDefs.ts';
 import { Notices, type Notice } from './notices.ts';
-import { windowWidth, type Ghost, type Shown } from './view.ts';
+import { UndoStack } from './undo.ts';
+import { shownNumber, windowWidth, type Ghost, type Shown } from './view.ts';
 import {
   EMPTY_LINE,
   backspace,
@@ -47,7 +42,9 @@ import {
   insertText,
   lineAt,
   negate,
+  stepHistory,
   wrap,
+  type HistoryPlace,
   type LineState,
 } from './lineEdit.ts';
 
@@ -100,8 +97,10 @@ export class AppController {
   /** `rand()` values drawn while previewing, so the committed line gets the value that was shown. */
   #pool: Decimal[] = [];
   /** Where ↑/↓ is in the tape's inputs, and what was being typed before (PRD §7.1). */
-  #history: { index: number; draft: string } | null = null;
+  #history: HistoryPlace | null = null;
   #droppedShown = false;
+  /** Earlier tapes, for ⌘Z (PRD §7.3). */
+  readonly #undo = new UndoStack<Tape>();
 
   constructor(options: ControllerOptions) {
     this.version = options.version;
@@ -118,10 +117,6 @@ export class AppController {
     const next = { ...this.settings.value, ...change };
     this.settings.value = next;
     this.#storage.save(next);
-  }
-
-  setTheme(theme: Theme): void {
-    this.update({ theme });
   }
 
   setMode(mode: Mode): void {
@@ -355,6 +350,7 @@ export class AppController {
     const before = this.tape.value;
     const tape = commit(before, text, this.#env());
     const line = tape.lines.at(-1)!;
+    if (tape !== before) this.#undo.push(before);
     batch(() => {
       this.tape.value = tape;
       this.#pool = [];
@@ -415,71 +411,71 @@ export class AppController {
     return memorySet(this.tape.value.scope);
   }
 
-  /** ↑: the previous tape input (PRD §7.1). */
-  historyBack(): void {
-    if (this.classicEntry()) return;
-    const lines = this.tape.value.lines;
-    if (lines.length === 0) return;
-    const h = this.#history ?? { index: lines.length, draft: this.line.value.text };
-    if (h.index === 0) return;
-    this.#showHistory({ index: h.index - 1, draft: h.draft });
-  }
-
-  /** ↓: the next tape input, then what was being typed. */
-  historyForward(): void {
-    if (this.classicEntry()) return;
-    const h = this.#history;
-    if (!h) return;
-    const lines = this.tape.value.lines;
-    if (h.index + 1 >= lines.length) {
-      this.line.value = lineAt(h.draft);
-      this.#history = null;
-      this.#refresh();
-      return;
-    }
-    this.#showHistory({ index: h.index + 1, draft: h.draft });
-  }
-
-  #showHistory(h: { index: number; draft: string }): void {
-    this.line.value = lineAt(this.tape.value.lines[h.index]!.input);
-    this.#history = h;
+  /** ↑ and ↓: walk back and forward through the tape's inputs, then to what was being typed (PRD §7.1). */
+  walkHistory(step: -1 | 1): void {
+    const walk = this.classicEntry()
+      ? null
+      : stepHistory(this.tape.value.lines, this.#history, this.line.value.text, step);
+    if (!walk) return;
+    this.line.value = lineAt(walk.text);
+    this.#history = walk.history;
     this.#refresh();
   }
 
   /** Clears the tape; the notice's Undo puts it back (PRD §7.3). */
   clearTape(): void {
-    const before = this.tape.value;
-    const count = before.lines.length;
+    const count = this.tape.value.lines.length;
     if (count === 0) return;
-    batch(() => {
-      this.tape.value = EMPTY_TAPE;
-      this.#last = null;
-      this.#lastError = null;
-      this.#history = null;
-      this.#refresh();
-    });
+    this.#editTape(EMPTY_TAPE);
     this.say(`Cleared ${count === 1 ? '1 line' : `${count.toLocaleString('en-US')} lines`}.`, {
       action: {
         label: 'Undo',
-        run: () => {
-          if (this.tape.value.lines.length > 0) return;
-          const last = before.lines.at(-1)?.result;
-          this.tape.value = before;
-          this.#last = last?.kind === 'value' ? last.value : null;
-          this.#lastUnit = last?.kind === 'value' ? last.unit : null;
-          this.#refresh();
-        },
+        run: () => void (this.tape.value.lines.length === 0 && this.stepTape('undo')),
       },
+    });
+  }
+
+  /** Deletes a tape line; the lines after it are worked out again (PRD §7.2). */
+  deleteLine(index: number): void {
+    this.#editTape(deleteLine(this.tape.value, index, this.#env()));
+  }
+
+  /**
+   * True when ⌘Z (or ⇧⌘Z) has a tape change to undo (redo). Only with nothing typed: while the expression line
+   * has text, the keys undo its typing (PRD §7.3).
+   */
+  canStepTape(step: 'undo' | 'redo'): boolean {
+    return (step === 'undo' ? this.#undo.canUndo() : this.#undo.canRedo()) && !this.hasEntry();
+  }
+
+  stepTape(step: 'undo' | 'redo'): void {
+    const tape = step === 'undo' ? this.#undo.undo(this.tape.value) : this.#undo.redo(this.tape.value);
+    if (tape) this.#showTape(tape);
+  }
+
+  /** A change to the tape other than a commit, kept for ⌘Z. */
+  #editTape(tape: Tape): void {
+    if (tape === this.tape.value) return;
+    this.#undo.push(this.tape.value);
+    this.#showTape(tape);
+  }
+
+  /** Shows `tape`, with its last line's result on the display. */
+  #showTape(tape: Tape): void {
+    const last = tape.lines.at(-1)?.result;
+    batch(() => {
+      this.tape.value = tape;
+      this.#last = last?.kind === 'value' ? last.value : null;
+      this.#lastUnit = last?.kind === 'value' ? last.unit : null;
+      this.#lastError = last?.kind === 'error' ? last.message : null;
+      this.#history = null;
+      this.#refresh();
     });
   }
 
   /** The number on the display, or null when it shows an error or an unfinished line. */
   currentValue(): string | null {
-    const shown = this.shown.value;
-    // The number alone: no grouping commas, and no unit after a conversion.
-    return shown.kind === 'result' || shown.kind === 'live'
-      ? shown.text.split(' ')[0]!.replaceAll(',', '')
-      : null;
+    return shownNumber(this.shown.value);
   }
 
   /** ⇧⌘C: copies the number on the display, without grouping commas. */
@@ -489,9 +485,14 @@ export class AppController {
       this.say('There’s no result to copy.', { tone: 'error' });
       return;
     }
+    await this.copyText(value);
+  }
+
+  /** Copies text and says so: a result, or a tape line's input (PRD §7.1). */
+  async copyText(text: string): Promise<void> {
     try {
-      await this.#copy(value);
-      this.say(`Copied ${value}.`);
+      await this.#copy(text);
+      this.say(`Copied ${text}.`);
     } catch {
       this.say('Couldn’t copy to the clipboard.', { tone: 'error' });
     }

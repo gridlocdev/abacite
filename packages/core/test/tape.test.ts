@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   commit,
   type Decimal,
+  deleteLine,
   EMPTY_TAPE,
   type Env,
   evaluateTape,
@@ -128,5 +129,15 @@ describe('preview and re-evaluation (PRD §7.2, §9.1)', () => {
       env,
     );
     expect(results(tape)).toEqual(['-5', '-10', '-10', '-20']);
+  });
+
+  it('evaluates the lines after a deleted line again', () => {
+    const tape = commitAll(['x = 4', 'rand()', 'x * 2', '+ 1']);
+    const without = deleteLine(tape, 0, sequenceEnv('0.9'));
+    expect(without.lines.map((l) => l.input)).toEqual(['rand()', 'x * 2', '+ 1']);
+    // `+ 1` continues from the last result, so it keeps working.
+    expect(results(without)).toEqual(['0.5', '`x` isn’t defined.', '1.5']);
+    expect(results(deleteLine(tape, 2, env))).toEqual(['4', '0.5', '1.5']);
+    expect(deleteLine(tape, 9, env)).toBe(tape);
   });
 });

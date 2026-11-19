@@ -49,3 +49,24 @@ export function useScrollToEnd(ref: RefObject<HTMLElement | null>, key: unknown)
     if (ref.current) ref.current.scrollTop = ref.current.scrollHeight;
   }, [ref, key]);
 }
+
+/**
+ * Keeps the keyboard in a popup menu: focuses its first enabled button when it opens, calls `onClose` on a
+ * pointer press outside it or when the window loses focus, and gives focus back to where it was on closing.
+ */
+export function usePopupFocus(ref: RefObject<HTMLElement | null>, onClose: () => void): void {
+  useLayoutEffect(() => {
+    const previous = document.activeElement as HTMLElement | null;
+    ref.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
+    const away = (e: PointerEvent) => {
+      if (!ref.current?.contains(e.target as Node)) onClose();
+    };
+    window.addEventListener('pointerdown', away, true);
+    window.addEventListener('blur', onClose);
+    return () => {
+      window.removeEventListener('pointerdown', away, true);
+      window.removeEventListener('blur', onClose);
+      previous?.focus();
+    };
+  }, [ref, onClose]);
+}

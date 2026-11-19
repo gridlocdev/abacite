@@ -28,7 +28,7 @@ Type a value with a unit, then `to` or `in` and another unit: `5 km to mi`, `100
 
 ## Tape
 
-**⌘T** shows the tape: every line you committed, with its result or its error. **↑** and **↓** bring earlier lines back into the expression line. Click a line to insert its result, or **⌥-click** (Alt-click) to insert its expression. **⇧⌘⌫** clears the tape, with Undo in the status bar. In this version the tape lasts until the window closes.
+**⌘T** shows the tape: every line you committed, with its result or its error. **↑** and **↓** bring earlier lines back into the expression line. Click a line to insert its result, or **⌥-click** (Alt-click) to insert its expression. Right-click a line to copy or insert its result or expression, or to delete it; the lines after it are worked out again. **⇧⌘⌫** clears the tape, with Undo in the status bar. With the expression line empty, **⌘Z** and **⇧⌘Z** undo and redo tape changes: a new line, a deleted line or a cleared tape. In this version the tape lasts until the window closes.
 
 ## Commands and shortcuts
 

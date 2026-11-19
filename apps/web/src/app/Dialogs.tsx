@@ -198,7 +198,7 @@ function SettingsDialog({ app }: { readonly app: AppController }) {
         items={THEMES}
         titles={THEME_TITLES}
         value={s.theme}
-        onPick={(t) => app.setTheme(t)}
+        onPick={(t) => app.update({ theme: t })}
       />
       <Choice
         id="ab-mode-label"

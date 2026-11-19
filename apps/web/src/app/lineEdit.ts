@@ -125,3 +125,29 @@ function depthAt(text: string, at: number): number {
   }
   return depth;
 }
+
+/** Where ↑/↓ is in the tape's inputs, and what was being typed before the first ↑ (PRD §7.1). */
+export interface HistoryPlace {
+  readonly index: number;
+  readonly draft: string;
+}
+
+/**
+ * One step of ↑ (`-1`) or ↓ (`1`) from `place`: the text the line shows and the new place, null at the end
+ * of the walk once it is back at what was typed. Null when the key does nothing.
+ */
+export function stepHistory(
+  lines: readonly { readonly input: string }[],
+  place: HistoryPlace | null,
+  typed: string,
+  step: -1 | 1,
+): { text: string; history: HistoryPlace | null } | null {
+  if (step < 0) {
+    const at = place ?? { index: lines.length, draft: typed };
+    if (at.index === 0) return null;
+    return { text: lines[at.index - 1]!.input, history: { index: at.index - 1, draft: at.draft } };
+  }
+  if (!place) return null;
+  if (place.index + 1 >= lines.length) return { text: place.draft, history: null };
+  return { text: lines[place.index + 1]!.input, history: { index: place.index + 1, draft: place.draft } };
+}

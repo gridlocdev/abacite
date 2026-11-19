@@ -91,14 +91,14 @@ describe('the tape (PRD §7.1)', () => {
     const { app } = makeApp();
     enter(app, '1+1', '2+2');
     type(app, '9');
-    app.historyBack();
+    app.walkHistory(-1);
     expect(app.line.value.text).toBe('2+2');
-    app.historyBack();
-    app.historyBack();
+    app.walkHistory(-1);
+    app.walkHistory(-1);
     expect(app.line.value.text).toBe('1+1');
-    app.historyForward();
+    app.walkHistory(1);
     expect(app.line.value.text).toBe('2+2');
-    app.historyForward();
+    app.walkHistory(1);
     expect(app.line.value.text).toBe('9');
   });
 
@@ -120,6 +120,36 @@ describe('the tape (PRD §7.1)', () => {
     app.notice.value!.action!.run();
     expect(app.tape.value.lines).toHaveLength(2);
     expect(app.shown.value.text).toBe('2');
+  });
+});
+
+describe('tape changes and undo (PRD §7.2, §7.3)', () => {
+  it('undoes and redoes commits, deleted lines and Clear Tape', () => {
+    const { app } = makeApp();
+    enter(app, 'x = 4', 'x * 2');
+    app.deleteLine(0);
+    expect(app.tape.value.lines.map((l) => l.input)).toEqual(['x * 2']);
+    expect(app.shown.value.kind).toBe('error');
+    app.clearTape();
+    expect(app.canStepTape('undo')).toBe(true);
+    app.stepTape('undo');
+    app.stepTape('undo');
+    expect(app.tape.value.lines).toHaveLength(2);
+    expect(app.shown.value.text).toBe('8');
+    app.stepTape('undo');
+    expect(app.tape.value.lines.map((l) => l.input)).toEqual(['x = 4']);
+    app.stepTape('redo');
+    app.stepTape('redo');
+    expect(app.tape.value.lines.map((l) => l.input)).toEqual(['x * 2']);
+  });
+
+  it('leaves ⌘Z to the expression line while it has text', () => {
+    const { app } = makeApp();
+    enter(app, '1');
+    type(app, '2');
+    expect(app.canStepTape('undo')).toBe(false);
+    app.clear();
+    expect(app.canStepTape('undo')).toBe(true);
   });
 });
 

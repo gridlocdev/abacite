@@ -69,6 +69,7 @@ export {
   EMPTY_TAPE,
   MAX_TAPE_LINES,
   commit,
+  deleteLine,
   evaluateTape,
   expandInput,
   preview,

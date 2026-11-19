@@ -143,7 +143,8 @@ Abacite is a calculator for one person, replacing the macOS Calculator. It runs 
 ### §7.3 Undo
 
 - ⌘Z and ⇧⌘Z undo and redo tape changes: committing a line, deleting a line, clearing the tape. Clearing the tape (⇧⌘⌫, **Clear Tape**) is one undo step with the notice "Cleared 14 lines." and **Undo**.
-- In the expression line, ⌘Z first undoes text editing (the text field's own undo); with nothing left to undo there, it undoes the last tape change.
+- In the expression line, ⌘Z undoes text editing (the text field's own undo) while the line has text; with the line empty, it undoes the last tape change. A page can't see whether the field's own undo has steps left, so an empty line is the signal. In classic entry the same holds for the calculation being entered. The menu bar's Edit → Undo stays the text field's undo.
+- Up to 100 tape changes are kept for undo.
 - Settings changes are not undo steps.
 
 ## §8 Tape files

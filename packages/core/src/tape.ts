@@ -128,3 +128,10 @@ export function evaluateTape(
   }
   return { lines, scope, dropped: false };
 }
+
+/** The tape without line `index`; the lines after it are evaluated again (PRD §7.2). */
+export function deleteLine(tape: Tape, index: number, env: Env): Tape {
+  if (index < 0 || index >= tape.lines.length) return tape;
+  const rest = evaluateTape(tape.lines.toSpliced(index, 1), env);
+  return { ...rest, dropped: tape.dropped };
+}

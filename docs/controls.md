@@ -13,9 +13,10 @@ The expression line keeps the keyboard while no window is open: every key you ty
 | Clear the line, then the last result         | **⎋** or the **AC** key | **Esc** or the **AC** key     |
 | Previous / next tape line                    | **↑** / **↓**           | **Up** / **Down**             |
 | Insert a tape line's result / its expression | click / **⌥-click**     | click / **Alt-click**         |
+| Copy, insert or delete a tape line           | right-click the line    | right-click the line          |
 | Copy the result                              | **⇧⌘C**                 | **Ctrl+Shift+C**              |
 | Paste, dropping grouping commas from numbers | **⌘V**                  | **Ctrl+V**                    |
-| Undo / redo typing                           | **⌘Z** / **⇧⌘Z**        | **Ctrl+Z** / **Ctrl+Shift+Z** |
+| Undo / redo typing, then tape changes        | **⌘Z** / **⇧⌘Z**        | **Ctrl+Z** / **Ctrl+Shift+Z** |
 | Clear the tape                               | **⇧⌘⌫**                 | **Ctrl+Shift+Backspace**      |
 
 ## View

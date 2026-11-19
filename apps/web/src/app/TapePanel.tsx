@@ -1,14 +1,17 @@
 import { useScrollToEnd } from '@abacite/ui';
-import { useRef } from 'preact/hooks';
+import { useCallback, useRef, useState } from 'preact/hooks';
 import type { AppController } from './controller.ts';
+import { TapeMenu, type TapeMenuPlace } from './TapeMenu.tsx';
 
 /**
  * The tape (PRD §7.1): every committed line with its result, newest at the bottom. Clicking a line puts its
- * result into the expression line; ⌥-click (Alt-click) puts its input.
+ * result into the expression line; ⌥-click (Alt-click) puts its input. Right-click opens its menu.
  */
 export function TapePanel({ app }: { readonly app: AppController }) {
   const tape = app.tape.value;
   const list = useRef<HTMLOListElement>(null);
+  const [menu, setMenu] = useState<TapeMenuPlace | null>(null);
+  const closeMenu = useCallback(() => setMenu(null), []);
   // The newest line stays in view.
   useScrollToEnd(list, tape);
   return (
@@ -42,6 +45,17 @@ export function TapePanel({ app }: { readonly app: AppController }) {
                   onClick={(e) =>
                     app.insert(e.altKey || value === null ? line.input : value.replaceAll(',', ''))
                   }
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    // The menu key or Shift+F10 gives no point: open the menu under the line.
+                    const box = e.currentTarget.getBoundingClientRect();
+                    const keyboard = e.clientX === 0 && e.clientY === 0;
+                    setMenu({
+                      index: i,
+                      x: keyboard ? box.left : e.clientX,
+                      y: keyboard ? box.bottom : e.clientY,
+                    });
+                  }}
                 >
                   <span class="ab-tape-input">{line.input}</span>
                   <span class="ab-tape-result">
@@ -61,6 +75,7 @@ export function TapePanel({ app }: { readonly app: AppController }) {
           })}
         </ol>
       )}
+      {menu && <TapeMenu app={app} place={menu} onClose={closeMenu} />}
     </aside>
   );
 }

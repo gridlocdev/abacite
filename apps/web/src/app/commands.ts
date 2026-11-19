@@ -52,7 +52,7 @@ export function buildCommands(app: AppController): CommandCatalog {
       shortcuts: ['up'],
       keysOnly: true,
       hidden: true,
-      run: () => app.historyBack(),
+      run: () => app.walkHistory(-1),
     },
     {
       id: 'line.historyForward',
@@ -62,7 +62,7 @@ export function buildCommands(app: AppController): CommandCatalog {
       shortcuts: ['down'],
       keysOnly: true,
       hidden: true,
-      run: () => app.historyForward(),
+      run: () => app.walkHistory(1),
     },
     {
       id: 'edit.copyResult',
@@ -72,6 +72,26 @@ export function buildCommands(app: AppController): CommandCatalog {
       shortcuts: ['shift+mod+c'],
       global: true,
       run: () => app.copyResult(),
+    },
+    {
+      id: 'tape.undo',
+      title: 'Undo Tape Change',
+      description: 'Undo the last change to the tape: a new line, a deleted line or Clear Tape.',
+      group: 'Edit',
+      shortcuts: ['mod+z'],
+      keysOnly: true,
+      enabled: () => app.canStepTape('undo'),
+      run: () => app.stepTape('undo'),
+    },
+    {
+      id: 'tape.redo',
+      title: 'Redo Tape Change',
+      description: 'Redo the tape change you undid last.',
+      group: 'Edit',
+      shortcuts: ['shift+mod+z'],
+      keysOnly: true,
+      enabled: () => app.canStepTape('redo'),
+      run: () => app.stepTape('redo'),
     },
     {
       id: 'tape.clear',
@@ -140,7 +160,7 @@ export function buildCommands(app: AppController): CommandCatalog {
       group: 'View',
       keywords: 'theme dark mode light mode',
       checked: () => s().theme === theme,
-      run: () => app.setTheme(theme),
+      run: () => app.update({ theme }),
     })),
     {
       id: 'help.commands',

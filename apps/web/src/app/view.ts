@@ -27,3 +27,10 @@ export const WIDTHS = { basic: 400, scientific: 720, tape: 260 } as const;
 export function windowWidth(mode: Mode, tape: boolean): number {
   return WIDTHS[mode] + (tape ? WIDTHS.tape : 0);
 }
+
+/** The number a display shows, alone: no grouping commas or unit. Null for an error or an unfinished line. */
+export function shownNumber(shown: Shown): string | null {
+  return shown.kind === 'result' || shown.kind === 'live'
+    ? shown.text.split(' ')[0]!.replaceAll(',', '')
+    : null;
+}
