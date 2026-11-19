@@ -1,5 +1,8 @@
+import { mkdtempSync, readdirSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { parseSavedWindow, placeWindow, widened } from '../src/index.ts';
+import { loadSavedWindow, parseSavedWindow, placeWindow, saveWindowSync, widened } from '../src/index.ts';
 
 const main = { x: 0, y: 25, width: 1440, height: 875 };
 const right = { x: 1440, y: 0, width: 1920, height: 1080 };
@@ -77,5 +80,20 @@ describe('widened', () => {
 
   it('leaves a wide enough window alone', () => {
     expect(widened({ x: 0, y: 80, width: 800, height: 620 }, 720, area)).toBeNull();
+  });
+});
+
+describe('saveWindowSync', () => {
+  it('has the file in place when it returns, with no temporary file left', async () => {
+    const folder = mkdtempSync(path.join(tmpdir(), 'abacite-window-'));
+    try {
+      const file = path.join(folder, 'window-state.json');
+      const saved = { x: 10, y: 20, width: 500, height: 640, maximized: true };
+      saveWindowSync(file, saved);
+      expect(readdirSync(folder)).toEqual(['window-state.json']);
+      expect(await loadSavedWindow(file)).toEqual(saved);
+    } finally {
+      rmSync(folder, { recursive: true, force: true });
+    }
   });
 });

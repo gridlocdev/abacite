@@ -10,7 +10,14 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Channels } from './bridge.ts';
 import { editMenuTemplate, toTemplate, withStandardMenus } from './menu.ts';
 import { appFile, dataPaths, isAppUrl, isHeadless } from './paths.ts';
-import { loadSavedWindow, placeWindow, saveWindow, widened, type SavedWindow } from './windowState.ts';
+import {
+  loadSavedWindow,
+  placeWindow,
+  saveWindow,
+  saveWindowSync,
+  widened,
+  type SavedWindow,
+} from './windowState.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const webRoot = path.join(here, 'web');
@@ -60,13 +67,21 @@ function trusted(e: Electron.IpcMainEvent | Electron.IpcMainInvokeEvent): boolea
   return isAppUrl(e.senderFrame?.url);
 }
 
-function rememberWindow(w: BrowserWindow): void {
+/** Saves where the window is. On close it saves before returning, since the app quits right after. */
+function rememberWindow(w: BrowserWindow, closing = false): void {
   if (headless || w.isDestroyed() || w.isMinimized()) return;
   const b = w.getNormalBounds();
   lastWindow = { ...b, maximized: w.isMaximized() };
-  void saveWindow(windowFile, lastWindow).catch((e: unknown) =>
-    console.warn('Could not remember the window position:', e),
-  );
+  const failed = (e: unknown) => console.warn('Could not remember the window position:', e);
+  if (!closing) {
+    void saveWindow(windowFile, lastWindow).catch(failed);
+    return;
+  }
+  try {
+    saveWindowSync(windowFile, lastWindow);
+  } catch (e) {
+    failed(e);
+  }
 }
 
 function createWindow(): BrowserWindow {
@@ -115,7 +130,10 @@ function createWindow(): BrowserWindow {
     placeTimer = setTimeout(() => rememberWindow(w), 500);
   };
   for (const ev of ['move', 'resize', 'maximize', 'unmaximize'] as const) w.on(ev as 'move', placeChanged);
-  w.on('close', () => rememberWindow(w));
+  w.on('close', () => {
+    if (placeTimer) clearTimeout(placeTimer);
+    rememberWindow(w, true);
+  });
   w.on('closed', () => {
     if (placeTimer) clearTimeout(placeTimer);
     if (win === w) win = null;

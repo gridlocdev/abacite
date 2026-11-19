@@ -1,6 +1,7 @@
 // Where the window opens (PRD §9.1): the size and place it had when it last closed, kept on a screen that is
 // still there. No Electron imports, so the tests can run it in Node.
 import { randomUUID } from 'node:crypto';
+import { renameSync, rmSync, writeFileSync } from 'node:fs';
 import { readFile, rename, rm, writeFile } from 'node:fs/promises';
 
 export interface Rect {
@@ -84,6 +85,18 @@ export async function saveWindow(file: string, w: SavedWindow): Promise<void> {
     await rename(temp, file);
   } catch (e) {
     await rm(temp, { force: true });
+    throw e;
+  }
+}
+
+/** `saveWindow`, finished before it returns: for closing, when the app may quit before a promise settles. */
+export function saveWindowSync(file: string, w: SavedWindow): void {
+  const temp = `${file}.${randomUUID()}.tmp`;
+  try {
+    writeFileSync(temp, JSON.stringify(w) + '\n');
+    renameSync(temp, file);
+  } catch (e) {
+    rmSync(temp, { force: true });
     throw e;
   }
 }

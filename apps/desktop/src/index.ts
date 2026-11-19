@@ -7,6 +7,7 @@ export {
   parseSavedWindow,
   placeWindow,
   saveWindow,
+  saveWindowSync,
   widened,
   type Rect,
   type SavedWindow,
