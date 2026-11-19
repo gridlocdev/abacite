@@ -59,6 +59,23 @@ test.describe('Expression line', () => {
     await page.keyboard.type('80 rate');
     await expect(display(page)).toHaveText('100');
   });
+
+  test('dragging over the result selects it to copy, and a click on empty space brings the line back', async ({
+    page,
+  }) => {
+    await page.keyboard.type('123456789*9');
+    await page.keyboard.press('Enter');
+    const box = (await display(page).boundingBox())!;
+    const y = box.y + box.height / 2;
+    await page.mouse.move(box.x + box.width - 2, y);
+    await page.mouse.down();
+    await page.mouse.move(box.x + 2, y, { steps: 8 });
+    await page.mouse.up();
+    await expect.poll(() => page.evaluate(() => getSelection()?.toString())).toBe('1,111,111,101');
+    await expect(expression(page)).not.toBeFocused();
+    await page.mouse.click(box.x + box.width / 2, 2);
+    await expect(expression(page)).toBeFocused();
+  });
 });
 
 test.describe('Exact decimals', () => {

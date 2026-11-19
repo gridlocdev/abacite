@@ -50,6 +50,7 @@ export {
   useFieldSelection,
   useFieldValue,
   useFocusWhen,
+  useTakeBackFocus,
   usePopupFocus,
   useScrollToEnd,
 } from './components/domHooks.ts';

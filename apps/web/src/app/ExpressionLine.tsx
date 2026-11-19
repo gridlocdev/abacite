@@ -1,4 +1,4 @@
-import { nextFrame, useFieldSelection, useFieldValue, useFocusWhen } from '@abacite/ui';
+import { useFieldSelection, useFieldValue, useFocusWhen, useTakeBackFocus } from '@abacite/ui';
 import { useRef } from 'preact/hooks';
 import type { AppController } from './controller.ts';
 
@@ -18,6 +18,7 @@ export function ExpressionLine({ app }: { readonly app: AppController }) {
   // Focus comes back to the line when a dialog closes.
   useFocusWhen(input, dialog === null);
   useFieldSelection(input, app.select);
+  useTakeBackFocus(input, () => app.dialog.peek() === null);
 
   const text = line.text;
   const at = ghost.errorAt;
@@ -63,14 +64,6 @@ export function ExpressionLine({ app }: { readonly app: AppController }) {
           if (text === undefined) return;
           e.preventDefault();
           app.paste(text);
-        }}
-        onBlur={(e) => {
-          // Clicking empty space leaves focus nowhere: take it back. Tabbing to a key keeps it there.
-          if (e.relatedTarget === null && app.dialog.peek() === null)
-            nextFrame(() => {
-              if (document.activeElement === document.body && app.dialog.peek() === null)
-                input.current?.focus();
-            });
         }}
       />
     </div>
