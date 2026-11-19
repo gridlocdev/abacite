@@ -42,6 +42,7 @@ import { NodeFolder } from './tapeFolder.ts';
 import { checkForUpdate, fetchLatestRelease, isNewer, parseRelease, type Release } from './updates.ts';
 import {
   loadSavedWindow,
+  outerWidth,
   placeWindow,
   saveWindow,
   saveWindowSync,
@@ -206,12 +207,16 @@ function createWindow(): BrowserWindow {
   return w;
 }
 
-/** Grows the window for the Scientific keypad or the tape, keeping it on its screen (PRD §9.1). */
+/**
+ * Grows the window for the Scientific keypad or the tape, keeping it on its screen (PRD §9.1). `width` is in
+ * the page's CSS pixels.
+ */
 function fitWidth(width: number): void {
   if (!win || win.isMaximized() || win.isFullScreen()) return;
   const bounds = win.getBounds();
   const area = screen.getDisplayMatching(bounds).workArea;
-  const next = widened(bounds, width, area);
+  const frame = bounds.width - win.getContentBounds().width;
+  const next = widened(bounds, outerWidth(width, win.webContents.getZoomFactor(), frame), area);
   if (next) win.setBounds(next, !headless);
 }
 

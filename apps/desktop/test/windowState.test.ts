@@ -2,7 +2,14 @@ import { mkdtempSync, readdirSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { loadSavedWindow, parseSavedWindow, placeWindow, saveWindowSync, widened } from '../src/index.ts';
+import {
+  loadSavedWindow,
+  outerWidth,
+  parseSavedWindow,
+  placeWindow,
+  saveWindowSync,
+  widened,
+} from '../src/index.ts';
 
 const main = { x: 0, y: 25, width: 1440, height: 875 };
 const right = { x: 1440, y: 0, width: 1920, height: 1080 };
@@ -51,6 +58,20 @@ describe('parseSavedWindow', () => {
     expect(parseSavedWindow({ x: 1, y: 2, width: 0, height: 200 })).toBeNull();
     expect(parseSavedWindow('nope')).toBeNull();
     expect(parseSavedWindow({ x: '1', y: 2, width: 3, height: 4 })).toBeNull();
+  });
+});
+
+describe('outerWidth', () => {
+  it('scales the page width by the zoom and adds the window frame', () => {
+    expect(outerWidth(720, 1, 0)).toBe(720);
+    expect(outerWidth(720, 1.25, 0)).toBe(900);
+    expect(outerWidth(720, 1, 16)).toBe(736);
+    expect(outerWidth(720, 1.1, 16)).toBe(808);
+  });
+
+  it('ignores a zoom or frame that can’t be right', () => {
+    expect(outerWidth(720, 0, -4)).toBe(720);
+    expect(outerWidth(720, Number.NaN, 0)).toBe(720);
   });
 });
 

@@ -102,6 +102,16 @@ export function saveWindowSync(file: string, w: SavedWindow): void {
 }
 
 /**
+ * The window width that gives the page `pageWidth` CSS pixels: scaled by the page's zoom, plus the window's
+ * frame (`frame`: the outer width less the content width; 0 on macOS, a border on Windows and Linux).
+ */
+export function outerWidth(pageWidth: number, zoom: number, frame: number): number {
+  const scale = Number.isFinite(zoom) && zoom > 0 ? zoom : 1;
+  // Rounded first, so float error (720 × 1.1 = 792.0000000000001) doesn't add a pixel.
+  return Math.ceil(Math.round(pageWidth * scale * 1000) / 1000) + Math.max(0, frame);
+}
+
+/**
  * The window grown to at least `width` (the Scientific keypad or the tape, PRD §9.1), kept on its screen:
  * never wider than the screen, and moved left when it would run off the right edge. Null when it is wide enough.
  */

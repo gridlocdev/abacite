@@ -18,6 +18,7 @@ export {
   placeWindow,
   saveWindow,
   saveWindowSync,
+  outerWidth,
   widened,
   type Rect,
   type SavedWindow,
