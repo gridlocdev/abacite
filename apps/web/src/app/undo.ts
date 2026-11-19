@@ -30,6 +30,12 @@ export class UndoStack<T> {
     return after;
   }
 
+  /** Forgets every step: another tape was opened. */
+  clear(): void {
+    this.#undo = [];
+    this.#redo = [];
+  }
+
   canUndo(): boolean {
     return this.#undo.length > 0;
   }

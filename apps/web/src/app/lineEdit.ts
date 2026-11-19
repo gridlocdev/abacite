@@ -1,4 +1,5 @@
 /** Editing the expression line from the keypad (PRD §9.2): pure functions over the text and its selection. */
+import type { KeyAction } from './keyDefs.ts';
 
 export interface LineState {
   readonly text: string;
@@ -150,4 +151,31 @@ export function stepHistory(
   if (!place) return null;
   if (place.index + 1 >= lines.length) return { text: place.draft, history: null };
   return { text: lines[place.index + 1]!.input, history: { index: place.index + 1, draft: place.draft } };
+}
+
+/**
+ * The line after an expression-entry key that edits it (PRD §9.2), or null for a key that doesn't.
+ * `afterResult`: the tape has a line, so 1/x on an empty line works on `ans`.
+ */
+export function editByKey(s: LineState, action: KeyAction, afterResult: boolean): LineState | null {
+  switch (action.type) {
+    case 'insert':
+      return insertText(s, action.text);
+    case 'call':
+      return insertCall(s, action.name);
+    case 'wrap':
+      return !s.text.trim() && afterResult
+        ? lineAt(`${action.prefix}ans${action.suffix}`)
+        : wrap(s, action.prefix, action.suffix);
+    case 'negate':
+      return negate(s);
+    case 'backspace':
+      return backspace(s);
+    case 'commit':
+    case 'clear':
+    case 'second':
+    case 'angle':
+    case 'memory':
+      return null;
+  }
 }

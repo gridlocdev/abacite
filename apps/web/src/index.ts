@@ -28,3 +28,12 @@ export {
   wrap,
   type LineState,
 } from './app/lineEdit.ts';
+export {
+  RETRIES,
+  TapeSession,
+  type Conflict,
+  type Recovery,
+  type SaveState,
+  type SessionOptions,
+} from './app/tapeSession.ts';
+export { editByKey } from './app/lineEdit.ts';

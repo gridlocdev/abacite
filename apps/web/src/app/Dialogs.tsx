@@ -27,6 +27,13 @@ export function Dialogs({ app, catalog }: { readonly app: AppController; readonl
       return <ShortcutsDialog app={app} catalog={catalog} />;
     case 'settings':
       return <SettingsDialog app={app} />;
+    // The tape folder's dialogs are drawn by TapeDialogs.
+    case 'tapes':
+    case 'rename':
+    case 'trash':
+    case 'conflict':
+    case 'recovery':
+    case 'folder':
     case null:
       return null;
   }

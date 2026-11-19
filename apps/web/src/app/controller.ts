@@ -6,6 +6,7 @@ import {
   defaultRandom,
   deleteLine,
   evaluate,
+  evaluateTape,
   expandInput,
   formatDecimal,
   memoryLine,
@@ -36,19 +37,17 @@ import { UndoStack } from './undo.ts';
 import { shownNumber, windowWidth, type Ghost, type Shown } from './view.ts';
 import {
   EMPTY_LINE,
-  backspace,
   cleanPaste,
-  insertCall,
+  editByKey,
   insertText,
   lineAt,
-  negate,
   stepHistory,
-  wrap,
   type HistoryPlace,
   type LineState,
 } from './lineEdit.ts';
 
-export type DialogKind = 'commands' | 'shortcuts' | 'settings';
+export type DialogKind =
+  'commands' | 'shortcuts' | 'settings' | 'tapes' | 'rename' | 'trash' | 'conflict' | 'recovery' | 'folder';
 
 export interface ControllerOptions {
   readonly settings: SettingsStorage;
@@ -155,9 +154,10 @@ export class AppController {
     return this.classicEntry() ? !classicEmpty(this.classic.value) : !!this.line.value.text;
   }
 
+  /** The open tape's angle unit, kept in its file (PRD §8.1): the tape is worked out again in it. */
   setAngle(angle: Angle): void {
     this.update({ angle });
-    this.#refresh();
+    this.#showTape(evaluateTape(this.tape.value.lines, this.#env()));
     this.say(angle === 'rad' ? 'Angles are in radians.' : 'Angles are in degrees.');
   }
 
@@ -277,27 +277,14 @@ export class AppController {
       if (def !== key) this.second.value = false;
       return;
     }
-    const s = this.line.value;
+    const edited = editByKey(this.line.value, action, this.tape.value.lines.length > 0);
+    if (edited) this.setLine(edited);
     switch (action.type) {
       case 'insert':
-        this.setLine(insertText(s, action.text));
-        break;
       case 'call':
-        this.setLine(insertCall(s, action.name));
-        break;
       case 'wrap':
-        // On an empty line after a result, 1/x works on the result.
-        this.setLine(
-          !s.text.trim() && this.tape.value.lines.length > 0
-            ? lineAt(`${action.prefix}ans${action.suffix}`)
-            : wrap(s, action.prefix, action.suffix),
-        );
-        break;
       case 'negate':
-        this.setLine(negate(s));
-        break;
       case 'backspace':
-        this.setLine(backspace(s));
         break;
       case 'clear':
         this.clear();
@@ -426,7 +413,7 @@ export class AppController {
   clearTape(): void {
     const count = this.tape.value.lines.length;
     if (count === 0) return;
-    this.#editTape(EMPTY_TAPE);
+    this.editTape(EMPTY_TAPE);
     this.say(`Cleared ${count === 1 ? '1 line' : `${count.toLocaleString('en-US')} lines`}.`, {
       action: {
         label: 'Undo',
@@ -437,7 +424,7 @@ export class AppController {
 
   /** Deletes a tape line; the lines after it are worked out again (PRD §7.2). */
   deleteLine(index: number): void {
-    this.#editTape(deleteLine(this.tape.value, index, this.#env()));
+    this.editTape(deleteLine(this.tape.value, index, this.#env()));
   }
 
   /**
@@ -453,8 +440,17 @@ export class AppController {
     if (tape) this.#showTape(tape);
   }
 
+  /** Shows a tape just opened, in its file's angle unit, with nothing to undo (PRD §8.2). */
+  loadTape(tape: Tape, angle: Angle): void {
+    batch(() => {
+      this.#undo.clear();
+      if (angle !== this.settings.value.angle) this.update({ angle });
+      this.#showTape(tape);
+    });
+  }
+
   /** A change to the tape other than a commit, kept for ⌘Z. */
-  #editTape(tape: Tape): void {
+  editTape(tape: Tape): void {
     if (tape === this.tape.value) return;
     this.#undo.push(this.tape.value);
     this.#showTape(tape);
@@ -479,17 +475,13 @@ export class AppController {
   }
 
   /** ⇧⌘C: copies the number on the display, without grouping commas. */
-  async copyResult(): Promise<void> {
-    const value = this.currentValue();
-    if (value === null) {
-      this.say('There’s no result to copy.', { tone: 'error' });
-      return;
-    }
-    await this.copyText(value);
+  copyResult(): Promise<void> {
+    return this.copyText(this.currentValue());
   }
 
-  /** Copies text and says so: a result, or a tape line's input (PRD §7.1). */
-  async copyText(text: string): Promise<void> {
+  /** Copies text and says so: a result, or a tape line's input (PRD §7.1). Null when there's no result. */
+  async copyText(text: string | null): Promise<void> {
+    if (text === null) return this.say('There’s no result to copy.', { tone: 'error' });
     try {
       await this.#copy(text);
       this.say(`Copied ${text}.`);
