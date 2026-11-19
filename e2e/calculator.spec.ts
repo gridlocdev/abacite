@@ -271,6 +271,43 @@ test.describe('Tape files', () => {
     await expect(tape(page).getByRole('listitem')).toHaveText([/1\+2\s*3/]);
   });
 
+  test('committing a line stays quick with a full tape of 10,000 lines', async ({ page }) => {
+    await page.evaluate(
+      async (text) => {
+        const tapes = await (
+          await navigator.storage.getDirectory()
+        ).getDirectoryHandle('tapes', { create: true });
+        const file = await (await tapes.getFileHandle('Tape.txt', { create: true })).createWritable();
+        await file.write(text);
+        await file.close();
+      },
+      Array.from({ length: 10_000 }, (_, i) => `${i}+1`).join('\n'),
+    );
+    await page.reload();
+    await waitForApp(page);
+    await page.keyboard.press('ControlOrMeta+KeyT');
+    await expect(tape(page).getByRole('listitem')).toHaveCount(10_000);
+    // The time from Enter to the next painted frame, the median of 9.
+    const times = await page.evaluate(async () => {
+      const line = document.querySelector<HTMLInputElement>('[data-ab-line]')!;
+      const frame = () => new Promise((done) => requestAnimationFrame(() => setTimeout(done)));
+      const out: number[] = [];
+      for (let i = 0; i < 9; i++) {
+        line.value = String(i);
+        line.dispatchEvent(new InputEvent('input', { bubbles: true }));
+        await frame();
+        const start = performance.now();
+        line.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', bubbles: true }));
+        await frame();
+        out.push(performance.now() - start);
+      }
+      return out.sort((a, b) => a - b);
+    });
+    await expect(tape(page).getByRole('listitem').last()).toHaveText(/^8\s*8$/);
+    // About 35 ms here; redrawing every row took 70 ms or more.
+    expect(times[4]).toBeLessThan(55);
+  });
+
   test('new, rename, delete with Undo, restore from the trash, and switch tapes', async ({ page }) => {
     await page.keyboard.press('ControlOrMeta+KeyT');
     await runCommand(page, 'New Tape');
