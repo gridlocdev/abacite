@@ -56,3 +56,20 @@ export { Dialog } from './components/Dialog.tsx';
 export { focusables, trapIndex, trapTab } from './components/focusTrap.ts';
 export { Icon } from './components/Icon.tsx';
 export { ListPopup, listStep } from './components/ListPopup.tsx';
+export {
+  HandleFolder,
+  MemoryFolder,
+  Serial,
+  StoreError,
+  TRASH,
+  TapeLibrary,
+  checkTapeName,
+  copyName,
+  freeName,
+  pathParts,
+  versionOf,
+  versionOfBytes,
+  type FileRead,
+  type Folder,
+  type StoreErrorKind,
+} from './platform/index.ts';

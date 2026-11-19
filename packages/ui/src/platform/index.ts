@@ -1,0 +1,13 @@
+export {
+  Serial,
+  StoreError,
+  pathParts,
+  versionOf,
+  versionOfBytes,
+  type FileRead,
+  type Folder,
+  type StoreErrorKind,
+} from './folder.ts';
+export { HandleFolder } from './handleFolder.ts';
+export { MemoryFolder } from './memoryFolder.ts';
+export { TRASH, TapeLibrary, checkTapeName, copyName, freeName } from './tapeLibrary.ts';
