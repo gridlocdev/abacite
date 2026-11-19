@@ -2,7 +2,9 @@
 export { Channels, type NativeMenuItem } from './bridge.ts';
 export { editMenuTemplate, toTemplate, withStandardMenus, type EditMenuParams } from './menu.ts';
 export {
+  allowPermission,
   appFile,
+  appRequestFile,
   dataPaths,
   HEADLESS_PREFIX,
   isAppUrl,

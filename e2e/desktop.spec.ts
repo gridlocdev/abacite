@@ -36,7 +36,7 @@ async function firstStart(window: Page): Promise<void> {
 }
 
 test.describe('Desktop and browser', () => {
-  test('the desktop app starts headless, calculates and keeps its settings', async () => {
+  test('the desktop app starts headless, calculates, keeps its settings and grants nothing but the clipboard', async () => {
     // realpath: macOS's temp folder is behind a symlink, and the app may report the real path.
     const temp = realpathSync(mkdtempSync(path.join(tmpdir(), 'abacite-e2e-')));
     const profile = path.join(temp, 'profile');
@@ -63,6 +63,15 @@ test.describe('Desktop and browser', () => {
         await expect
           .poll(() => readFileSync(file, 'utf8'), { message: 'the tape is saved' })
           .toBe('2*(3+4)  # = 14\n');
+        // The page may write to the clipboard (Copy Result) and nothing else.
+        const permission = (name: string) =>
+          window.evaluate(
+            async (n) => (await navigator.permissions.query({ name: n as PermissionName })).state,
+            name,
+          );
+        expect(await permission('clipboard-write')).toBe('granted');
+        expect(await permission('geolocation')).toBe('denied');
+        expect(await permission('notifications')).toBe('denied');
         await window.keyboard.press('ControlOrMeta+2');
         await expect(window.getByRole('group', { name: 'Scientific keys' })).toBeVisible();
         // Choosing the mode that is already on: Electron unticks the item, and the page puts the tick back.

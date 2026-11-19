@@ -12,6 +12,7 @@ import {
   net,
   protocol,
   screen,
+  session,
   shell,
 } from 'electron';
 import { mkdtempSync } from 'node:fs';
@@ -29,7 +30,8 @@ import {
 } from './folderChoice.ts';
 import { editMenuTemplate, toTemplate, withStandardMenus } from './menu.ts';
 import {
-  appFile,
+  allowPermission,
+  appRequestFile,
   dataPaths,
   HEADLESS_PREFIX,
   isAppUrl,
@@ -196,8 +198,9 @@ function createWindow(): BrowserWindow {
     else void shell.openExternal(url);
     return { action: 'deny' };
   });
-  w.webContents.on('will-navigate', (e, url) => {
-    if (!isAppUrl(url)) e.preventDefault();
+  // Any frame, not only the main one, stays on the app's own pages.
+  w.webContents.on('will-frame-navigate', (e) => {
+    if (!isAppUrl(e.url)) e.preventDefault();
   });
   void w.loadURL('app://abacite/index.html');
   return w;
@@ -321,8 +324,16 @@ else {
     win.focus();
   });
   void app.whenReady().then(async () => {
+    // Until the page sends its menu: no reload or developer tools in a packaged app.
+    Menu.setApplicationMenu(Menu.buildFromTemplate(withStandardMenus([], process.platform, !app.isPackaged)));
+    session.defaultSession.setPermissionRequestHandler((_wc, permission, done, details) =>
+      done(allowPermission(permission, details.requestingUrl)),
+    );
+    session.defaultSession.setPermissionCheckHandler((_wc, permission, origin, details) =>
+      allowPermission(permission, details.requestingUrl ?? origin),
+    );
     protocol.handle('app', (req) => {
-      const file = appFile(webRoot, new URL(req.url).pathname);
+      const file = appRequestFile(webRoot, req.url);
       return file ? net.fetch(pathToFileURL(file).toString()) : new Response('Forbidden', { status: 403 });
     });
     registerIpc();

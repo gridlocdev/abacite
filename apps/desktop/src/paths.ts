@@ -38,6 +38,25 @@ export function isAppUrl(url: string | undefined | null): boolean {
   return typeof url === 'string' && url.startsWith('app://abacite/');
 }
 
+/** The file under `root` that an app:// request names; null for another host or a path that leaves `root`. */
+export function appRequestFile(root: string, url: string): string | null {
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return null;
+  }
+  return parsed.protocol === 'app:' && parsed.host === 'abacite' ? appFile(root, parsed.pathname) : null;
+}
+
+/** The only permission the page needs: writing a result to the clipboard (Copy Result). */
+const PERMISSIONS = new Set(['clipboard-sanitized-write']);
+
+/** True when the page at `url` may have `permission`; every other page and permission is refused. */
+export function allowPermission(permission: string, url: string | undefined): boolean {
+  return PERMISSIONS.has(permission) && (isAppUrl(url) || url === 'app://abacite');
+}
+
 /** The file under `root` that an app:// path names, or null when it would leave `root`. */
 export function appFile(root: string, pathname: string): string | null {
   let decoded: string;

@@ -3,7 +3,9 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  allowPermission,
   appFile,
+  appRequestFile,
   dataPaths,
   HEADLESS_PREFIX,
   isAppUrl,
@@ -44,6 +46,21 @@ describe('app:// files', () => {
     expect(appFile(root, '/../main.js')).toBeNull();
     expect(appFile(root, '/%2e%2e/main.js')).toBeNull();
     expect(appFile(root, '/%E0%A4%A')).toBeNull();
+  });
+
+  it('serves only the abacite host', () => {
+    expect(appRequestFile(root, 'app://abacite/index.html')).toBe(path.join(root, 'index.html'));
+    expect(appRequestFile(root, 'app://other/index.html')).toBeNull();
+    expect(appRequestFile(root, 'app://abacite.evil/index.html')).toBeNull();
+    expect(appRequestFile(root, 'not a url')).toBeNull();
+  });
+
+  it('gives our page only the clipboard, and other pages nothing', () => {
+    expect(allowPermission('clipboard-sanitized-write', 'app://abacite/index.html')).toBe(true);
+    expect(allowPermission('clipboard-sanitized-write', 'app://abacite')).toBe(true);
+    expect(allowPermission('clipboard-sanitized-write', 'https://example.com/')).toBe(false);
+    expect(allowPermission('media', 'app://abacite/index.html')).toBe(false);
+    expect(allowPermission('notifications', undefined)).toBe(false);
   });
 
   it('trusts only our own page', () => {
