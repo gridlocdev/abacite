@@ -351,6 +351,15 @@ test.describe('Settings and appearance', () => {
     await page.reload();
     await expect(page.locator('html')).toHaveAttribute('data-theme', 'dark');
   });
+
+  test('a setting changed in one tab reaches the others', async ({ page, context }) => {
+    const other = await context.newPage();
+    await openApp(other);
+    await page.keyboard.press('ControlOrMeta+Comma');
+    await page.getByRole('dialog', { name: 'Settings' }).getByRole('radio', { name: 'Dark' }).click();
+    await expect(other.locator('html')).toHaveAttribute('data-theme', 'dark');
+    await other.close();
+  });
 });
 
 test.describe('Accessibility', () => {

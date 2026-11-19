@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_SETTINGS, keyFocus, memorySettings, parseSettings } from '../src/index.ts';
+import {
+  DEFAULT_SETTINGS,
+  keyFocus,
+  memorySettings,
+  parseSettings,
+  settingsFromEvent,
+} from '../src/index.ts';
 
 describe('settings', () => {
   it('keeps good fields and defaults bad ones one by one', () => {
@@ -17,6 +23,14 @@ describe('settings', () => {
   it('reads anything that is not an object as the defaults', () => {
     expect(parseSettings(null)).toEqual(DEFAULT_SETTINGS);
     expect(parseSettings('dark')).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it('reads another window’s settings from a storage event, and nothing else', () => {
+    const newValue = JSON.stringify({ ...DEFAULT_SETTINGS, theme: 'dark' });
+    expect(settingsFromEvent({ key: 'abacite.settings', newValue })?.theme).toBe('dark');
+    expect(settingsFromEvent({ key: 'abacite.lastTape', newValue })).toBeNull();
+    expect(settingsFromEvent({ key: 'abacite.settings', newValue: '{oops' })).toBeNull();
+    expect(settingsFromEvent({ key: null, newValue: null })).toEqual(DEFAULT_SETTINGS);
   });
 
   it('keeps settings in memory for tests', () => {

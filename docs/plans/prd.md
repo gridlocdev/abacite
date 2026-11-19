@@ -232,6 +232,8 @@ Stored in the app's own storage (desktop: its data folder; browser: local storag
 - Group Digits: on (default) or off.
 - Show Tape: on or off.
 
+In the browser, a change in one tab reaches the other open tabs at once. Each tab keeps the angle unit of its own open tape.
+
 ## §12 Desktop
 
 - Electron, with the web build inside. Native menu bar from the command catalog. One window. Closing the window quits on every platform.

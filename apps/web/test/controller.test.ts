@@ -249,6 +249,25 @@ describe('settings and the window (PRD §9.1, §11)', () => {
     expect(widths).toEqual([windowWidth('scientific', false), windowWidth('scientific', true)]);
   });
 
+  it('takes settings another window changed, without saving them back, and keeps its own angle', () => {
+    const { app, storage, widths } = makeApp({ angle: 'deg' });
+    app.setAngle('rad');
+    type(app, '1234');
+    let saves = 0;
+    const save = storage.save.bind(storage);
+    storage.save = (s) => {
+      saves++;
+      save(s);
+    };
+    storage.change({ theme: 'dark', mode: 'scientific', groupDigits: false, angle: 'deg' });
+    expect(app.settings.value).toMatchObject({ theme: 'dark', mode: 'scientific', angle: 'rad' });
+    expect(app.shown.value.text).toBe('1234');
+    expect(widths.at(-1)).toBe(windowWidth('scientific', false));
+    storage.change({ entry: 'classic' });
+    expect(app.classicEntry()).toBe(true);
+    expect(saves).toBe(0);
+  });
+
   it('dismisses a notice after a while', () => {
     vi.useFakeTimers();
     try {

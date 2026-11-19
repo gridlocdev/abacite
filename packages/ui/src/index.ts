@@ -35,6 +35,7 @@ export {
   MODES,
   THEMES,
   localSettings,
+  settingsFromEvent,
   memorySettings,
   parseSettings,
   type Angle,

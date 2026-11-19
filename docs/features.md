@@ -42,7 +42,7 @@ Every action has a command. **⌘K** opens the command menu to search and run th
 
 ## Settings and appearance
 
-**⌘,** opens Settings: the appearance (system, light or dark), the keypad, the angle unit, digit grouping and whether the tape shows. Settings are kept on this device.
+**⌘,** opens Settings: the appearance (system, light or dark), the keypad, the angle unit, digit grouping and whether the tape shows. Settings are kept on this device, and a change in one browser tab reaches the others.
 
 ## Accessibility
 

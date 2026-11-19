@@ -100,6 +100,7 @@ export class AppController {
     this.#random = options.random ?? defaultRandom;
     this.#copy = options.copy ?? ((text) => navigator.clipboard.writeText(text));
     this.#fitWidth = options.fitWidth;
+    options.settings.watch?.((next) => this.#takeOutside(next));
   }
 
   // Settings (PRD §11)
@@ -108,6 +109,21 @@ export class AppController {
     const next = { ...this.settings.value, ...change };
     this.settings.value = next;
     this.#storage.save(next);
+  }
+
+  /** Another window changed the settings: take them without saving them back. The angle stays the tape's own. */
+  #takeOutside(outside: Settings): void {
+    const before = this.settings.value;
+    const next = { ...outside, angle: before.angle };
+    batch(() => {
+      this.settings.value = next;
+      if (next.entry !== before.entry) {
+        this.classic.value = EMPTY_CLASSIC;
+        this.#history = null;
+      }
+      if (next.entry !== before.entry || next.groupDigits !== before.groupDigits) this.#refresh();
+    });
+    if (next.mode !== before.mode || next.showTape !== before.showTape) this.#fit();
   }
 
   setMode(mode: Mode): void {
