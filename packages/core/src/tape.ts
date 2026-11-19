@@ -26,6 +26,7 @@ export interface Tape {
 export const EMPTY_TAPE: Tape = { lines: [], scope: EMPTY_SCOPE, dropped: false };
 
 const ANS_PREFIX = 'ans ';
+const USES_ANS = /(?<![A-Za-z0-9_])ans(?![A-Za-z0-9_])/;
 const LEADING_OPERATOR = /^\s*(?:\*\*|[+\-*/^%×÷−·]|mod\b)/;
 
 /** True when the line starts with an operator, so it continues from `ans` (PRD §7.1). */
@@ -40,7 +41,7 @@ export function expandInput(input: string, tape: Tape): string {
 
 /**
  * The line Enter commits on an empty expression line: the last line's top-level operation applied to `ans`
- * (`5 + 3` → `ans + 3`), or null when it has none (PRD §7.1).
+ * (`5 + 3` → `ans + 3`), or null when it has none or its operand uses `ans` (PRD §7.1).
  */
 export function repeatInput(tape: Tape): string | null {
   const last = tape.lines.at(-1);
@@ -49,7 +50,10 @@ export function repeatInput(tape: Tape): string | null {
     const statement = parseStatement(expandInput(last.input, { ...tape, lines: tape.lines.slice(0, -1) }));
     if (!statement || statement.grouped || statement.expr.kind !== 'binary' || statement.expr.at === null)
       return null;
-    return `ans ${statement.source.slice(statement.expr.at).trim()}${')'.repeat(statement.missingParens)}`;
+    const operation = statement.source.slice(statement.expr.at).trim();
+    // `5 + ans` would read the new ans each time and double instead of repeating `+ 0`.
+    if (USES_ANS.test(operation)) return null;
+    return `ans ${operation}${')'.repeat(statement.missingParens)}`;
   } catch (error) {
     if (error instanceof CalcError) return null;
     throw error;

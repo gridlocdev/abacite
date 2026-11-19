@@ -85,12 +85,19 @@ describe('repeating the last operation (PRD §7.1)', () => {
     expect(repeatInput(commitAll(inputs))).toBe(expected);
   });
 
-  it.each([[[]], [['42']], [['(5 + 3)']], [['2pi']], [['sqrt(9)']], [['1/0']], [['-5']]])(
-    '%j has nothing to repeat',
-    (inputs) => {
-      expect(repeatInput(commitAll(inputs))).toBeNull();
-    },
-  );
+  it.each([
+    [[]],
+    [['42']],
+    [['(5 + 3)']],
+    [['2pi']],
+    [['sqrt(9)']],
+    [['1/0']],
+    [['-5']],
+    [['5 + ans']],
+    [['3', '* ans']],
+  ])('%j has nothing to repeat', (inputs) => {
+    expect(repeatInput(commitAll(inputs))).toBeNull();
+  });
 
   it('repeats like the Calculator’s =', () => {
     let tape = commitAll(['5 + 3']);

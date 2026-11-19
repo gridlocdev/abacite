@@ -130,7 +130,7 @@ Abacite is a calculator for one person, replacing the macOS Calculator. It runs 
 
 - Pressing Enter (or `=`) on a non-empty expression line commits it: the tape gains a line with the input and its result (or error), the expression line clears, and the result stays shown on the display until typing starts again.
 - Starting a line with an operator (`+`, `-`, `*`, `/`, `^`, `%`, `mod`) prefixes `ans`: typing `* 2` after a result gives `ans * 2`, shown in the line as typed with a greyed `ans` in front.
-- Enter on an empty line repeats the last operation on the new result, like `=` on the macOS Calculator: after `5 + 3` → `8`, Enter commits `ans + 3`. After a line with no binary operator at the top, it does nothing.
+- Enter on an empty line repeats the last operation on the new result, like `=` on the macOS Calculator: after `5 + 3` → `8`, Enter commits `ans + 3`. After a line with no binary operator at the top, or one whose operand uses `ans` (`5 + ans`), it does nothing.
 - ↑ and ↓ in the expression line walk back and forward through the tape's inputs; ↓ past the newest restores what was being typed.
 - Clicking a tape line puts its result into the expression line at the cursor; ⌥-click puts its input. Its context menu: **Copy Result**, **Copy Expression**, **Insert Result**, **Insert Expression**, **Delete Line**.
 - A tape holds up to 10 000 lines; at the limit the oldest line is dropped when a new one is committed, the remaining lines keep their results, and the status bar says so once per tape.
