@@ -37,3 +37,13 @@ export {
   type SessionOptions,
 } from './app/tapeSession.ts';
 export { editByKey } from './app/lineEdit.ts';
+export {
+  BROWSER_KEY,
+  TapeFolders,
+  browserPlatform,
+  desktopPlatform,
+  inBrowserStorage,
+  type FolderPlatform,
+  type FolderSetup,
+  type OpenedFolder,
+} from './app/tapeFolders.ts';

@@ -160,9 +160,9 @@ Abacite is a calculator for one person, replacing the macOS Calculator. It runs 
 ### §8.2 The tape folder
 
 - The desktop app and the browser keep tapes in a folder the user picks; each `*.txt` directly in it is a tape. First start on desktop asks **Use Documents/Abacite** (created when chosen) or **Choose Folder…**; a missing remembered folder (an unplugged drive) is named in the same question and nothing is created in its place.
-- The browser uses the File System Access API folder where the browser has it; otherwise tapes live in the browser's storage and the status bar says "Stored in this browser". **Export Tape…** downloads the `.txt`.
+- The browser starts with tapes in its own storage, and the status bar says "Stored in this browser". Where the browser has the File System Access API, **Open Tape Folder…** (⌘O) picks a folder on disk, which is remembered (the browser may ask to allow it again on a later visit), and **Keep Tapes in This Browser** goes back. **Export Tape…** downloads the `.txt`; on desktop it asks where to save it.
 - An empty folder gets one tape, `Tape.txt`, on first start (no welcome card).
-- The tape panel's header names the open tape and opens a list of the folder's tapes. **New Tape** (⌘N) makes `Tape 2.txt`, `Tape 3.txt`…; **Rename Tape…** renames the file; **Delete Tape** moves it to `.abacite/trash/` with the notice "Moved Tape 2 to the trash." and **Undo**. **Open Trash…** lists trashed tapes with **Restore**; restoring a name that's taken adds ` 2`.
+- The tape panel's header names the open tape and opens a list of the folder's tapes (also **Open Tape…**). Opening a tape sets the angle unit to the tape's. **New Tape** (⌘N) makes `Tape 2.txt`, `Tape 3.txt`…; **Rename Tape…** renames the file; **Delete Tape** moves it to `.abacite/trash/` with the notice "Moved Tape 2 to the trash." and **Undo**. **Open Trash…** lists trashed tapes with **Restore**; restoring a name that's taken adds ` 2`.
 - The open tape is remembered per folder and reopened on start.
 
 ### §8.3 Saving
@@ -203,7 +203,9 @@ All commands are in one catalog, which feeds the keyboard, ⌘K, the menu bar, c
 | Group | Command | Keys |
 | --- | --- | --- |
 | File | New Tape | ⌘N |
-| File | Open Tape Folder… (desktop) | ⌘O |
+| File | Open Tape… |  |
+| File | Open Tape Folder… (desktop, and browsers with the File System Access API) | ⌘O |
+| File | Keep Tapes in This Browser (those browsers) |  |
 | File | Rename Tape…, Delete Tape, Export Tape…, Open Trash… |  |
 | File | Settings… | ⌘, |
 | Edit | Undo, Redo | ⌘Z, ⇧⌘Z |

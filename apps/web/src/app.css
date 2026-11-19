@@ -213,6 +213,35 @@
   font-weight: 600;
   color: var(--ab-text-2);
 }
+.ab-tape-head h2 {
+  min-width: 0;
+}
+.ab-tape-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 100%;
+  margin: -2px 0 -2px -6px;
+  padding: 2px 4px 2px 6px;
+  border: 0;
+  border-radius: var(--ab-radius);
+  background: none;
+  color: var(--ab-text);
+  font: inherit;
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ab-tape-name:hover {
+  background: var(--ab-pressed);
+}
+.ab-tape-name .ab-icon {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--ab-text-2);
+}
 .ab-tape-empty {
   margin: 16px 12px;
   color: var(--ab-text-3);
@@ -317,6 +346,39 @@
 }
 .ab-notice-error {
   color: var(--ab-danger);
+}
+
+/* Tape folder dialogs */
+.ab-field-wide {
+  grid-template-columns: auto 1fr;
+}
+.ab-field-wide input:not([type='checkbox']) {
+  justify-self: stretch;
+}
+.ab-field-error {
+  color: var(--ab-danger);
+}
+.ab-trash {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ab-trash li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--ab-line);
+}
+.ab-trash li:last-child {
+  border-bottom: 0;
+}
+.ab-trash span {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 /* Settings */

@@ -28,7 +28,13 @@ Type a value with a unit, then `to` or `in` and another unit: `5 km to mi`, `100
 
 ## Tape
 
-**⌘T** shows the tape: every line you committed, with its result or its error. **↑** and **↓** bring earlier lines back into the expression line. Click a line to insert its result, or **⌥-click** (Alt-click) to insert its expression. Right-click a line to copy or insert its result or expression, or to delete it; the lines after it are worked out again. **⇧⌘⌫** clears the tape, with Undo in the status bar. With the expression line empty, **⌘Z** and **⇧⌘Z** undo and redo tape changes: a new line, a deleted line or a cleared tape. In this version the tape lasts until the window closes.
+**⌘T** shows the tape: every line you committed, with its result or its error. **↑** and **↓** bring earlier lines back into the expression line. Click a line to insert its result, or **⌥-click** (Alt-click) to insert its expression. Right-click a line to copy or insert its result or expression, or to delete it; the lines after it are worked out again. **⇧⌘⌫** clears the tape, with Undo in the status bar. With the expression line empty, **⌘Z** and **⇧⌘Z** undo and redo tape changes: a new line, a deleted line or a cleared tape.
+
+## Tape files
+
+Every tape is a plain text file, one calculation per line with its result as a comment (`2 * 3  # = 6`), so other apps and the `abacite tape` command can read and change it. The desktop app keeps tapes in a folder: on first start it offers Documents/Abacite or a folder you choose, and **⌘O** picks another. The browser keeps tapes in its own storage, with "Stored in this browser" in the status bar, and in Chrome and Edge **Open Tape Folder…** works on a folder on disk. Each change is saved at once. The tape panel's header names the open tape and opens the list of tapes; **⌘N** starts a new one, and the File menu renames, deletes or exports it. A deleted tape goes to the trash, with Undo in the status bar, and **Open Trash…** brings it back.
+
+Saving never overwrites changes made somewhere else. If the file changed or was deleted while you worked, Abacite asks whether to save yours as a copy, keep yours or use theirs. Changes made elsewhere while the tape has nothing unsaved are picked up as one undo step. A failed save is retried, then shown in the status bar with Try Again, and unsaved work is kept so it can be restored on the next start.
 
 ## Commands and shortcuts
 

@@ -55,6 +55,8 @@ export class TapeSession {
   readonly state = signal<SaveState>('saved');
   readonly conflict = signal<Conflict | null>(null);
   readonly recovery = signal<Recovery | null>(null);
+  /** The trash's tapes, as last listed (Open Trash…). */
+  readonly trashed = signal<readonly string[]>([]);
 
   readonly #app: AppController;
   readonly #key: string;
@@ -344,9 +346,17 @@ export class TapeSession {
     });
   }
 
+  /** Lists the trash for Open Trash…. */
+  async listTrash(): Promise<readonly string[]> {
+    const names = await this.library.trashed();
+    this.trashed.value = names;
+    return names;
+  }
+
   /** Brings a tape back from the trash and opens it; a taken name gets ` 2`. */
   async restoreTrashed(trashed: string): Promise<void> {
     const name = await this.library.restore(trashed);
+    this.trashed.value = this.trashed.value.filter((n) => n !== trashed);
     await this.#refreshNames();
     await this.open(name);
     this.#app.say(`Restored ${name}.`);

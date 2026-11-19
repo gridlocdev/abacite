@@ -17,6 +17,8 @@ export interface AbaciteNative {
   chooseFolder(): Promise<string | null>;
   /** One call on the tape folder: `list`, `read`, `write` or `move`. */
   folder(op: string, args: readonly unknown[]): Promise<NativeReply>;
+  /** Asks where to save a copy of the tape and writes it; false when the user cancels. */
+  exportTape(name: string, text: string): Promise<boolean>;
 }
 
 export function nativeBridge(): AbaciteNative | null {

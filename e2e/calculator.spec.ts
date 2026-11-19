@@ -2,7 +2,21 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { cli, display, expect, expression, key, openApp, runCommand, tape, test } from './fixtures.ts';
+import type { Page } from '@playwright/test';
+import {
+  cli,
+  display,
+  expect,
+  expression,
+  key,
+  notice,
+  openApp,
+  runCommand,
+  storedTape,
+  tape,
+  test,
+  waitForApp,
+} from './fixtures.ts';
 
 test.beforeEach(async ({ page }) => {
   await openApp(page);
@@ -221,6 +235,75 @@ test.describe('Tape', () => {
     await expect(lines).toHaveText([/x = 4/, /x \* 2\s*8/]);
     await page.keyboard.press('ControlOrMeta+Shift+KeyZ');
     await expect(lines).toHaveCount(1);
+  });
+});
+
+test.describe('Tape files', () => {
+  const tapeName = (page: Page) => tape(page).getByRole('heading').getByRole('button');
+
+  test('each change is saved in the browser and is there after a reload', async ({ page }) => {
+    await page.keyboard.press('ControlOrMeta+KeyT');
+    await expect(tapeName(page)).toHaveText('Tape');
+    await expect(page.getByText('Stored in this browser')).toBeVisible();
+    await page.keyboard.type('1+2');
+    await page.keyboard.press('Enter');
+    await expect(tape(page).getByRole('listitem')).toHaveText([/1\+2\s*3/]);
+    await expect.poll(() => storedTape(page, 'Tape')).toBe('1+2  # = 3\n');
+    await page.reload();
+    await waitForApp(page);
+    await expect(tape(page).getByRole('listitem')).toHaveText([/1\+2\s*3/]);
+  });
+
+  test('new, rename, delete with Undo, restore from the trash, and switch tapes', async ({ page }) => {
+    await page.keyboard.press('ControlOrMeta+KeyT');
+    await runCommand(page, 'New Tape');
+    await expect(tapeName(page)).toHaveText('Tape 2');
+
+    await runCommand(page, 'Rename Tape');
+    const rename = page.getByRole('dialog', { name: 'Rename Tape' });
+    await expect(rename.getByRole('textbox')).toBeFocused();
+    await page.keyboard.type('Tape');
+    await page.keyboard.press('Enter');
+    await expect(rename.getByRole('alert')).toHaveText('There’s already a tape called Tape.');
+    await page.keyboard.press('ControlOrMeta+KeyA');
+    await page.keyboard.type('Groceries');
+    await page.keyboard.press('Enter');
+    await expect(rename).toBeHidden();
+    await expect(tapeName(page)).toHaveText('Groceries');
+
+    await runCommand(page, 'Delete Tape');
+    await expect(notice(page)).toContainText('Moved Groceries to the trash.');
+    await expect(tapeName(page)).toHaveText('Tape');
+    await page.getByRole('button', { name: 'Undo' }).click();
+    await expect(tapeName(page)).toHaveText('Groceries');
+
+    await runCommand(page, 'Delete Tape');
+    await expect(tapeName(page)).toHaveText('Tape');
+    await runCommand(page, 'Open Trash');
+    const trash = page.getByRole('dialog', { name: 'Trash' });
+    await trash.getByRole('button', { name: 'Restore Groceries' }).click();
+    await expect(trash).toBeHidden();
+    await expect(tapeName(page)).toHaveText('Groceries');
+
+    await tapeName(page).click();
+    const list = page.getByRole('dialog', { name: 'Open Tape' });
+    await expect(list.getByRole('option')).toHaveText([/Groceries/, /^Tape$/]);
+    await page.keyboard.type('tape');
+    await page.keyboard.press('Enter');
+    await expect(list).toBeHidden();
+    await expect(tapeName(page)).toHaveText('Tape');
+    await expect(expression(page)).toBeFocused();
+  });
+
+  test('Export Tape downloads the tape as a text file', async ({ page }) => {
+    await page.keyboard.type('6*7');
+    await page.keyboard.press('Enter');
+    const download = page.waitForEvent('download');
+    await runCommand(page, 'Export Tape');
+    const file = await download;
+    expect(file.suggestedFilename()).toBe('Tape.txt');
+    expect(readFileSync(await file.path(), 'utf8')).toBe('6*7  # = 42\n');
+    await expect(notice(page)).toContainText('Exported Tape.');
   });
 });
 

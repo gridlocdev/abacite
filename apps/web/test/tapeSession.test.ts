@@ -1,17 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { MemoryFolder, storageKeep, type FileRead, type Folder } from '@abacite/ui';
+import { MemoryFolder, type FileRead, type Folder } from '@abacite/ui';
 import { TapeSession } from '../src/index.ts';
-import { enter, makeApp } from './helpers.ts';
-
-function memoryKeep() {
-  const map = new Map<string, string>();
-  const keep = storageKeep({
-    getItem: (k) => map.get(k) ?? null,
-    setItem: (k, v) => void map.set(k, v),
-    removeItem: (k) => void map.delete(k),
-  });
-  return { keep, map };
-}
+import { enter, makeApp, memoryKeep } from './helpers.ts';
 
 const NOW = new Date(2026, 10, 19, 14, 5, 9);
 

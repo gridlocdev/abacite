@@ -1,5 +1,5 @@
 /** The desktop menu bar, made from the command catalog (PRD §12). */
-import { effect } from '@preact/signals';
+import { effect, type ReadonlySignal } from '@preact/signals';
 import {
   COMMAND_GROUPS,
   debounce,
@@ -13,6 +13,9 @@ import type { AppController } from './controller.ts';
 
 /** Separators go before these ids. */
 const BREAKS = new Set([
+  'file.rename',
+  'file.export',
+  'app.settings',
   'edit.copyResult',
   'tape.clear',
   'view.classic',
@@ -89,12 +92,18 @@ export function menuSender(send: (menu: readonly NativeMenuItem[]) => void): {
 }
 
 /** Calls `changed` (at most every `settleMs`) when anything a menu item reads may have moved. */
-export function watchMenuInputs(app: AppController, changed: () => void, settleMs = 100): () => void {
+export function watchMenuInputs(
+  app: AppController,
+  changed: () => void,
+  more: readonly ReadonlySignal<unknown>[] = [],
+  settleMs = 100,
+): () => void {
   const later = debounce(settleMs, changed);
   const stop = effect(() => {
     void app.settings.value;
     void app.dialog.value;
     void app.tape.value;
+    for (const s of more) void s.value;
     later.call();
   });
   return () => {

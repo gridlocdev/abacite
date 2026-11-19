@@ -1,11 +1,11 @@
 // Desktop smoke test: the built Electron app starts headless (no window, Dock icon or system dialog) on a
 // throwaway profile and calculates. `just e2e-desktop` builds it first. The throwaway profile matters: the app
 // must never read the owner's settings or window state.
-import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
+import { mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { _electron as electron, type ElectronApplication } from '@playwright/test';
+import { _electron as electron, type ElectronApplication, type Page } from '@playwright/test';
 import { display, expect, test, waitForApp, watchErrors } from './fixtures.ts';
 
 const DESKTOP = fileURLToPath(new URL('../apps/desktop', import.meta.url));
@@ -25,6 +25,14 @@ async function closeApp(app: ElectronApplication): Promise<void> {
   const pid = app.process().pid!;
   await app.close();
   await expect.poll(() => alive(pid), { message: 'no Electron process is left running' }).toBe(false);
+}
+
+/** A first start on a fresh profile asks where to keep tapes: take Documents/Abacite (inside the profile). */
+async function firstStart(window: Page): Promise<void> {
+  const question = window.getByRole('dialog', { name: 'Where should Abacite keep tapes?' });
+  await question.getByRole('button', { name: 'Use Documents/Abacite' }).click();
+  await expect(question).toBeHidden();
+  await waitForApp(window);
 }
 
 test.describe('Desktop and browser', () => {
@@ -47,10 +55,14 @@ test.describe('Desktop and browser', () => {
         );
         const window = await app.firstWindow();
         const errors = watchErrors(window);
-        await waitForApp(window);
+        await firstStart(window);
         await window.keyboard.type('2*(3+4)');
         await expect(display(window)).toHaveText('14');
         await window.keyboard.press('Enter');
+        const file = path.join(profile, 'Documents', 'Abacite', 'Tape.txt');
+        await expect
+          .poll(() => readFileSync(file, 'utf8'), { message: 'the tape is saved' })
+          .toBe('2*(3+4)  # = 14\n');
         await window.keyboard.press('ControlOrMeta+2');
         await expect(window.getByRole('group', { name: 'Scientific keys' })).toBeVisible();
         // Choosing the mode that is already on: Electron unticks the item, and the page puts the tick back.
@@ -79,6 +91,7 @@ test.describe('Desktop and browser', () => {
           window.getByRole('group', { name: 'Scientific keys' }),
           'the keypad is remembered',
         ).toBeVisible();
+        await expect(window.getByTestId('display'), 'the tape is reopened').toHaveText('14');
         expect(errors).toEqual([]);
       } finally {
         await closeApp(again);
@@ -100,7 +113,7 @@ test.describe('Desktop and browser', () => {
       expect(path.basename(profile)).toMatch(/^abacite-headless-/);
       const window = await app.firstWindow();
       const errors = watchErrors(window);
-      await waitForApp(window);
+      await firstStart(window);
       expect(
         await app.evaluate(({ BrowserWindow }) =>
           BrowserWindow.getAllWindows()[0]!.webContents.isAudioMuted(),
@@ -137,7 +150,7 @@ test.describe('Desktop and browser', () => {
     });
     const child = app.process();
     try {
-      await waitForApp(await app.firstWindow());
+      await firstStart(await app.firstWindow());
       const exited = new Promise<number | null>((resolve) => child.once('exit', (code) => resolve(code)));
       await app.evaluate(() => {
         setTimeout(() => {

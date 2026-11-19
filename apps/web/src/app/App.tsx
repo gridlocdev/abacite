@@ -5,6 +5,8 @@ import { Dialogs } from './Dialogs.tsx';
 import { ExpressionLine } from './ExpressionLine.tsx';
 import { classicPending } from './classic.ts';
 import { Keypad } from './Keypad.tsx';
+import { TapeDialogs } from './TapeDialogs.tsx';
+import { inBrowserStorage, type TapeFolders } from './tapeFolders.ts';
 import { TapePanel } from './TapePanel.tsx';
 
 /** The display (PRD §9.1): the angle unit, then the result, right-aligned, shrinking to fit. */
@@ -39,12 +41,33 @@ function Display({ app }: { readonly app: AppController }) {
   );
 }
 
-/** The status bar: the latest notice with its action, and the live region for screen readers (PRD §14). */
-function StatusBar({ app }: { readonly app: AppController }) {
+/**
+ * The status bar: the latest notice with its action, a failed save until a save works, and in the browser's
+ * own storage the storage note (PRD §8.2, §8.3), and the live region for screen readers (PRD §14).
+ */
+function StatusBar({ app, folders }: { readonly app: AppController; readonly folders?: TapeFolders }) {
   const notice = app.notice.value;
+  const session = folders?.session.value ?? null;
+  const failed = session?.state.value === 'failed' ? session.name.value : null;
   return (
     <footer class="ab-status">
-      <div class={`ab-notice${notice?.tone === 'error' ? ' ab-notice-error' : ''}`}>
+      <div class={`ab-notice${notice?.tone === 'error' || (!notice && failed) ? ' ab-notice-error' : ''}`}>
+        {!notice && failed !== null && session && (
+          <>
+            <span>Couldn’t save {failed}.</span>
+            <button
+              type="button"
+              class="ab-link-button"
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => void session.save()}
+            >
+              Try Again
+            </button>
+          </>
+        )}
+        {!notice && failed === null && inBrowserStorage(session) && (
+          <span class="ab-storage-note">Stored in this browser</span>
+        )}
         {notice && (
           <>
             <span>{notice.text}</span>
@@ -81,20 +104,34 @@ function StatusBar({ app }: { readonly app: AppController }) {
   );
 }
 
-export function App({ app, catalog }: { readonly app: AppController; readonly catalog: CommandCatalog }) {
+export function App(props: {
+  readonly app: AppController;
+  readonly catalog: CommandCatalog;
+  /** The tape folders; without them (tests) the tape lives in memory only. */
+  readonly folders?: TapeFolders;
+}) {
+  const { app, catalog, folders } = props;
   const { mode, showTape } = app.settings.value;
+  const session = folders?.session.value ?? null;
+  // Nothing to type into until a tape is open: keys would change a tape about to be replaced.
+  const ready = !folders || session !== null;
   return (
     <div class={`ab-app ab-mode-${mode}${showTape ? ' ab-with-tape' : ''}`}>
       <div class="ab-body">
-        <main class="ab-calc">
-          <Display app={app} />
-          {!app.classicEntry() && <ExpressionLine app={app} />}
-          <Keypad app={app} />
-        </main>
-        {showTape && <TapePanel app={app} />}
+        {ready && (
+          <>
+            <main class="ab-calc">
+              <Display app={app} />
+              {!app.classicEntry() && <ExpressionLine app={app} />}
+              <Keypad app={app} />
+            </main>
+            {showTape && <TapePanel app={app} name={session?.name.value ?? null} />}
+          </>
+        )}
       </div>
-      <StatusBar app={app} />
+      <StatusBar app={app} {...(folders ? { folders } : {})} />
       <Dialogs app={app} catalog={catalog} />
+      {folders && <TapeDialogs app={app} folders={folders} />}
     </div>
   );
 }

@@ -54,3 +54,20 @@ export async function runCommand(page: Page, name: string): Promise<void> {
   await page.keyboard.press('Enter');
   await expect(menu).toBeHidden();
 }
+
+/** A tape file's text in the browser's own storage, or null when there is none. */
+export function storedTape(page: Page, name: string): Promise<string | null> {
+  return page.evaluate(async (file) => {
+    const root = await navigator.storage.getDirectory();
+    try {
+      const tapes = await root.getDirectoryHandle('tapes');
+      return await (await (await tapes.getFileHandle(file)).getFile()).text();
+    } catch (e) {
+      if (e instanceof DOMException && e.name === 'NotFoundError') return null;
+      throw e;
+    }
+  }, `${name}.txt`);
+}
+
+/** The status bar's notice. */
+export const notice = (page: Page) => page.locator('.ab-notice');

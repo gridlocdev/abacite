@@ -1,4 +1,4 @@
-import { useScrollToEnd } from '@abacite/ui';
+import { Icon, useScrollToEnd } from '@abacite/ui';
 import { useCallback, useRef, useState } from 'preact/hooks';
 import type { AppController } from './controller.ts';
 import { TapeMenu, type TapeMenuPlace } from './TapeMenu.tsx';
@@ -7,7 +7,7 @@ import { TapeMenu, type TapeMenuPlace } from './TapeMenu.tsx';
  * The tape (PRD §7.1): every committed line with its result, newest at the bottom. Clicking a line puts its
  * result into the expression line; ⌥-click (Alt-click) puts its input. Right-click opens its menu.
  */
-export function TapePanel({ app }: { readonly app: AppController }) {
+export function TapePanel({ app, name }: { readonly app: AppController; readonly name: string | null }) {
   const tape = app.tape.value;
   const list = useRef<HTMLOListElement>(null);
   const [menu, setMenu] = useState<TapeMenuPlace | null>(null);
@@ -17,7 +17,23 @@ export function TapePanel({ app }: { readonly app: AppController }) {
   return (
     <aside class="ab-tape" aria-label="Tape">
       <header class="ab-tape-head">
-        <h2>Tape</h2>
+        {name === null ? (
+          <h2>Tape</h2>
+        ) : (
+          <h2>
+            <button
+              type="button"
+              class="ab-tape-name"
+              aria-haspopup="dialog"
+              title="Open another tape"
+              onPointerDown={(e) => e.preventDefault()}
+              onClick={() => app.open('tapes')}
+            >
+              {name}
+              <Icon name="chevron-down" />
+            </button>
+          </h2>
+        )}
         <button
           type="button"
           class="ab-link-button"

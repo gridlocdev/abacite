@@ -4,6 +4,17 @@ Every action is in the menu bar, in the **command menu** (**⌘K** on a Mac, **C
 
 The expression line keeps the keyboard while no window is open: every key you type goes into it.
 
+## Tapes
+
+| Action                                      | macOS                   | Windows / Linux         |
+| ------------------------------------------- | ----------------------- | ----------------------- |
+| New tape                                    | **⌘N**                  | **Ctrl+N**              |
+| Open another tape                           | **File → Open Tape…**   | **File → Open Tape…**   |
+| Keep tapes in another folder                | **⌘O**                  | **Ctrl+O**              |
+| Rename, delete or export the tape, or trash | **File** menu or **⌘K** | **File** menu or **⌘K** |
+
+The tape panel's header names the open tape: click it to open another.
+
 ## Calculating
 
 | Action                                       | macOS                   | Windows / Linux               |

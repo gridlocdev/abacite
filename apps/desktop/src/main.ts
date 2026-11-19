@@ -15,7 +15,7 @@ import {
   shell,
 } from 'electron';
 import { mkdtempSync } from 'node:fs';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -244,6 +244,21 @@ function registerFolderIpc(): void {
   ipcMain.handle(Channels.folder, (e, op: unknown, args: unknown) =>
     trusted(e) ? folderCall(tapeFolder, op, args) : refuse(),
   );
+  ipcMain.handle(Channels.exportTape, async (e, name: unknown, text: unknown): Promise<boolean> => {
+    if (!trusted(e) || typeof name !== 'string' || typeof text !== 'string') return refuse();
+    if (headless || !win) {
+      headlessLog.dialogs.push('Export Tape');
+      return false;
+    }
+    const picked = await dialog.showSaveDialog(win, {
+      title: 'Export Tape',
+      defaultPath: path.join(app.getPath('documents'), `${name}.txt`),
+      filters: [{ name: 'Text', extensions: ['txt'] }],
+    });
+    if (picked.canceled || !picked.filePath) return false;
+    await writeFile(picked.filePath, text, 'utf8');
+    return true;
+  });
 }
 
 function registerIpc(): void {

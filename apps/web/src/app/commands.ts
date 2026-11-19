@@ -1,6 +1,8 @@
 /** Every command, for the keyboard, ⌘K, the menu bar and the Keyboard Shortcuts window (PRD §10). */
 import { CommandCatalog, type CommandSpec, type Theme } from '@abacite/ui';
-import type { AppController } from './controller.ts';
+import type { AppController, DialogKind } from './controller.ts';
+import { inBrowserStorage, type TapeFolders } from './tapeFolders.ts';
+import type { TapeSession } from './tapeSession.ts';
 
 const THEME_TITLES: Readonly<Record<Theme, string>> = {
   system: 'System Appearance',
@@ -9,11 +11,125 @@ const THEME_TITLES: Readonly<Record<Theme, string>> = {
 };
 
 /** Commands that open or close their own window still run with a dialog open, so their key closes it again. */
-const DIALOG_TOGGLES = new Set(['help.commands', 'help.shortcuts', 'app.settings']);
+const DIALOG_TOGGLES = new Set([
+  'help.commands',
+  'help.shortcuts',
+  'app.settings',
+  'file.open',
+  'file.rename',
+  'file.trash',
+]);
 
-export function buildCommands(app: AppController): CommandCatalog {
+/**
+ * The File menu's tape commands (PRD §8.2). They run on the open folder's session; while no folder is open
+ * (at start, or while another is picked) no command runs at all.
+ */
+function tapeCommands(app: AppController, folders: TapeFolders): CommandSpec[] {
+  const session = () => folders.session.value;
+  const act =
+    (what: string, task: (s: TapeSession) => Promise<unknown>): (() => void) =>
+    () => {
+      const s = session();
+      if (!s) return;
+      task(s).catch((e: unknown) => {
+        console.warn(e);
+        app.say(`Couldn’t ${what}: ${e instanceof Error ? e.message : String(e)}`, { tone: 'error' });
+      });
+    };
+  const platform = folders.platform;
+  const specs: CommandSpec[] = [
+    {
+      id: 'file.new',
+      title: 'New Tape',
+      description: 'Start a new tape in the tape folder.',
+      group: 'File',
+      shortcuts: ['mod+n'],
+      run: act('make a new tape', (s) => s.newTape()),
+    },
+    {
+      id: 'file.open',
+      title: 'Open Tape…',
+      description: 'Pick one of the tapes in the tape folder.',
+      group: 'File',
+      keywords: 'switch list tapes files',
+      run: () => app.toggle('tapes'),
+    },
+  ];
+  if (platform.canChoose)
+    specs.push({
+      id: 'file.folder',
+      title: 'Open Tape Folder…',
+      description: 'Keep tapes in another folder.',
+      group: 'File',
+      shortcuts: ['mod+o'],
+      keywords: 'choose directory location',
+      run: () => void folders.choose(),
+    });
+  if (platform.offersDefault)
+    specs.push({
+      id: 'file.browserStorage',
+      title: platform.defaultTitle,
+      description: 'Keep tapes in the browser’s own storage instead of a folder.',
+      group: 'File',
+      enabled: () => !inBrowserStorage(session()),
+      run: () => void folders.useDefault(),
+    });
+  specs.push(
+    {
+      id: 'file.rename',
+      title: 'Rename Tape…',
+      description: 'Give the open tape another name.',
+      group: 'File',
+      run: () => app.toggle('rename'),
+    },
+    {
+      id: 'file.delete',
+      title: 'Delete Tape',
+      description: 'Move the open tape to the trash.',
+      group: 'File',
+      keywords: 'remove trash',
+      danger: true,
+      run: act('delete the tape', (s) => s.trash()),
+    },
+    {
+      id: 'file.export',
+      title: 'Export Tape…',
+      description: 'Save a copy of the open tape as a text file.',
+      group: 'File',
+      keywords: 'download save copy',
+      run: () =>
+        void folders.exportTape().catch((e: unknown) => {
+          app.say(`Couldn’t export the tape: ${e instanceof Error ? e.message : String(e)}`, {
+            tone: 'error',
+          });
+        }),
+    },
+    {
+      id: 'file.trash',
+      title: 'Open Trash…',
+      description: 'See deleted tapes and restore them.',
+      group: 'File',
+      keywords: 'restore deleted',
+      run: () => {
+        if (app.dialog.value === 'trash') app.close();
+        else
+          act('open the trash', async (s) => {
+            await s.listTrash();
+            app.open('trash');
+          })();
+      },
+    },
+  );
+  return specs;
+}
+
+/** Dialogs that wait for an answer: no other window replaces them. */
+const QUESTIONS: ReadonlySet<DialogKind> = new Set(['conflict', 'recovery', 'folder']);
+
+export function buildCommands(app: AppController, folders?: TapeFolders): CommandCatalog {
   const s = () => app.settings.value;
   const specs: CommandSpec[] = [
+    ...(folders ? tapeCommands(app, folders) : []),
     {
       id: 'app.settings',
       title: 'Settings…',
@@ -183,6 +299,10 @@ export function buildCommands(app: AppController): CommandCatalog {
     },
   ];
   const catalog = new CommandCatalog(specs);
-  catalog.gate = (c) => !app.blocked() || DIALOG_TOGGLES.has(c.id);
+  catalog.gate = (c) => {
+    if (folders !== undefined && folders.session.value === null) return false;
+    const open = app.dialog.value;
+    return open === null || (DIALOG_TOGGLES.has(c.id) && !QUESTIONS.has(open));
+  };
   return catalog;
 }
