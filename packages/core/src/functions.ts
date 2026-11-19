@@ -40,6 +40,8 @@ const EXP_MAX = fromInt(2_302_590);
 const FACTORIAL_MAX = 10_000;
 /** An angle in radians with a larger leading exponent can't be reduced meaningfully. */
 const ANGLE_MAX_EXPONENT = 1000;
+/** Extra digits of π a radian reduction may use when the angle is close to a multiple of π. */
+const REDUCTION_MAX_DIGITS = 1000;
 /** Integer powers up to this are computed by repeated squaring, larger ones through exp and ln. */
 const SQUARING_MAX = 1_000_000_000;
 /** Trigonometric results smaller than this show as 0 (PRD §4.5). */
@@ -275,7 +277,8 @@ function sinCosSeries(r: Decimal, wp: number): { sin: Decimal; cos: Decimal } {
   let term = ONE;
   for (let n = 1; ; n++) {
     term = div(mul(term, r, wp), fromInt(n), wp);
-    if (negligible(term, wp)) break;
+    // Relative to the smaller sum, so a tiny angle keeps all its digits: sin(1e-16) needs terms far below 1e-wp.
+    if (isZero(term) || adjusted(term) < Math.min(adjusted(sinSum), adjusted(cosSum), 0) - wp - 2) break;
     const k = n % 4;
     if (k === 1 && n > 1) sinSum = add(sinSum, term, wp);
     else if (k === 2) cosSum = sub(cosSum, term, wp);
@@ -306,27 +309,38 @@ function reduce(x: Decimal, unit: AngleUnit, wp: number): { r: Decimal; exact: E
     return { r: div(mul(signed, pi(wp), wp), fromInt(180), wp), exact: null, deg: d };
   }
   if (adjusted(x) > ANGLE_MAX_EXPONENT) throw new CalcError('Angle is too large.');
-  const w = wp + Math.max(0, adjusted(x));
-  const twoPi = mul(pi(w), TWO, w);
-  const k = quantize(div(x, twoPi, w), 0, 'halfAway');
-  return { r: round(sub(x, mul(k, twoPi, w), w), wp), exact: null, deg: ZERO };
+  // Reducing cancels the leading digits; near a multiple of π it cancels more, so when r comes out small the
+  // reduction runs again with that many more digits of π, until r keeps `wp` significant digits.
+  let w = wp + Math.max(0, adjusted(x));
+  for (;;) {
+    const twoPi = mul(pi(w), TWO, w);
+    const k = quantize(div(x, twoPi, w), 0, 'halfAway');
+    const r = sub(x, mul(k, twoPi, w), w);
+    const lost = isZero(r) ? 0 : -adjusted(r);
+    if (lost <= 0 || w >= wp + Math.max(0, adjusted(x)) + lost + GUARD || lost > REDUCTION_MAX_DIGITS)
+      return { r: round(r, wp), exact: null, deg: ZERO };
+    w = wp + Math.max(0, adjusted(x)) + lost + GUARD;
+  }
 }
 
-/** Rounds a trigonometric result, showing values below 1e-32 as 0 (PRD §4.5). */
-function trigResult(v: Decimal, p: number): Decimal {
-  return cmp(abs(v), TRIG_ZERO) < 0 ? ZERO : round(v, p);
+/**
+ * Rounds a trigonometric result. In radians a value below 1e-32 is 0, so `sin(pi)` is 0; degrees reduce
+ * exactly, so a tiny result there is real (PRD §4.5).
+ */
+function trigResult(v: Decimal, unit: AngleUnit, p: number): Decimal {
+  return unit === 'rad' && cmp(abs(v), TRIG_ZERO) < 0 ? ZERO : round(v, p);
 }
 
 export function sin(x: Decimal, unit: AngleUnit, p: number = PRECISION): Decimal {
   const wp = p + GUARD;
   const { r, exact } = reduce(x, unit, wp);
-  return exact ? exact.sin : trigResult(sinCosSeries(r, wp).sin, p);
+  return exact ? exact.sin : trigResult(sinCosSeries(r, wp).sin, unit, p);
 }
 
 export function cos(x: Decimal, unit: AngleUnit, p: number = PRECISION): Decimal {
   const wp = p + GUARD;
   const { r, exact } = reduce(x, unit, wp);
-  return exact ? exact.cos : trigResult(sinCosSeries(r, wp).cos, p);
+  return exact ? exact.cos : trigResult(sinCosSeries(r, wp).cos, unit, p);
 }
 
 export function tan(x: Decimal, unit: AngleUnit, p: number = PRECISION): Decimal {
@@ -337,7 +351,7 @@ export function tan(x: Decimal, unit: AngleUnit, p: number = PRECISION): Decimal
     return ZERO;
   }
   const sc = sinCosSeries(r, wp);
-  return trigResult(div(sc.sin, sc.cos, wp), p);
+  return trigResult(div(sc.sin, sc.cos, wp), unit, p);
 }
 
 /** atan(x) in radians to `wp` digits. */

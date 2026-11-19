@@ -154,4 +154,24 @@ export const REFERENCE: readonly ReferenceCase[] = [
   { fn: 'pi', args: [], expected: '3.141592653589793238462643383279503' },
   { fn: 'e', args: [], expected: '2.718281828459045235360287471352662' },
   { fn: 'tau', args: [], expected: '6.283185307179586476925286766559006' },
+  // Small and tiny angles (relative accuracy), and large ones close to a multiple of π. From `bc -l` at 200 digits.
+  { fn: 'sin', args: ['1e-16'], expected: '9.999999999999999999999999999999983E-17' },
+  { fn: 'tan', args: ['1e-16'], expected: '1.000000000000000000000000000000003E-16' },
+  { fn: 'sin', args: ['1e-40'], angle: 'deg', expected: '1.745329251994329576923690768488613E-42' },
+  { fn: 'sin', args: ['1e-31'], angle: 'deg', expected: '1.745329251994329576923690768488613E-33' },
+  {
+    fn: 'sin',
+    args: ['3141592653.589793238462643383279503'],
+    expected: '1.158028306006248941790250554076922E-25',
+  },
+  {
+    fn: 'cos',
+    args: ['3141592653.589793238462643383279503'],
+    expected: '1.000000000000000000000000000000000',
+  },
+  {
+    fn: 'sin',
+    args: ['-31415926535897932384626.43383279503'],
+    expected: '-1.158028306006248941790250295251891E-12',
+  },
 ];
