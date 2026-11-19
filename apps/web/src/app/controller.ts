@@ -415,7 +415,6 @@ export class AppController {
     }
     const evaluation = preview(tape, text, this.#env());
     const ans = expandInput(text, tape) !== text;
-    const shift = ans ? 4 : 0;
     const result = evaluation.result;
     let errorAt: number | null = null;
     if (result.kind === 'value') {
@@ -424,7 +423,7 @@ export class AppController {
     } else if (result.kind === 'error' && !result.incomplete && !/[A-Za-z_]$/.test(text)) {
       // A complete line that fails (`1/0`); a name still being typed (`si`) isn't an error yet.
       this.shown.value = { kind: 'error', text: result.message };
-      errorAt = result.at === null ? null : Math.max(0, result.at - shift);
+      errorAt = result.at;
     } else {
       this.shown.value = {
         kind: 'pending',

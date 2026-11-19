@@ -25,6 +25,7 @@ export interface Tape {
 
 export const EMPTY_TAPE: Tape = { lines: [], scope: EMPTY_SCOPE, dropped: false };
 
+const ANS_PREFIX = 'ans ';
 const LEADING_OPERATOR = /^\s*(?:\*\*|[+\-*/^%×÷−]|mod\b)/;
 
 /** True when the line starts with an operator, so it continues from `ans` (PRD §7.1). */
@@ -34,7 +35,7 @@ export function startsWithOperator(input: string): boolean {
 
 /** The text that is evaluated: `ans` in front of a leading operator once the tape has a result. */
 export function expandInput(input: string, tape: Tape): string {
-  return tape.lines.length > 0 && startsWithOperator(input) ? `ans ${input}` : input;
+  return tape.lines.length > 0 && startsWithOperator(input) ? `${ANS_PREFIX}${input}` : input;
 }
 
 /**
@@ -55,9 +56,26 @@ export function repeatInput(tape: Tape): string | null {
   }
 }
 
+/**
+ * Evaluates a typed line after `lines` earlier lines. A leading operator continues from `ans`; an error's
+ * position, and the one in its message, still count from what was typed.
+ */
+function evaluateTyped(input: string, lines: number, scope: Scope, env: Env): Evaluation {
+  if (lines === 0 || !startsWithOperator(input)) return evaluate(input, scope, env);
+  const evaluation = evaluate(`${ANS_PREFIX}${input}`, scope, env);
+  const result = evaluation.result;
+  if (result.kind !== 'error' || result.at === null) return evaluation;
+  const at = Math.max(0, result.at - ANS_PREFIX.length);
+  const message = result.message.replace(
+    / at (\d+)\.$/,
+    (_, n: string) => ` at ${Math.max(1, Number(n) - ANS_PREFIX.length)}.`,
+  );
+  return { ...evaluation, result: { ...result, at, message } };
+}
+
 /** Evaluates `input` as the tape's next line without committing it: the live result (PRD §9.1). */
 export function preview(tape: Tape, input: string, env: Env): Evaluation {
-  return evaluate(expandInput(input, tape), tape.scope, env);
+  return evaluateTyped(input, tape.lines.length, tape.scope, env);
 }
 
 /** An env whose `rand()` replays `replay` first, then draws new values; `drawn` collects all of them. */
@@ -80,7 +98,7 @@ function recordingEnv(env: Env, replay: readonly Decimal[]): { env: Env; drawn: 
 export function commit(tape: Tape, input: string, env: Env): Tape {
   if (!input.trim()) return tape;
   const recording = recordingEnv(env, []);
-  const evaluation = evaluate(expandInput(input, tape), tape.scope, recording.env);
+  const evaluation = evaluateTyped(input, tape.lines.length, tape.scope, recording.env);
   const line: TapeLine = { input, result: evaluation.result, randoms: recording.drawn };
   const lines = [...tape.lines, line];
   const over = lines.length > MAX_TAPE_LINES;
@@ -100,8 +118,7 @@ export function evaluateTape(
   const lines: TapeLine[] = [];
   for (const { input, randoms = [] } of inputs) {
     const recording = recordingEnv(env, randoms);
-    const expanded = lines.length > 0 && startsWithOperator(input) ? `ans ${input}` : input;
-    const evaluation = evaluate(expanded, scope, recording.env);
+    const evaluation = evaluateTyped(input, lines.length, scope, recording.env);
     lines.push({ input, result: evaluation.result, randoms: recording.drawn });
     scope = evaluation.scope;
   }

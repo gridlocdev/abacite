@@ -46,6 +46,13 @@ describe('committing lines (PRD §7.1)', () => {
     expect(expandInput('model', tape)).toBe('model');
   });
 
+  it('counts error positions from what was typed, not from the ans in front', () => {
+    const tape = commitAll(['10', '* )', '+ sinn(2)']);
+    expect(tape.lines[1]!.result).toMatchObject({ message: 'Unexpected `)` at 3.', at: 2 });
+    expect(tape.lines[2]!.result).toMatchObject({ message: 'Unknown function `sinn` at 3.', at: 2 });
+    expect(preview(tape, '* )', env).result).toMatchObject({ message: 'Unexpected `)` at 3.', at: 2 });
+  });
+
   it('keeps variables across lines', () => {
     const tape = commitAll(['x = 4', 'y = x * 2', 'x + y']);
     expect(results(tape)).toEqual(['4', '8', '12']);
