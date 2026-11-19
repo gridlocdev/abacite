@@ -37,6 +37,7 @@ import {
   removeStaleHeadlessProfiles,
 } from './paths.ts';
 import { NodeFolder } from './tapeFolder.ts';
+import { checkForUpdate, fetchLatestRelease, isNewer, parseRelease, type Release } from './updates.ts';
 import {
   loadSavedWindow,
   placeWindow,
@@ -87,6 +88,7 @@ const paths = dataPaths(process.env, headless, () => {
 if (paths.userData) app.setPath('userData', paths.userData);
 const windowFile = path.join(app.getPath('userData'), 'window-state.json');
 const folderFile = path.join(app.getPath('userData'), 'folder.json');
+const updatesFile = path.join(app.getPath('userData'), 'updates.json');
 // A check's Documents folder is inside its own profile, so "Use Documents/Abacite" never touches the owner's.
 if (paths.userData) app.setPath('documents', path.join(paths.userData, 'Documents'));
 
@@ -261,8 +263,35 @@ function registerFolderIpc(): void {
   });
 }
 
+/**
+ * A newer release, or null (PRD §12). A headless run never goes online: it reports the release in
+ * ABACITE_TEST_RELEASE (GitHub's JSON), if any, so the checks can see the notice.
+ */
+async function latestRelease(): Promise<Release | null> {
+  if (headless) {
+    const raw = process.env.ABACITE_TEST_RELEASE;
+    const release = raw ? parseRelease(JSON.parse(raw)) : null;
+    return release && isNewer(release.version, app.getVersion()) ? release : null;
+  }
+  try {
+    return await checkForUpdate({
+      file: updatesFile,
+      current: app.getVersion(),
+      now: Date.now(),
+      latest: () => fetchLatestRelease(net.fetch as typeof fetch),
+    });
+  } catch (e) {
+    // Offline, or GitHub is down: the app works the same, and tomorrow's start asks again.
+    console.warn('Could not check for updates:', e);
+    return null;
+  }
+}
+
 function registerIpc(): void {
   registerFolderIpc();
+  ipcMain.handle(Channels.latestRelease, (e) =>
+    trusted(e) ? latestRelease() : Promise.reject(new Error('Not our page.')),
+  );
   ipcMain.on(Channels.setMenu, (e, items: unknown) => {
     if (!trusted(e) || !Array.isArray(items)) return;
     const send = (id: string) => win?.webContents.send(Channels.command, id);

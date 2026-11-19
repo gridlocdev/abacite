@@ -141,6 +141,40 @@ test.describe('Desktop and browser', () => {
     }
   });
 
+  test('a newer release shows in the status bar, and Download opens its page', async () => {
+    const temp = realpathSync(mkdtempSync(path.join(tmpdir(), 'abacite-e2e-')));
+    const page = 'https://github.com/gridlocdev/abacite/releases/tag/v99.0.0';
+    const app = await electron.launch({
+      cwd: DESKTOP,
+      args: ['out/main.js'],
+      env: {
+        ...process.env,
+        ABACITE_HEADLESS: '1',
+        ABACITE_USER_DATA: path.join(temp, 'profile'),
+        ABACITE_TEST_RELEASE: JSON.stringify({ tag_name: 'v99.0.0', html_url: page }),
+      },
+    });
+    try {
+      const window = await app.firstWindow();
+      const errors = watchErrors(window);
+      await firstStart(window);
+      await expect(window.locator('.ab-notice')).toContainText('Abacite 99.0.0 is available.');
+      await window.getByRole('link', { name: 'Download' }).click();
+      await expect
+        .poll(() =>
+          app.evaluate(
+            () =>
+              (globalThis as { abaciteHeadless?: { openedLinks: string[] } }).abaciteHeadless?.openedLinks,
+          ),
+        )
+        .toEqual([page]);
+      expect(errors).toEqual([]);
+    } finally {
+      await closeApp(app);
+      rmSync(temp, { recursive: true, force: true });
+    }
+  });
+
   test('an uncaught error in a headless run exits instead of showing a dialog', async () => {
     const temp = realpathSync(mkdtempSync(path.join(tmpdir(), 'abacite-e2e-')));
     const app = await electron.launch({

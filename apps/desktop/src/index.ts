@@ -29,3 +29,16 @@ export {
   type FolderReply,
 } from './folderChoice.ts';
 export { FolderError, NodeFolder, versionOf, type FileRead, type FolderErrorKind } from './tapeFolder.ts';
+export {
+  CHECK_INTERVAL_MS,
+  RELEASES_API,
+  RELEASES_PAGE,
+  checkForUpdate,
+  fetchLatestRelease,
+  isNewer,
+  loadLastCheck,
+  parseRelease,
+  parseVersion,
+  saveLastCheck,
+  type Release,
+} from './updates.ts';

@@ -11,6 +11,7 @@ export const Channels = {
   chooseFolder: 'abacite:choose-folder',
   folder: 'abacite:folder',
   exportTape: 'abacite:export-tape',
+  latestRelease: 'abacite:latest-release',
 } as const;
 
 /** One item of the menu bar the page sends, as `NativeMenuItem` in @abacite/ui. */

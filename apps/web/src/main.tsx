@@ -1,4 +1,4 @@
-import { effect } from '@preact/signals';
+import { effect, signal } from '@preact/signals';
 import { render } from 'preact';
 import '@abacite/ui/styles.css';
 import './app.css';
@@ -6,7 +6,7 @@ import { every, listenForKeys, localKeep, localSettings } from '@abacite/ui';
 import { App } from './app/App.tsx';
 import { buildCommands } from './app/commands.ts';
 import { AppController } from './app/controller.ts';
-import { nativeBridge } from './app/native.ts';
+import { nativeBridge, type Release } from './app/native.ts';
 import { menuSender, nativeMenu, watchMenuInputs } from './app/nativeMenu.ts';
 import { TapeFolders, browserPlatform, desktopPlatform } from './app/tapeFolders.ts';
 import pkg from '../package.json';
@@ -22,8 +22,13 @@ function start(): void {
   });
   const folders = new TapeFolders(app, native ? desktopPlatform(native) : browserPlatform(), localKeep());
   const catalog = buildCommands(app, folders);
-  render(<App app={app} catalog={catalog} folders={folders} />, root);
+  const release = signal<Release | null>(null);
+  render(<App app={app} catalog={catalog} folders={folders} release={release} />, root);
   void folders.start();
+  native
+    ?.latestRelease()
+    .then((r) => (release.value = r))
+    .catch((e: unknown) => console.warn('Could not check for updates:', e));
   watchTapeFolder(folders);
 
   // The theme lives on <html>, so dialogs and the body follow it too (PRD §11).

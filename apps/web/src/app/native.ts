@@ -1,6 +1,12 @@
 /** What the desktop app's preload script puts on `window.abaciteNative` (PRD §12). */
 import type { NativeMenuItem, NativeReply } from '@abacite/ui';
 
+/** A newer published release: its version and its page. */
+export interface Release {
+  readonly version: string;
+  readonly url: string;
+}
+
 export interface AbaciteNative {
   readonly version: string;
   /** Replaces the menu bar. */
@@ -19,6 +25,8 @@ export interface AbaciteNative {
   folder(op: string, args: readonly unknown[]): Promise<NativeReply>;
   /** Asks where to save a copy of the tape and writes it; false when the user cancels. */
   exportTape(name: string, text: string): Promise<boolean>;
+  /** A newer release than this one, checked at most once a day (PRD §12); null when there is none. */
+  latestRelease(): Promise<Release | null>;
 }
 
 export function nativeBridge(): AbaciteNative | null {

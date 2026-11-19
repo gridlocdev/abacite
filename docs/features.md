@@ -50,4 +50,4 @@ Every action has a command. **⌘K** opens the command menu to search and run th
 
 ## Desktop and browser
 
-The same app runs as a desktop app (Electron) and in any modern browser as static files. The desktop app remembers its window's place and size.
+The same app runs as a desktop app (Electron) and in any modern browser as static files. The desktop app remembers its window's place and size. Once a day at most, on start, the desktop app checks GitHub for a newer release and says so in the status bar, with Download to open its page. Nothing downloads or installs on its own.
