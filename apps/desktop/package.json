@@ -1,0 +1,19 @@
+{
+  "name": "@abacite/desktop",
+  "productName": "Abacite",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "Abacite desktop app (Electron).",
+  "main": "out/main.js",
+  "scripts": {
+    "build": "vite build && tsc -p tsconfig.build.json && node scripts/copy-web.mjs",
+    "start": "pnpm build && node scripts/start.mjs"
+  },
+  "devDependencies": {
+    "@abacite/web": "workspace:*",
+    "electron": "45.2.3",
+    "vite": "8.3.5"
+  }
+}

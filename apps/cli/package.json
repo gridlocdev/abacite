@@ -1,0 +1,21 @@
+{
+  "name": "@abacite/cli",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "description": "abacite: evaluate expressions with Abacite's exact decimal engine from the command line.",
+  "bin": {
+    "abacite": "./bin/abacite.mjs"
+  },
+  "scripts": {
+    "start": "node src/main.ts",
+    "build": "echo 'cli runs from source (node type stripping)'"
+  },
+  "dependencies": {
+    "@abacite/core": "workspace:*"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  }
+}

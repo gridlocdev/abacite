@@ -1,0 +1,279 @@
+/* The calculator's own layout (PRD §9). Shared pieces (buttons, dialogs, the command menu) are in @abacite/ui. */
+
+.ab-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.ab-body {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.ab-calc {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  padding: 10px;
+  gap: 8px;
+}
+
+/* Display */
+.ab-display {
+  container-type: inline-size;
+  padding: 8px 12px 6px;
+  border: 1px solid var(--ab-line);
+  border-radius: 10px;
+  background: var(--ab-display);
+}
+.ab-display-flags {
+  display: flex;
+  gap: 8px;
+  min-height: 16px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ab-text-3);
+}
+.ab-value {
+  display: block;
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-height: 56px;
+  font: 300 clamp(18px, calc(100cqw / (var(--ab-chars, 10) * 0.62)), 48px) / 56px var(--ab-font);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+  scrollbar-width: none;
+}
+.ab-value-pending {
+  color: var(--ab-text-3);
+}
+.ab-value-error {
+  font-size: 15px;
+  white-space: normal;
+  line-height: 1.35;
+  padding-block: 8px;
+  color: var(--ab-danger);
+}
+
+/* Expression line */
+.ab-line {
+  position: relative;
+  font: 17px/1 var(--ab-mono);
+  border: 1px solid var(--ab-line-strong);
+  border-radius: 8px;
+  background: var(--ab-field);
+}
+.ab-line:focus-within {
+  border-color: var(--ab-accent);
+  box-shadow: 0 0 0 3px var(--ab-accent-soft);
+}
+.ab-line-mirror,
+.ab-line-input {
+  padding: 9px 10px;
+  font: inherit;
+  white-space: pre;
+}
+.ab-line-mirror {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+.ab-typed {
+  color: transparent;
+}
+.ab-ghost {
+  color: var(--ab-text-3);
+}
+.ab-error-mark {
+  text-decoration: wavy underline var(--ab-danger);
+  text-underline-offset: 4px;
+}
+.ab-line-input {
+  position: relative;
+  display: block;
+  width: 100%;
+  border: 0;
+  outline: none;
+  background: transparent;
+  caret-color: var(--ab-accent);
+}
+/* The typed text starts after the greyed `ans `: four characters of the monospace font. */
+.ab-line-input.ab-after-ans {
+  padding-left: calc(10px + 4ch);
+}
+.ab-line-input::placeholder {
+  color: var(--ab-text-3);
+}
+
+/* Keypad */
+.ab-keypad {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  min-height: 0;
+}
+.ab-keys {
+  display: grid;
+  flex: 4;
+  gap: 6px;
+  grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 1fr;
+}
+.ab-keys-basic {
+  grid-template-rows: 0.7fr;
+}
+.ab-keys-sci {
+  flex: 6;
+  grid-template-columns: repeat(6, 1fr);
+  grid-template-rows: none;
+  align-content: end;
+}
+.ab-key-wide {
+  grid-column: span 2;
+}
+.ab-key {
+  min-width: 0;
+  min-height: 34px;
+  padding: 0 2px;
+  border: 1px solid var(--ab-line);
+  border-radius: 8px;
+  font-size: 19px;
+  background: var(--ab-key);
+  cursor: default;
+  transition: filter 0.08s;
+  user-select: none;
+}
+.ab-key:hover {
+  filter: brightness(0.96);
+}
+.ab-key:active {
+  filter: brightness(0.86);
+}
+.ab-key-util,
+.ab-key-fn {
+  background: var(--ab-key-fn);
+}
+.ab-key-fn {
+  font-size: 14px;
+}
+.ab-key-op {
+  border-color: transparent;
+  color: var(--ab-key-op-text);
+  background: var(--ab-key-op);
+}
+.ab-key[aria-pressed='true'] {
+  color: var(--ab-accent-text);
+  background: var(--ab-accent);
+}
+
+/* Tape: beside the keypad when the window is wide enough, over it when not (PRD §9.1). */
+.ab-tape {
+  display: flex;
+  flex-direction: column;
+  width: 260px;
+  min-height: 0;
+  border-left: 1px solid var(--ab-line);
+  background: var(--ab-raised);
+}
+@media (max-width: 639px) {
+  .ab-tape {
+    position: absolute;
+    inset: 0 0 0 auto;
+    width: min(260px, 85vw);
+    box-shadow: var(--ab-shadow);
+  }
+}
+.ab-tape-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--ab-line);
+}
+.ab-tape-head h2 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ab-text-2);
+}
+.ab-tape-empty {
+  margin: 16px 12px;
+  color: var(--ab-text-3);
+}
+.ab-tape-lines {
+  flex: 1;
+  overflow-y: auto;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+}
+.ab-tape-line {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  width: 100%;
+  padding: 5px 12px;
+  border: 0;
+  text-align: right;
+  background: none;
+}
+.ab-tape-line:hover {
+  background: var(--ab-hover);
+}
+.ab-tape-input {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font: 12px/1.4 var(--ab-mono);
+  color: var(--ab-text-2);
+}
+.ab-tape-result {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.ab-tape-var {
+  color: var(--ab-text-3);
+}
+.ab-tape-error .ab-tape-result {
+  font-size: 12px;
+  color: var(--ab-danger);
+}
+
+/* Status bar */
+.ab-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--ab-status);
+  padding: 0 6px 0 12px;
+  border-top: 1px solid var(--ab-line);
+  font-size: 12px;
+  color: var(--ab-text-2);
+}
+.ab-notice {
+  display: flex;
+  flex: 1;
+  gap: 8px;
+  min-width: 0;
+  align-items: center;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ab-notice-error {
+  color: var(--ab-danger);
+}
+
+/* Settings */
+.ab-check {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 10px;
+}

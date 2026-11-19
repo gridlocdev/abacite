@@ -1,0 +1,130 @@
+# Abacite — run `just` to list recipes.
+set shell := ["bash", "-cu"]
+
+default:
+    @just --list --unsorted
+
+# ── Run (dev) ─────────────────────────────────────────────────────────────
+
+# Web client dev server (http://localhost:5173).
+[group('run')]
+run-web:
+    pnpm --filter @abacite/web dev
+
+# Desktop app in dev mode (builds the web client first).
+[group('run')]
+run-desktop: build-desktop
+    pnpm --filter @abacite/desktop start
+
+# Desktop app with no window or Dock icon, on a throwaway profile in ./.headless-data, with DevTools on port 9338.
+[group('run')]
+run-desktop-headless dir=(justfile_directory() / ".headless-data"): build-desktop
+    mkdir -p "{{ dir }}"
+    cd apps/desktop && ABACITE_HEADLESS=1 ABACITE_USER_DATA="{{ dir }}" pnpm exec electron out/main.js --remote-debugging-port=9338
+
+# The built web client, as a static site (http://localhost:4173).
+[group('run')]
+preview-web: build-web
+    pnpm --filter @abacite/web preview
+
+# Run the abacite CLI from source (quoting is kept): just cli "2 * (3 + 4)"
+[group('run')]
+[no-cd]
+[positional-arguments]
+cli *args:
+    node "{{ justfile_directory() }}/apps/cli/src/main.ts" "$@"
+
+# ── Build ─────────────────────────────────────────────────────────────────
+
+# Build everything: the web client and the desktop app.
+[group('build')]
+build:
+    pnpm build
+
+# Build the web client into apps/web/dist.
+[group('build')]
+build-web:
+    pnpm --filter @abacite/web build
+
+# Build the desktop app's main process and copy the web client into apps/desktop/out.
+[group('build')]
+build-desktop: build-web
+    pnpm --filter @abacite/desktop build
+
+# ── Quality ───────────────────────────────────────────────────────────────
+
+# Everything CI checks: format, lint, typecheck, tests, build.
+[group('quality')]
+check:
+    pnpm check
+
+# Run the tests once (pass a file or -t "name" to narrow them).
+[group('quality')]
+test *args:
+    pnpm vitest run {{ args }}
+
+# Run the tests in watch mode.
+[group('quality')]
+test-watch *args:
+    pnpm vitest {{ args }}
+
+# Lint with ESLint.
+[group('quality')]
+lint:
+    pnpm lint
+
+# Typecheck every package.
+[group('quality')]
+typecheck:
+    pnpm typecheck
+
+# Format every file.
+[group('quality')]
+fmt:
+    pnpm format
+
+# Check formatting without changing anything.
+[group('quality')]
+fmt-check:
+    pnpm format:check
+
+# Architecture rules only: layers, entry points, platform APIs, swallowed errors, file size. Part of `check`.
+[group('quality')]
+check-arch:
+    pnpm vitest run test/architecture.test.ts
+
+# Random arithmetic checked against exact fractions, on many seeds (FUZZ_SEED=<n> repeats one).
+[group('quality')]
+fuzz runs="500":
+    FUZZ_RUNS={{ runs }} pnpm vitest run -t random --testTimeout=0
+
+# `--project=web` with the `=`: `--project` takes several names, so `just e2e tape` would read "tape" as one.
+# Browser scenarios against the built web client.
+[group('quality')]
+[positional-arguments]
+e2e *args: build-web
+    pnpm exec playwright test -c e2e/playwright.config.ts --project=web "$@"
+
+# Desktop smoke test: the built Electron app, headless, with a throwaway profile.
+[group('quality')]
+e2e-desktop: build-desktop
+    pnpm exec playwright test -c e2e/playwright.config.ts --project=desktop
+
+# ── Housekeeping ──────────────────────────────────────────────────────────
+
+# Install dependencies (pnpm via corepack).
+[group('housekeeping')]
+setup:
+    corepack enable
+    pnpm install
+
+# Remove build output.
+[group('housekeeping')]
+clean:
+    rm -rf apps/web/dist apps/desktop/out .headless-data .e2e-results .e2e-report .types-e2e .types-test
+    find . -name '*.tsbuildinfo' -not -path '*/node_modules/*' -delete
+
+# Remove build output and every node_modules (run `just setup` after).
+[group('housekeeping')]
+clean-all: clean
+    find . -name node_modules -type d -prune -exec rm -rf {} +

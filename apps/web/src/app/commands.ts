@@ -1,0 +1,158 @@
+/** Every command, for the keyboard, ⌘K, the menu bar and the Keyboard Shortcuts window (PRD §10). */
+import { CommandCatalog, type CommandSpec, type Theme } from '@abacite/ui';
+import type { AppController } from './controller.ts';
+
+const THEME_TITLES: Readonly<Record<Theme, string>> = {
+  system: 'System Appearance',
+  light: 'Light Appearance',
+  dark: 'Dark Appearance',
+};
+
+/** Commands that open or close their own window still run with a dialog open, so their key closes it again. */
+const DIALOG_TOGGLES = new Set(['help.commands', 'help.shortcuts', 'app.settings']);
+
+export function buildCommands(app: AppController): CommandCatalog {
+  const s = () => app.settings.value;
+  const specs: CommandSpec[] = [
+    {
+      id: 'app.settings',
+      title: 'Settings…',
+      description: 'Change the appearance, the angle unit and how results are shown.',
+      group: 'File',
+      shortcuts: ['mod+,'],
+      keywords: 'preferences options',
+      global: true,
+      run: () => app.toggle('settings'),
+    },
+    {
+      id: 'line.commit',
+      title: 'Calculate',
+      description: 'Put the expression line on the tape; on an empty line, repeat the last operation.',
+      group: 'Edit',
+      shortcuts: ['enter'],
+      keywords: 'equals enter commit',
+      keysOnly: true,
+      run: () => app.commit(),
+    },
+    {
+      id: 'line.clear',
+      title: 'Clear Line',
+      description: 'Clear the expression line; on an empty line, clear the last result too.',
+      group: 'Edit',
+      shortcuts: ['esc'],
+      keywords: 'ac all clear',
+      keysOnly: true,
+      run: () => app.clear(),
+    },
+    {
+      id: 'line.historyBack',
+      title: 'Previous Tape Line',
+      description: 'Put the previous tape line in the expression line.',
+      group: 'Edit',
+      shortcuts: ['up'],
+      keysOnly: true,
+      hidden: true,
+      run: () => app.historyBack(),
+    },
+    {
+      id: 'line.historyForward',
+      title: 'Next Tape Line',
+      description: 'Put the next tape line in the expression line, then what you were typing.',
+      group: 'Edit',
+      shortcuts: ['down'],
+      keysOnly: true,
+      hidden: true,
+      run: () => app.historyForward(),
+    },
+    {
+      id: 'edit.copyResult',
+      title: 'Copy Result',
+      description: 'Copy the number on the display, without grouping commas.',
+      group: 'Edit',
+      shortcuts: ['shift+mod+c'],
+      global: true,
+      run: () => app.copyResult(),
+    },
+    {
+      id: 'tape.clear',
+      title: 'Clear Tape',
+      description: 'Remove every line from the tape.',
+      group: 'Edit',
+      shortcuts: ['shift+mod+backspace'],
+      danger: true,
+      enabled: () => app.tape.value.lines.length > 0,
+      run: () => app.clearTape(),
+    },
+    {
+      id: 'view.basic',
+      title: 'Basic',
+      description: 'Show the basic keypad.',
+      group: 'View',
+      shortcuts: ['mod+1'],
+      keywords: 'mode keypad',
+      checked: () => s().mode === 'basic',
+      run: () => app.setMode('basic'),
+    },
+    {
+      id: 'view.scientific',
+      title: 'Scientific',
+      description: 'Show the scientific keypad beside the basic one.',
+      group: 'View',
+      shortcuts: ['mod+2'],
+      keywords: 'mode keypad functions',
+      checked: () => s().mode === 'scientific',
+      run: () => app.setMode('scientific'),
+    },
+    {
+      id: 'view.tape',
+      title: 'Show Tape',
+      description: 'Show or hide the tape of past calculations.',
+      group: 'View',
+      shortcuts: ['mod+t'],
+      keywords: 'history paper',
+      checked: () => s().showTape,
+      run: () => app.toggleTape(),
+    },
+    {
+      id: 'view.angle',
+      title: 'Radians',
+      description: 'Switch trigonometry between degrees and radians.',
+      group: 'View',
+      shortcuts: ['shift+mod+r'],
+      keywords: 'degrees angle deg rad',
+      checked: () => s().angle === 'rad',
+      run: () => app.toggleAngle(),
+    },
+    ...(['system', 'light', 'dark'] as const).map((theme): CommandSpec => ({
+      id: `view.theme${theme[0]!.toUpperCase()}${theme.slice(1)}`,
+      title: THEME_TITLES[theme],
+      description: `Use the ${theme === 'system' ? 'system’s' : theme} appearance.`,
+      group: 'View',
+      keywords: 'theme dark mode light mode',
+      checked: () => s().theme === theme,
+      run: () => app.setTheme(theme),
+    })),
+    {
+      id: 'help.commands',
+      title: 'Command Menu',
+      description: 'Search every command.',
+      group: 'Help',
+      shortcuts: ['mod+k'],
+      global: true,
+      run: () => app.toggle('commands'),
+    },
+    {
+      id: 'help.shortcuts',
+      title: 'Keyboard Shortcuts',
+      description: 'List every keyboard shortcut.',
+      group: 'Help',
+      shortcuts: ['mod+/'],
+      keywords: 'keys help',
+      global: true,
+      run: () => app.toggle('shortcuts'),
+    },
+  ];
+  const catalog = new CommandCatalog(specs);
+  catalog.gate = (c) => !app.blocked() || DIALOG_TOGGLES.has(c.id);
+  return catalog;
+}
