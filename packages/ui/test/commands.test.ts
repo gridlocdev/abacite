@@ -116,6 +116,17 @@ describe('shortcuts', () => {
     expect(id(c.forEvent(key({ key: 'g' }), 'text', 0, true))).toBeNull();
   });
 
+  it('a disabled two-key shortcut neither runs nor holds its first key', () => {
+    const off = (id: string, shortcuts: string[]): CommandSpec => ({
+      ...spec1(id, shortcuts),
+      enabled: () => false,
+    });
+    const { c } = catalog([off('later', ['x l']), off('both', ['y b']), spec1('yes', ['y y'])]);
+    expect(id(c.forEvent(key({ key: 'x' }), 'list', 0, true))).toBeNull();
+    expect(id(c.forEvent(key({ key: 'y' }), 'list', 0, true))).toBe('wait');
+    expect(id(c.forEvent(key({ key: 'b' }), 'list', 100, true))).toBeNull();
+  });
+
   it('a pending first key is dropped when focus moves into a text field', () => {
     const { c } = catalog();
     expect(id(c.forEvent(key({ key: 'g' }), 'list', 0, true))).toBe('wait');

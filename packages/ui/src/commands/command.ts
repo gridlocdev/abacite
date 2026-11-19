@@ -129,7 +129,7 @@ export class CommandCatalog {
     // A sequence never finishes in a text field: g in the list, then i typed into search, types i.
     if (pending && focus !== 'text' && now - pending.at <= SEQUENCE_MS) {
       for (const c of this.all)
-        for (const seq of c.sequences) {
+        for (const seq of this.isEnabled(c) ? c.sequences : []) {
           const [a, b] = seq;
           if (seq.length === 2 && a && same(a, pending.first) && b && matchRank(b, e, mac) > 0)
             return { kind: 'run', command: c };
@@ -152,9 +152,10 @@ export class CommandCatalog {
       }
     }
     if (best) return { kind: 'run', command: best };
+    // Only an enabled command's first key waits: a disabled one would swallow the key for nothing.
     if (focus !== 'text')
       for (const c of this.all)
-        for (const seq of c.sequences) {
+        for (const seq of this.isEnabled(c) ? c.sequences : []) {
           const [a] = seq;
           if (seq.length === 2 && a && matchRank(a, e, mac) > 0) {
             this.#pending = { first: a, at: now };
