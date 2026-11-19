@@ -9,6 +9,8 @@ import {
   SHOWN_DIGITS,
   commit,
   formatDecimal,
+  readTape,
+  writeTapeText,
   type Env,
   type Tape,
 } from '@abacite/core';
@@ -31,24 +33,35 @@ export interface CliIo {
   prompt?(text: string): void;
 }
 
+/** Reading and writing tape files; tests pass their own. */
+export interface CliFiles {
+  read(path: string): Promise<string>;
+  /** Replaces the file at once: a temporary file beside it, then a rename. */
+  writeAtomic(path: string, text: string): Promise<void>;
+}
+
 export interface CliContext {
   readonly version: string;
   /** `rand()`; tests fix it. */
   readonly random?: Env['random'];
+  readonly files?: CliFiles;
 }
 
 export function helpText(): string {
   return [
     'Usage: abacite [options] [expression…]',
+    '       abacite tape [--write] <file.txt>',
     '',
     'Evaluates the expression and prints the result. Several arguments are joined with spaces.',
     'With no expression, reads stdin one line at a time as a tape, keeping ans and variables;',
     'on a terminal it shows a "> " prompt until end of input or "exit".',
+    '"abacite tape" evaluates a tape file and prints it with fresh results.',
     '',
     'Options:',
     '  --rad        Trigonometry in radians (default: degrees)',
     `  --full       Print all ${PRECISION} digits (default: ${SHOWN_DIGITS})`,
     '  --json       Print {"input", "result", "unit", "error"} per line',
+    '  --write      With tape: write the fresh results back to the file',
     '  -h, --help   Show this help',
     '  -v, --version',
     '',
@@ -82,8 +95,9 @@ function evaluateLine(run: Run, input: string): void {
   else run.io.stdout(unit ? `${value} ${unit}\n` : `${value}\n`);
 }
 
-const FLAGS: Readonly<Record<string, 'rad' | 'full' | 'json' | 'help' | 'version'>> = {
+const FLAGS: Readonly<Record<string, 'rad' | 'full' | 'json' | 'help' | 'version' | 'write'>> = {
   '--rad': 'rad',
+  '--write': 'write',
   '--full': 'full',
   '--json': 'json',
   '--help': 'help',
@@ -129,6 +143,16 @@ export async function runCli(argv: readonly string[], io: CliIo, context: CliCon
     io.stdout(`abacite ${context.version}\n`);
     return EXIT_OK;
   }
+  // `abacite tape [--write] <file>`; `tape` with anything else is an expression using a name.
+  const tapeArgs = words[0] === 'tape' ? words.slice(1).filter((w) => w !== '--write') : [];
+  if (tapeArgs.length === 1) {
+    const write = flags.has('write') || words.includes('--write');
+    return runTape(tapeArgs[0]!, write, io, context);
+  }
+  if (flags.has('write')) {
+    io.stderr(`abacite: --write goes with "abacite tape <file.txt>".\n\n${helpText()}`);
+    return EXIT_USAGE;
+  }
   const run: Run = {
     tape: EMPTY_TAPE,
     env: { angle: flags.has('rad') ? 'rad' : 'deg', random: context.random ?? DEFAULT_ENV.random },
@@ -164,4 +188,36 @@ export async function runCli(argv: readonly string[], io: CliIo, context: CliCon
   }
   prompt('\n');
   return run.failed ? EXIT_ERROR : EXIT_OK;
+}
+
+const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
+
+/**
+ * `abacite tape <file>` (PRD §13): evaluates a tape file from the top and prints it in the tape format with
+ * fresh results, or with `--write` writes them back when they changed. Exit code 1 when a line has an error.
+ */
+async function runTape(path: string, write: boolean, io: CliIo, context: CliContext): Promise<number> {
+  if (!context.files) {
+    io.stderr('abacite: this build can’t read files.\n');
+    return EXIT_ERROR;
+  }
+  let text: string;
+  try {
+    text = await context.files.read(path);
+  } catch (error) {
+    io.stderr(`abacite: couldn’t read ${path}: ${message(error)}\n`);
+    return EXIT_ERROR;
+  }
+  const { tape, angle } = readTape(text, { ...DEFAULT_ENV, random: context.random ?? DEFAULT_ENV.random });
+  const fresh = writeTapeText(tape, angle);
+  if (!write) io.stdout(fresh);
+  else if (fresh !== text) {
+    try {
+      await context.files.writeAtomic(path, fresh);
+    } catch (error) {
+      io.stderr(`abacite: couldn’t write ${path}: ${message(error)}\n`);
+      return EXIT_ERROR;
+    }
+  }
+  return tape.lines.some((l) => l.result.kind === 'error') ? EXIT_ERROR : EXIT_OK;
 }

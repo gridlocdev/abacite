@@ -77,3 +77,13 @@ export {
   type Tape,
   type TapeLine,
 } from './tape.ts';
+export {
+  RADIANS_HEADER,
+  parseTapeText,
+  readTape,
+  writeLine,
+  writeTapeText,
+  type TapeAngle,
+  type TapeFile,
+  type TapeFileLine,
+} from './tapeFile.ts';

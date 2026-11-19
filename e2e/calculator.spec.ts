@@ -1,4 +1,7 @@
 // Scenarios for the calculator in the browser: each test.describe names a feature in docs/features.md.
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { cli, display, expect, expression, key, openApp, runCommand, tape, test } from './fixtures.ts';
 
 test.beforeEach(async ({ page }) => {
@@ -245,5 +248,18 @@ test.describe('Command line', () => {
     expect(cli(['2 * (3 + 4)'])).toBe('14');
     expect(cli(['--json', '0.1+0.2'])).toBe('{"input":"0.1+0.2","result":"0.3","unit":null,"error":null}');
     expect(cli([], 'x = 4\nx^2\n+ 1\n')).toBe('4\n16\n17');
+  });
+
+  test('abacite tape works out a tape file and writes the results back', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'abacite-e2e-'));
+    try {
+      const file = path.join(dir, 'Tape.txt');
+      writeFileSync(file, '# Rent\nrent = 1200\nrent / 3\n');
+      expect(cli(['tape', file])).toBe('# Rent\nrent = 1200  # = 1200\nrent / 3  # = 400');
+      cli(['tape', '--write', file]);
+      expect(readFileSync(file, 'utf8')).toBe('# Rent\nrent = 1200  # = 1200\nrent / 3  # = 400\n');
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

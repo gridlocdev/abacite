@@ -150,7 +150,7 @@ Abacite is a calculator for one person, replacing the macOS Calculator. It runs 
 
 ### §8.1 Format
 
-- A tape is a UTF-8 text file with `.txt` extension and LF line endings (CRLF read too). Each calculation is one line: the input, two spaces, and a result comment: `x = 5 * 3  # = 15`. An error is written `1/0  # error: Can't divide by zero.`. A `rand()` line writes its value as `rand()  # = 0.53...  (rand)`, and that value is kept on reading.
+- A tape is a UTF-8 text file with `.txt` extension and LF line endings (CRLF read too). Each calculation is one line: the input, two spaces, and a result comment: `x = 5 * 3  # = 15`. An error is written `1/0  # error: Can't divide by zero.`. A `rand()` line writes its value as `rand()  # = 0.53...  (rand)`, and that value is kept on reading. A line whose result isn't the one value drawn lists the values: `rand() + rand()  # = 0.75  (rand 0.25 0.5)`.
 - Results are written with all 34 digits, ungrouped.
 - On reading, the result comment of every line is ignored and the tape is re-evaluated (§7.2), except a `(rand)` value. A blank line and a line starting with `#` are kept as notes, shown on the tape in grey, and written back unchanged.
 - An optional first line `# abacite: angle=rad` sets the tape's angle unit while evaluating; a tape without it uses degrees. The line is written when the tape's angle unit is radians.

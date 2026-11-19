@@ -1,14 +1,17 @@
 import { execFileSync, spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parseDecimal } from '@abacite/core';
-import { EXIT_ERROR, EXIT_OK, EXIT_USAGE, parseArgv, runCli } from '../src/index.ts';
+import { EXIT_ERROR, EXIT_OK, EXIT_USAGE, parseArgv, runCli, type CliFiles } from '../src/index.ts';
 
 async function* linesOf(lines: readonly string[]): AsyncIterable<string> {
   for (const line of lines) yield await Promise.resolve(line);
 }
 
-async function run(argv: string[], stdin: string[] = [], interactive = false) {
+async function run(argv: string[], stdin: string[] = [], interactive = false, files?: CliFiles) {
   let out = '';
   let err = '';
   let read = false;
@@ -23,7 +26,7 @@ async function run(argv: string[], stdin: string[] = [], interactive = false) {
       },
       interactive,
     },
-    { version: '9.9.9', random: () => parseDecimal('0.25')! },
+    { version: '9.9.9', random: () => parseDecimal('0.25')!, ...(files ? { files } : {}) },
   );
   return { code, out, err, read };
 }
@@ -175,12 +178,74 @@ describe('reading stdin', () => {
   });
 });
 
+/** Files in memory, recording what was written. */
+function memoryFiles(initial: Record<string, string>) {
+  const files = new Map(Object.entries(initial));
+  const writes: string[] = [];
+  const io: CliFiles = {
+    read: (file) => {
+      const text = files.get(file);
+      return text === undefined ? Promise.reject(new Error('no such file')) : Promise.resolve(text);
+    },
+    writeAtomic: (file, text) => {
+      writes.push(file);
+      files.set(file, text);
+      return Promise.resolve();
+    },
+  };
+  return { files, writes, io };
+}
+
+describe('abacite tape (PRD §13)', () => {
+  it('prints the tape with fresh results', async () => {
+    const { io, writes } = memoryFiles({ 'a.txt': 'x = 2  # = 9\nx * 21\n# done\n' });
+    const r = await run(['tape', 'a.txt'], [], false, io);
+    expect(r).toMatchObject({ code: EXIT_OK, out: 'x = 2  # = 2\nx * 21  # = 42\n# done\n', read: false });
+    expect(writes).toEqual([]);
+  });
+
+  it('writes the results back with --write, only when they changed', async () => {
+    const { io, files, writes } = memoryFiles({ 'a.txt': '1 + 1\n' });
+    expect(await run(['--write', 'tape', 'a.txt'], [], false, io)).toMatchObject({ code: EXIT_OK, out: '' });
+    expect(files.get('a.txt')).toBe('1 + 1  # = 2\n');
+    await run(['--write', 'tape', 'a.txt'], [], false, io);
+    expect(writes).toEqual(['a.txt']);
+  });
+
+  it('exits with 1 for an error line or a file it can’t read, and 2 for --write alone', async () => {
+    const { io } = memoryFiles({ 'bad.txt': '1/0\n' });
+    expect((await run(['tape', 'bad.txt'], [], false, io)).code).toBe(EXIT_ERROR);
+    expect(await run(['tape', 'gone.txt'], [], false, io)).toMatchObject({
+      code: EXIT_ERROR,
+      err: 'abacite: couldn’t read gone.txt: no such file\n',
+    });
+    expect((await run(['--write', '2+2'], [], false, io)).code).toBe(EXIT_USAGE);
+  });
+
+  it('still evaluates `tape` as a name when it isn’t followed by one file', async () => {
+    expect((await run(['tape'])).err).toBe('error: `tape` isn’t defined.\n');
+  });
+});
+
 describe('the abacite bin', () => {
   const BIN = fileURLToPath(new URL('../bin/abacite.mjs', import.meta.url));
 
   it('runs from source and reads stdin', () => {
     expect(execFileSync(process.execPath, [BIN, '2^10'], { encoding: 'utf8' })).toBe('1024\n');
     expect(execFileSync(process.execPath, [BIN], { input: 'a = 3\na^2\n', encoding: 'utf8' })).toBe('3\n9\n');
+  });
+
+  it('writes a tape file in place, leaving no temporary file', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'abacite-cli-'));
+    try {
+      const file = path.join(dir, 'Tape.txt');
+      writeFileSync(file, '6 * 7\r\n');
+      execFileSync(process.execPath, [BIN, 'tape', '--write', file]);
+      expect(readFileSync(file, 'utf8')).toBe('6 * 7  # = 42\n');
+      expect(readdirSync(dir)).toEqual(['Tape.txt']);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it('stops quietly when the reader closes the pipe', () => {

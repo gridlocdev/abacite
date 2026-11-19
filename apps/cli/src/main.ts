@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import { readFile, rename, rm, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import { createInterface } from 'node:readline';
 import { runCli } from './cli.ts';
 
@@ -35,5 +37,19 @@ process.exitCode = await runCli(
     interactive: process.stdin.isTTY === true,
     prompt: (text) => (process.stdout.isTTY ? process.stdout : process.stderr).write(text),
   },
-  { version: pkg.version },
+  {
+    version: pkg.version,
+    files: {
+      read: (file) => readFile(file, 'utf8'),
+      async writeAtomic(file, text) {
+        const temp = path.join(path.dirname(file), `.${path.basename(file)}.${process.pid}.tmp`);
+        try {
+          await writeFile(temp, text, { encoding: 'utf8', flag: 'wx' });
+          await rename(temp, file);
+        } finally {
+          await rm(temp, { force: true });
+        }
+      },
+    },
+  },
 );

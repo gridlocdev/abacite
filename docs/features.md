@@ -40,7 +40,7 @@ Every action has a command. **⌘K** opens the command menu to search and run th
 
 ## Command line
 
-`abacite "2 * (3 + 4)"` prints `14` with the same engine. With no expression it reads lines from stdin as a tape, keeping `ans` and variables, or shows a `> ` prompt on a terminal. `--rad` uses radians, `--full` prints all 34 digits, and `--json` prints each line as JSON.
+`abacite "2 * (3 + 4)"` prints `14` with the same engine. With no expression it reads lines from stdin as a tape, keeping `ans` and variables, or shows a `> ` prompt on a terminal. `--rad` uses radians, `--full` prints all 34 digits, and `--json` prints each line as JSON. `abacite tape Tape.txt` works out a tape file from the top and prints it with fresh results; `--write` writes them back to the file.
 
 ## Desktop and browser
 
