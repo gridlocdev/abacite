@@ -11,7 +11,7 @@ Abacite is a calculator with exact decimal arithmetic and a tape. One UI runs in
 - Never add a `test/architecture-baseline.json`: fix the violation. A comment is never permission: a deliberate exception (`ignoreError(promise, 'why')`, an `eslint-disable`, a `@ts-expect-error`) goes in `test/architecture-exceptions.json` only after the owner agrees.
 - Features are named as in [docs/features.md](docs/features.md); every section has a `test.describe` with its name in `e2e/`, and `test/features.test.ts` keeps them in step.
 - Reports on UI changes include the screenshots that show the change, and what wasn't checked.
-- Check UI changes headlessly (Playwright in the background, or the desktop app with `ABACITE_HEADLESS=1` and a throwaway `ABACITE_USER_DATA`). Never open a visible window to check your work.
+- Check UI changes headlessly: Playwright in the background for the web build, or the desktop app with `--headless`, which runs muted on a throwaway profile and puts no window, menu or dialog on the screen. Never open a visible window or browser to check your work. Any native UI you add (a dialog, a menu, a notification, a prompt) is skipped in headless mode and recorded in `globalThis.abaciteHeadless` for the checks. When a run ends, make sure no Electron process it started is left.
 
 ## Layout
 

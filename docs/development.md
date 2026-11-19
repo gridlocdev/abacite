@@ -17,7 +17,7 @@ just setup   # corepack enable, then pnpm install
 | `just run-web` | The web client on http://localhost:5173 with hot reload |
 | `just preview-web` | The built web client as a static site |
 | `just run-desktop` | The desktop app (builds the web client first) |
-| `just run-desktop-headless` | The desktop app with no window or Dock icon, on `./.headless-data`, with DevTools on port 9338 (for automated checks) |
+| `just run-desktop-headless` | The desktop app with `--headless`: no window, Dock icon, sound or dialog, on `./.headless-data`, with DevTools on port 9338 (for automated checks) |
 | `just cli <args>` | The `abacite` CLI from source, for example `just cli "2^0.5"` |
 
 To try the desktop app on a throwaway profile, set `ABACITE_USER_DATA` to another folder:

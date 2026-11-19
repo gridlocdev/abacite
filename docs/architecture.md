@@ -54,7 +54,7 @@ Abacite is one TypeScript code base with two hosts and a CLI. The browser and th
 
 ## Desktop (`apps/desktop`)
 
-The Electron main process loads the built web client from `app://abacite/` in a sandboxed renderer with context isolation. The preload script exposes `abaciteNative`: the version, the menu bar, menu commands and a request to widen the window for the Scientific keypad or the tape. The main process keeps the window's place and size (`windowState.ts`, saved atomically). `ABACITE_HEADLESS=1` renders offscreen with no window or Dock icon, and `ABACITE_USER_DATA` points the profile somewhere else, for automated checks.
+The Electron main process loads the built web client from `app://abacite/` in a sandboxed renderer with context isolation. The preload script exposes `abaciteNative`: the version, the menu bar, menu commands and a request to widen the window for the Scientific keypad or the tape. The main process keeps the window's place and size (`windowState.ts`, saved atomically). For automated checks, `--headless` (or `ABACITE_HEADLESS=1`) renders offscreen and muted, with no window or Dock icon, on a fresh profile in the system's temporary folder unless `ABACITE_USER_DATA` names one. It puts nothing on the screen: the right-click menu and links to open are recorded in `globalThis.abaciteHeadless` instead, and an uncaught error in the main process is written to stderr and exits the app with code 1 rather than showing Electron's error dialog.
 
 ## CLI (`apps/cli`)
 

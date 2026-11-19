@@ -3,11 +3,13 @@
  * main process only through the preload's `abaciteNative`.
  */
 import { app, BrowserWindow, ipcMain, Menu, nativeTheme, net, protocol, screen, shell } from 'electron';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Channels, type NativeMenuItem } from './bridge.ts';
 import { editMenuTemplate, toTemplate, withStandardMenus } from './menu.ts';
-import { appFile, dataPaths, isAppUrl } from './paths.ts';
+import { appFile, dataPaths, isAppUrl, isHeadless } from './paths.ts';
 import { loadSavedWindow, placeWindow, saveWindow, widened, type SavedWindow } from './windowState.ts';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -17,11 +19,32 @@ const DEFAULT_SIZE = { width: 400, height: 620 };
 const MIN_SIZE = { width: 300, height: 460 };
 /** The widest the page may ask the window to grow. */
 const MAX_FIT = 2000;
-/** ABACITE_HEADLESS=1: render offscreen and never show a window or Dock icon (automated checks). */
-const headless = process.env.ABACITE_HEADLESS === '1';
-if (headless) app.dock?.hide();
+/**
+ * `--headless` or ABACITE_HEADLESS=1 (automated checks): render offscreen, muted, on a throwaway profile, and
+ * never put a window, Dock icon, menu or other app on the owner's screen. Native UI it would have shown is
+ * recorded in `globalThis.abaciteHeadless` for the checks to read instead.
+ */
+const headless = isHeadless(process.argv, process.env);
+if (headless) {
+  app.dock?.hide();
+  // Electron shows an uncaught main-process error in a dialog on the screen, hidden window or not. A headless
+  // run writes it to stderr and exits with an error instead, so the check fails and nothing appears.
+  process.on('uncaughtException', (error) => {
+    console.error('Uncaught exception in the main process:', error);
+    app.exit(1);
+  });
+}
 
-const paths = dataPaths(process.env);
+interface HeadlessLog {
+  /** Labels of each context menu that would have opened. */
+  readonly contextMenus: string[][];
+  /** Links that would have opened in the browser. */
+  readonly openedLinks: string[];
+}
+const headlessLog: HeadlessLog = { contextMenus: [], openedLinks: [] };
+if (headless) (globalThis as { abaciteHeadless?: HeadlessLog }).abaciteHeadless = headlessLog;
+
+const paths = dataPaths(process.env, headless, () => mkdtempSync(path.join(tmpdir(), 'abacite-headless-')));
 if (paths.userData) app.setPath('userData', paths.userData);
 const windowFile = path.join(app.getPath('userData'), 'window-state.json');
 
@@ -80,7 +103,8 @@ function createWindow(): BrowserWindow {
       additionalArguments: [`--abacite-version=${app.getVersion()}`],
     },
   });
-  if (!headless)
+  if (headless) w.webContents.setAudioMuted(true);
+  else
     w.once('ready-to-show', () => {
       if (placed.maximized) w.maximize();
       w.show();
@@ -103,10 +127,14 @@ function createWindow(): BrowserWindow {
       replace: (word) => w.webContents.replaceMisspelling(word),
       learn: (word) => w.webContents.session.addWordToSpellCheckerDictionary(word),
     });
-    if (template) Menu.buildFromTemplate(template).popup({ window: w });
+    if (!template) return;
+    if (headless) headlessLog.contextMenus.push(template.map((item) => item.label ?? item.role ?? '-'));
+    else Menu.buildFromTemplate(template).popup({ window: w });
   });
   w.webContents.setWindowOpenHandler(({ url }) => {
-    if (/^(https?|mailto):/i.test(url)) void shell.openExternal(url);
+    if (!/^(https?|mailto):/i.test(url)) return { action: 'deny' };
+    if (headless) headlessLog.openedLinks.push(url);
+    else void shell.openExternal(url);
     return { action: 'deny' };
   });
   w.webContents.on('will-navigate', (e, url) => {
@@ -141,9 +169,10 @@ function registerIpc(): void {
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', () => {
-    if (!win) return;
+    // A headless run never brings anything forward.
+    if (!win || headless) return;
     if (win.isMinimized()) win.restore();
-    if (!headless) win.show();
+    win.show();
     win.focus();
   });
   void app.whenReady().then(async () => {

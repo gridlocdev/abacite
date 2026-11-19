@@ -20,7 +20,7 @@ run-desktop: build-desktop
 [group('run')]
 run-desktop-headless dir=(justfile_directory() / ".headless-data"): build-desktop
     mkdir -p "{{ dir }}"
-    cd apps/desktop && ABACITE_HEADLESS=1 ABACITE_USER_DATA="{{ dir }}" pnpm exec electron out/main.js --remote-debugging-port=9338
+    cd apps/desktop && ABACITE_USER_DATA="{{ dir }}" pnpm exec electron out/main.js --headless --remote-debugging-port=9338
 
 # The built web client, as a static site (http://localhost:4173).
 [group('run')]
