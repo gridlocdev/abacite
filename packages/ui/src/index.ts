@@ -59,6 +59,7 @@ export { ListPopup, listStep } from './components/ListPopup.tsx';
 export {
   HandleFolder,
   MemoryFolder,
+  NativeFolder,
   Serial,
   StoreError,
   TRASH,
@@ -71,5 +72,7 @@ export {
   versionOfBytes,
   type FileRead,
   type Folder,
+  type NativeFolderCall,
+  type NativeReply,
   type StoreErrorKind,
 } from './platform/index.ts';

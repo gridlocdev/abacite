@@ -2,12 +2,31 @@
  * Abacite desktop (PRD §12): one window running the web build from app://abacite/. The page reaches the
  * main process only through the preload's `abaciteNative`.
  */
-import { app, BrowserWindow, ipcMain, Menu, nativeTheme, net, protocol, screen, shell } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  ipcMain,
+  Menu,
+  nativeTheme,
+  net,
+  protocol,
+  screen,
+  shell,
+} from 'electron';
 import { mkdtempSync } from 'node:fs';
+import { mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Channels } from './bridge.ts';
+import {
+  folderCall,
+  folderExists,
+  loadFolderChoice,
+  saveFolderChoice,
+  type FolderInfo,
+} from './folderChoice.ts';
 import { editMenuTemplate, toTemplate, withStandardMenus } from './menu.ts';
 import {
   appFile,
@@ -17,6 +36,7 @@ import {
   isHeadless,
   removeStaleHeadlessProfiles,
 } from './paths.ts';
+import { NodeFolder } from './tapeFolder.ts';
 import {
   loadSavedWindow,
   placeWindow,
@@ -54,8 +74,10 @@ interface HeadlessLog {
   readonly contextMenus: string[][];
   /** Links that would have opened in the browser. */
   readonly openedLinks: string[];
+  /** Open dialogs that would have been shown; each is answered with Cancel. */
+  readonly dialogs: string[];
 }
-const headlessLog: HeadlessLog = { contextMenus: [], openedLinks: [] };
+const headlessLog: HeadlessLog = { contextMenus: [], openedLinks: [], dialogs: [] };
 if (headless) (globalThis as { abaciteHeadless?: HeadlessLog }).abaciteHeadless = headlessLog;
 
 const paths = dataPaths(process.env, headless, () => {
@@ -64,12 +86,17 @@ const paths = dataPaths(process.env, headless, () => {
 });
 if (paths.userData) app.setPath('userData', paths.userData);
 const windowFile = path.join(app.getPath('userData'), 'window-state.json');
+const folderFile = path.join(app.getPath('userData'), 'folder.json');
+// A check's Documents folder is inside its own profile, so "Use Documents/Abacite" never touches the owner's.
+if (paths.userData) app.setPath('documents', path.join(paths.userData, 'Documents'));
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } },
 ]);
 
 let win: BrowserWindow | null = null;
+/** The tape folder in use, once the page has one (PRD §8.2). */
+let tapeFolder: NodeFolder | null = null;
 let lastWindow: SavedWindow | null = null;
 
 /** Only our own page may use the bridge. */
@@ -181,7 +208,46 @@ function fitWidth(width: number): void {
   if (next) win.setBounds(next, !headless);
 }
 
+/** Makes `dir` the tape folder and remembers it. */
+async function useFolder(dir: string): Promise<string> {
+  await mkdir(dir, { recursive: true });
+  await saveFolderChoice(folderFile, dir);
+  tapeFolder = new NodeFolder(dir);
+  return dir;
+}
+
+function registerFolderIpc(): void {
+  const defaultFolder = () => path.join(app.getPath('documents'), 'Abacite');
+  const refuse = () => Promise.reject(new Error('Not our page.'));
+  ipcMain.handle(Channels.folderInfo, async (e): Promise<FolderInfo> => {
+    if (!trusted(e)) return refuse();
+    const folder = await loadFolderChoice(folderFile);
+    const missing = folder !== null && !(await folderExists(folder));
+    tapeFolder = folder && !missing ? new NodeFolder(folder) : null;
+    return { folder, missing, defaultFolder: defaultFolder() };
+  });
+  ipcMain.handle(Channels.useDefaultFolder, (e) => (trusted(e) ? useFolder(defaultFolder()) : refuse()));
+  ipcMain.handle(Channels.chooseFolder, async (e): Promise<string | null> => {
+    if (!trusted(e)) return refuse();
+    if (headless || !win) {
+      headlessLog.dialogs.push('Choose Tape Folder');
+      return null;
+    }
+    const picked = await dialog.showOpenDialog(win, {
+      title: 'Choose Tape Folder',
+      buttonLabel: 'Use Folder',
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    const dir = picked.filePaths[0];
+    return picked.canceled || !dir ? null : useFolder(dir);
+  });
+  ipcMain.handle(Channels.folder, (e, op: unknown, args: unknown) =>
+    trusted(e) ? folderCall(tapeFolder, op, args) : refuse(),
+  );
+}
+
 function registerIpc(): void {
+  registerFolderIpc();
   ipcMain.on(Channels.setMenu, (e, items: unknown) => {
     if (!trusted(e) || !Array.isArray(items)) return;
     const send = (id: string) => win?.webContents.send(Channels.command, id);

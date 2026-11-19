@@ -6,6 +6,10 @@ export const Channels = {
   setMenu: 'abacite:set-menu',
   command: 'abacite:command',
   fitWidth: 'abacite:fit-width',
+  folderInfo: 'abacite:folder-info',
+  useDefaultFolder: 'abacite:use-default-folder',
+  chooseFolder: 'abacite:choose-folder',
+  folder: 'abacite:folder',
 } as const;
 
 /** One item of the menu bar the page sends, as `NativeMenuItem` in @abacite/ui. */

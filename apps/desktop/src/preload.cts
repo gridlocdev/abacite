@@ -12,4 +12,8 @@ contextBridge.exposeInMainWorld('abaciteNative', {
   setMenu: (items: readonly NativeMenuItem[]) => ipcRenderer.send('abacite:set-menu', items),
   onCommand: (fn: (id: string) => void) => ipcRenderer.on('abacite:command', (_e, id: string) => fn(id)),
   fitWidth: (width: number) => ipcRenderer.send('abacite:fit-width', width),
+  folderInfo: () => ipcRenderer.invoke('abacite:folder-info'),
+  useDefaultFolder: () => ipcRenderer.invoke('abacite:use-default-folder'),
+  chooseFolder: () => ipcRenderer.invoke('abacite:choose-folder'),
+  folder: (op: string, args: readonly unknown[]) => ipcRenderer.invoke('abacite:folder', op, args),
 });

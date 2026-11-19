@@ -20,3 +20,12 @@ export {
   type Rect,
   type SavedWindow,
 } from './windowState.ts';
+export {
+  folderCall,
+  folderExists,
+  loadFolderChoice,
+  saveFolderChoice,
+  type FolderInfo,
+  type FolderReply,
+} from './folderChoice.ts';
+export { FolderError, NodeFolder, versionOf, type FileRead, type FolderErrorKind } from './tapeFolder.ts';
