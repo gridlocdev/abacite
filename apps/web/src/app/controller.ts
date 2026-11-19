@@ -101,6 +101,8 @@ export class AppController {
   readonly #fitWidth: ((width: number) => void) | undefined;
   /** The last result the display shows while the line is empty; AC clears it. */
   #last: Decimal | null = null;
+  /** The error the last committed line gave, shown while the line stays empty. */
+  #lastError: string | null = null;
   /** The last complete live result, shown greyed while the line is unfinished. */
   #lastLive: string | null = null;
   /** `rand()` values drawn while previewing, so the committed line gets the value that was shown. */
@@ -189,8 +191,16 @@ export class AppController {
       tone: options.tone ?? 'info',
       ...(options.action ? { action: options.action } : {}),
     };
-    this.announcement.value = text;
+    this.#announce(text);
     this.#noticeTimer = after(options.action ? NOTICE_ACTION_MS : NOTICE_MS, () => this.dismissNotice());
+  }
+
+  /**
+   * Says `text` through the live region. The same text twice in a row gets a trailing no-break space, so the
+   * region changes and screen readers read it again (PRD §14).
+   */
+  #announce(text: string): void {
+    this.announcement.value = this.announcement.value === text ? `${text}\u00a0` : text;
   }
 
   dismissNotice(): void {
@@ -203,7 +213,12 @@ export class AppController {
 
   /** The text the user typed or pasted; the field already shows it. */
   setLine(state: LineState): void {
-    if (state.text !== this.line.value.text) this.#history = null;
+    if (state.text !== this.line.value.text) {
+      this.#history = null;
+      // Typing moves on from a committed error; an emptied line draws `rand()` afresh.
+      this.#lastError = null;
+      if (!state.text.trim()) this.#pool = [];
+    }
     this.line.value = state;
     this.#refresh();
   }
@@ -230,7 +245,9 @@ export class AppController {
         this.setLine(EMPTY_LINE);
       } else {
         this.#last = null;
+        this.#lastError = null;
         this.#history = null;
+        this.#pool = [];
         this.#refresh();
       }
     });
@@ -296,14 +313,16 @@ export class AppController {
       this.#lastLive = null;
       this.line.value = EMPTY_LINE;
       this.ghost.value = NO_GHOST;
+      this.#lastError = null;
       if (line.result.kind === 'value') {
         this.#last = line.result.value;
-        this.shown.value = { kind: 'result', text: this.format(line.result.value) };
-        this.announcement.value = `Result ${this.format(line.result.value)}`;
+        this.#announce(`Result ${this.format(line.result.value)}`);
       } else if (line.result.kind === 'error') {
-        this.shown.value = { kind: 'error', text: line.result.message };
-        this.announcement.value = line.result.message;
+        this.#lastError = line.result.message;
+        this.#announce(line.result.message);
       }
+      // A comment line has no result: the display keeps the last one.
+      this.#refresh();
       if (tape.dropped && !this.#droppedShown) {
         this.#droppedShown = true;
         this.say('The tape keeps 10,000 lines, so the oldest line was dropped.');
@@ -348,6 +367,7 @@ export class AppController {
     batch(() => {
       this.tape.value = EMPTY_TAPE;
       this.#last = null;
+      this.#lastError = null;
       this.#history = null;
       this.#refresh();
     });
@@ -410,7 +430,8 @@ export class AppController {
     if (!text.trim()) {
       this.#lastLive = null;
       this.ghost.value = NO_GHOST;
-      this.shown.value = this.#last ? { kind: 'result', text: this.format(this.#last) } : ZERO_SHOWN;
+      if (this.#lastError !== null) this.shown.value = { kind: 'error', text: this.#lastError };
+      else this.shown.value = this.#last ? { kind: 'result', text: this.format(this.#last) } : ZERO_SHOWN;
       return;
     }
     const evaluation = preview(tape, text, this.#env());

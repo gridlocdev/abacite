@@ -220,3 +220,40 @@ describe('settings and the window (PRD §9.1, §11)', () => {
     }
   });
 });
+
+describe('the display after a commit (PRD §9.1, §14)', () => {
+  it('keeps a committed error shown when a setting changes', () => {
+    const { app } = makeApp();
+    enter(app, '5', '1/0');
+    app.setGroupDigits(false);
+    app.toggleAngle();
+    expect(app.shown.value).toEqual({ kind: 'error', text: 'Can’t divide by zero.' });
+    type(app, '2');
+    expect(app.shown.value).toEqual({ kind: 'live', text: '2' });
+  });
+
+  it('keeps the last result for a comment line, so it can still be copied and repeated', () => {
+    const { app } = makeApp();
+    enter(app, '5+3', '# a note');
+    expect(app.shown.value).toEqual({ kind: 'result', text: '8' });
+    expect(app.currentValue()).toBe('8');
+  });
+
+  it('announces the same result twice in a row', () => {
+    const { app } = makeApp();
+    enter(app, '2+3');
+    const first = app.announcement.value;
+    enter(app, '1+4');
+    expect(app.announcement.value).not.toBe(first);
+    expect(app.announcement.value.trim()).toBe('Result 5');
+  });
+
+  it('draws rand() afresh after the line is cleared', () => {
+    const { app } = makeApp();
+    type(app, 'rand()');
+    expect(app.shown.value.text).toBe('0.25');
+    app.clear();
+    type(app, 'rand()');
+    expect(app.shown.value.text).toBe('0.5');
+  });
+});
