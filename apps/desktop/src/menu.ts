@@ -1,16 +1,34 @@
 import type { MenuItemConstructorOptions } from 'electron';
 import type { NativeMenuItem } from './bridge.ts';
 
+/** The only roles the page may ask for: the Edit menu's text commands. */
+const PAGE_ROLES: ReadonlySet<string> = new Set(['undo', 'redo', 'cut', 'copy', 'paste', 'selectAll']);
+
+/** Keeps the items the main process can build safely; the page's message is not trusted to be well formed. */
+function wellFormed(item: unknown): item is NativeMenuItem {
+  if (!item || typeof item !== 'object') return false;
+  const i = item as Record<string, unknown>;
+  const optionalString = (v: unknown) => v === undefined || typeof v === 'string';
+  return (
+    (i.type === undefined || i.type === 'separator' || i.type === 'checkbox') &&
+    (i.role === undefined || (typeof i.role === 'string' && PAGE_ROLES.has(i.role))) &&
+    optionalString(i.label) &&
+    optionalString(i.command) &&
+    optionalString(i.accelerator) &&
+    (i.submenu === undefined || Array.isArray(i.submenu))
+  );
+}
+
 /**
  * The page's menus as an Electron template. Accelerators only show the key and run the command through
- * `send`; plain keys are in the label after a tab, so the page keeps handling them. Pure, so it can be
- * tested without Electron.
+ * `send`; plain keys are in the label after a tab, so the page keeps handling them. Items that aren't well
+ * formed, or ask for a role other than the Edit menu's, are left out. Pure, so it can be tested without Electron.
  */
 export function toTemplate(
-  items: readonly NativeMenuItem[],
+  items: readonly unknown[],
   send: (command: string) => void,
 ): MenuItemConstructorOptions[] {
-  return items.map((item): MenuItemConstructorOptions => {
+  return items.filter(wellFormed).map((item): MenuItemConstructorOptions => {
     if (item.type === 'separator') return { type: 'separator' };
     if (item.role)
       return {
@@ -19,9 +37,9 @@ export function toTemplate(
       };
     const opts: MenuItemConstructorOptions = {
       label: item.label ?? '',
-      enabled: item.enabled ?? true,
+      enabled: item.enabled !== false,
       ...(item.accelerator ? { accelerator: item.accelerator } : {}),
-      ...(item.type === 'checkbox' ? { type: 'checkbox', checked: item.checked ?? false } : {}),
+      ...(item.type === 'checkbox' ? { type: 'checkbox', checked: item.checked === true } : {}),
     };
     if (item.submenu) opts.submenu = toTemplate(item.submenu, send);
     else if (item.command) {

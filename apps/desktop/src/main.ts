@@ -7,7 +7,7 @@ import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
-import { Channels, type NativeMenuItem } from './bridge.ts';
+import { Channels } from './bridge.ts';
 import { editMenuTemplate, toTemplate, withStandardMenus } from './menu.ts';
 import { appFile, dataPaths, isAppUrl, isHeadless } from './paths.ts';
 import { loadSavedWindow, placeWindow, saveWindow, widened, type SavedWindow } from './windowState.ts';
@@ -154,11 +154,16 @@ function fitWidth(width: number): void {
 }
 
 function registerIpc(): void {
-  ipcMain.on(Channels.setMenu, (e, items: readonly NativeMenuItem[]) => {
+  ipcMain.on(Channels.setMenu, (e, items: unknown) => {
     if (!trusted(e) || !Array.isArray(items)) return;
     const send = (id: string) => win?.webContents.send(Channels.command, id);
-    const template = withStandardMenus(toTemplate(items, send), process.platform, !app.isPackaged);
-    Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+    try {
+      const template = withStandardMenus(toTemplate(items, send), process.platform, !app.isPackaged);
+      Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+    } catch (error) {
+      // A bad accelerator, say: keep the menu bar there is rather than stop the main process.
+      console.warn('Could not build the menu bar:', error);
+    }
   });
   ipcMain.on(Channels.fitWidth, (e, width: unknown) => {
     if (!trusted(e) || typeof width !== 'number' || !Number.isFinite(width)) return;

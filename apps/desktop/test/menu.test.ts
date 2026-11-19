@@ -22,6 +22,28 @@ describe('menu', () => {
     expect((help?.submenu as unknown[])[0]).toMatchObject({ enabled: false });
   });
 
+  it('leaves out items that aren’t well formed and roles other than the Edit menu’s', () => {
+    const template = toTemplate(
+      [
+        null,
+        'File',
+        { role: 'quit' },
+        { role: 'toggleDevTools' },
+        { label: 3 },
+        { role: 'copy' },
+        {
+          label: 'Edit',
+          submenu: [{ role: 'paste' }, { role: 'reload' }, { label: 'Calc', command: 'line.commit' }],
+        },
+      ],
+      () => undefined,
+    );
+    expect(template.map((i) => i.role ?? i.label)).toEqual(['copy', 'Edit']);
+    expect(
+      (template[1]?.submenu as { role?: string; label?: string }[]).map((i) => i.role ?? i.label),
+    ).toEqual(['paste', 'Calc']);
+  });
+
   it('adds the app menu and Window menu on macOS', () => {
     const menus = withStandardMenus(
       toTemplate(page, () => undefined),
