@@ -2,6 +2,8 @@
  * Abacite desktop (PRD §12): one window running the web build from app://abacite/. The page reaches the
  * main process only through the preload's `abaciteNative`.
  */
+// First, so a headless run's error guard is in place before any other module runs.
+import './headlessStart.ts';
 import {
   app,
   BrowserWindow,
@@ -63,16 +65,6 @@ const MAX_FIT = 2000;
  * recorded in `globalThis.abaciteHeadless` for the checks to read instead.
  */
 const headless = isHeadless(process.argv, process.env);
-if (headless) {
-  app.dock?.hide();
-  // Electron shows an uncaught main-process error in a dialog on the screen, hidden window or not. A headless
-  // run writes it to stderr and exits with an error instead, so the check fails and nothing appears.
-  process.on('uncaughtException', (error) => {
-    console.error('Uncaught exception in the main process:', error);
-    app.exit(1);
-  });
-}
-
 interface HeadlessLog {
   /** Labels of each context menu that would have opened. */
   readonly contextMenus: string[][];

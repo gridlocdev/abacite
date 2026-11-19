@@ -184,29 +184,39 @@ test.describe('Desktop and browser', () => {
     }
   });
 
-  test('an uncaught error in a headless run exits instead of showing a dialog', async () => {
-    const temp = realpathSync(mkdtempSync(path.join(tmpdir(), 'abacite-e2e-')));
-    const app = await electron.launch({
-      cwd: DESKTOP,
-      args: ['out/main.js', '--headless'],
-      env: { ...process.env, ABACITE_USER_DATA: path.join(temp, 'profile') },
-    });
-    const child = app.process();
-    try {
-      await firstStart(await app.firstWindow());
-      const exited = new Promise<number | null>((resolve) => child.once('exit', (code) => resolve(code)));
-      await app.evaluate(() => {
-        setTimeout(() => {
-          throw new Error('a deliberate error from the check');
-        });
+  for (const [kind, crash] of [
+    ['an uncaught exception', 'throw'],
+    ['an unhandled rejection', 'reject'],
+  ] as const) {
+    test(`${kind} in a headless run exits instead of showing a dialog`, async () => {
+      const temp = realpathSync(mkdtempSync(path.join(tmpdir(), 'abacite-e2e-')));
+      const app = await electron.launch({
+        cwd: DESKTOP,
+        args: ['out/main.js', '--headless'],
+        env: { ...process.env, ABACITE_USER_DATA: path.join(temp, 'profile') },
       });
-      expect(await exited, 'the app exits with an error code').toBe(1);
-    } finally {
-      if (child.exitCode === null) child.kill();
-      rmSync(temp, { recursive: true, force: true });
-    }
-    await expect
-      .poll(() => alive(child.pid!), { message: 'no Electron process is left running' })
-      .toBe(false);
-  });
+      const child = app.process();
+      let stderr = '';
+      child.stderr?.on('data', (chunk: Buffer) => (stderr += chunk.toString()));
+      try {
+        await firstStart(await app.firstWindow());
+        const exited = new Promise<number | null>((resolve) => child.once('exit', (code) => resolve(code)));
+        await app.evaluate((_electron, how) => {
+          setTimeout(() => {
+            const error = new Error('a deliberate error from the check');
+            if (how === 'throw') throw error;
+            void Promise.reject(error);
+          });
+        }, crash);
+        expect(await exited, 'the app exits with an error code').toBe(1);
+        expect(stderr).toContain('a deliberate error from the check');
+      } finally {
+        if (child.exitCode === null) child.kill();
+        rmSync(temp, { recursive: true, force: true });
+      }
+      await expect
+        .poll(() => alive(child.pid!), { message: 'no Electron process is left running' })
+        .toBe(false);
+    });
+  }
 });

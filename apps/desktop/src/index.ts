@@ -1,5 +1,6 @@
 // The desktop app's pure parts, for its tests. Electron starts from main.ts.
 export { Channels, type NativeMenuItem } from './bridge.ts';
+export { guardMainErrors } from './crashGuard.ts';
 export { editMenuTemplate, toTemplate, withStandardMenus, type EditMenuParams } from './menu.ts';
 export {
   allowPermission,
