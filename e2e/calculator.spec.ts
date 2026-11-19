@@ -136,6 +136,34 @@ test.describe('Unit conversion', () => {
   });
 });
 
+test.describe('Classic entry', () => {
+  test('⌘E works the keypad like a pocket calculator and puts the calculation on the tape', async ({
+    page,
+  }) => {
+    await page.keyboard.press('ControlOrMeta+E');
+    await expect(expression(page)).toBeHidden();
+    await expect(page.locator('.ab-display-flags')).toContainText('CLASSIC');
+    await page.keyboard.type('2+3*');
+    await expect(page.getByTestId('pending')).toHaveText('2 + 3 ×');
+    await expect(display(page)).toHaveText('3');
+    await key(page, '4').click();
+    await key(page, 'Subtract').click();
+    await expect(display(page)).toHaveText('14');
+    await page.keyboard.type('1');
+    await page.keyboard.press('Enter');
+    await expect(display(page)).toHaveText('13');
+    await page.keyboard.type('9');
+    await key(page, 'Change sign').click();
+    await page.keyboard.press('Backspace');
+    await expect(display(page)).toHaveText('0');
+    await page.keyboard.press('Escape');
+    await page.keyboard.press('ControlOrMeta+T');
+    await expect(tape(page).getByRole('listitem')).toHaveText([/2 \+ 3 \* 4 - 1\s*13/]);
+    await page.keyboard.press('ControlOrMeta+E');
+    await expect(expression(page)).toBeVisible();
+  });
+});
+
 test.describe('Tape', () => {
   test('keeps every committed line, and ↑ brings one back', async ({ page }) => {
     await page.keyboard.press('ControlOrMeta+KeyT');

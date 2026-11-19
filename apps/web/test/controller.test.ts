@@ -317,3 +317,80 @@ describe('memory keys (PRD §5)', () => {
     expect(app.notice.value?.text).toBe('There’s no result to put in memory.');
   });
 });
+
+describe('classic entry (PRD §9.3)', () => {
+  /** Types `text` as keys, the way the keyboard does in classic entry. */
+  const keys = (app: ReturnType<typeof makeApp>['app'], text: string) => {
+    for (const ch of text.replaceAll(' ', '')) expect(app.typeKey(ch), ch).toBe(true);
+  };
+
+  it('shows operators applying as they are pressed, and = commits the calculation', () => {
+    const { app } = makeApp({ entry: 'classic' });
+    keys(app, '2+3*');
+    expect(app.shown.value).toMatchObject({ kind: 'live', text: '3' });
+    keys(app, '4');
+    expect(app.shown.value.text).toBe('4');
+    keys(app, '-');
+    expect(app.shown.value.text).toBe('14');
+    app.press(key('back'));
+    keys(app, '1=');
+    expect(app.tape.value.lines.map((l) => l.input)).toEqual(['2 + 3 * 4 - 1']);
+    expect(app.shown.value).toMatchObject({ kind: 'result', text: '13' });
+  });
+
+  it('repeats the last operation when = is pressed again', () => {
+    const { app } = makeApp({ entry: 'classic' });
+    keys(app, '10+5==');
+    expect(app.tape.value.lines.map((l) => l.input)).toEqual(['10 + 5', 'ans + 5']);
+    expect(app.shown.value.text).toBe('20');
+  });
+
+  it('applies a function to the number shown, and an operator after = goes on from the result', () => {
+    const { app } = makeApp({ entry: 'classic' });
+    keys(app, '9');
+    app.press(key('sqrt'));
+    expect(app.shown.value.text).toBe('3');
+    app.commit();
+    keys(app, '*2=');
+    expect(app.tape.value.lines.map((l) => l.input)).toEqual(['sqrt(9)', 'ans * 2']);
+    expect(app.shown.value.text).toBe('6');
+  });
+
+  it('groups typed digits, and C clears the number before AC clears the rest', () => {
+    const { app } = makeApp({ entry: 'classic' });
+    keys(app, '1234.5');
+    expect(app.shown.value.text).toBe('1,234.5');
+    expect(app.hasEntry()).toBe(true);
+    keys(app, '+');
+    keys(app, '7');
+    app.clear();
+    expect(app.classic.value.parts).toEqual(['1234.5', '+']);
+    app.clear();
+    expect(app.hasEntry()).toBe(false);
+    expect(app.shown.value.text).toBe('0');
+  });
+
+  it('shows errors, and m+ adds the calculation’s result', () => {
+    const { app } = makeApp({ entry: 'classic' });
+    keys(app, '1/0');
+    app.press(key('equals'));
+    expect(app.shown.value).toMatchObject({ kind: 'error', text: 'Can’t divide by zero.' });
+    keys(app, '6*7');
+    app.press(key('madd'));
+    expect(app.tape.value.lines.map((l) => l.input).slice(1)).toEqual(['6 * 7', 'mem = mem + 42']);
+    app.press(key('mrecall'));
+    expect(app.shown.value.text).toBe('42');
+  });
+
+  it('switches with ⌘E, keeps the setting, and leaves typed keys alone in expression entry', () => {
+    const { app, catalog, storage } = makeApp();
+    expect(app.typeKey('5')).toBe(false);
+    catalog.run('view.classic');
+    expect(storage.load().entry).toBe('classic');
+    expect(app.typeKey('5')).toBe(true);
+    expect(app.typeKey('a')).toBe(false);
+    expect(app.notice.value?.text).toBe('Classic entry is on.');
+    catalog.run('view.classic');
+    expect(app.classicEntry()).toBe(false);
+  });
+});

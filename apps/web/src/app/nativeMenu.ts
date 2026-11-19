@@ -15,6 +15,7 @@ import type { AppController } from './controller.ts';
 const BREAKS = new Set([
   'edit.copyResult',
   'tape.clear',
+  'view.classic',
   'view.tape',
   'view.angle',
   'view.themeSystem',

@@ -24,6 +24,7 @@ The expression line keeps the keyboard while no window is open: every key you ty
 | -------------------------------- | -------------------------- | ----------------------------------- |
 | Basic keypad                     | **⌘1**                     | **Ctrl+1**                          |
 | Scientific keypad                | **⌘2**                     | **Ctrl+2**                          |
+| Classic entry on or off          | **⌘E**                     | **Ctrl+E**                          |
 | Show or hide the tape            | **⌘T**                     | **Ctrl+T**                          |
 | Switch degrees and radians       | **⇧⌘R** or the **Rad** key | **Ctrl+Shift+R** or the **Rad** key |
 | System, Light or Dark appearance | **View** menu or Settings  | **View** menu or Settings           |

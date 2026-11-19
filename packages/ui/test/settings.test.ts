@@ -6,11 +6,12 @@ describe('settings', () => {
     const s = parseSettings({
       theme: 'dark',
       mode: 'programmer',
+      entry: 'classic',
       angle: 'rad',
       groupDigits: 'yes',
       showTape: true,
     });
-    expect(s).toEqual({ ...DEFAULT_SETTINGS, theme: 'dark', angle: 'rad', showTape: true });
+    expect(s).toEqual({ ...DEFAULT_SETTINGS, theme: 'dark', entry: 'classic', angle: 'rad', showTape: true });
   });
 
   it('reads anything that is not an object as the defaults', () => {

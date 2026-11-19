@@ -15,25 +15,34 @@ export function keyFocus(el: Element | null): KeyFocus {
  * Sends key presses on `target` to the catalog. `blocked` is true while a dialog is open; then only commands
  * the catalog's gate lets through (those that toggle their own window) run, and a blocked shortcut with ⌘ or
  * Ctrl still doesn't reach the browser (Ctrl+Shift+C would open its inspector). With nothing blocked, a
- * printable key pressed on a button goes to `typeInto` (the expression line keeps the typing, PRD §10).
- * Returns a function that stops listening.
+ * printable key pressed on a button goes to `typeInto` (the expression line keeps the typing, PRD §10). With
+ * no field to type into, a printable key or Backspace that is no command goes to `typeKey`, which returns
+ * true when it used the key (classic entry, PRD §9.3). Returns a function that stops listening.
  */
 export function listenForKeys(
   target: Window,
   catalog: CommandCatalog,
   blocked: () => boolean,
   typeInto?: () => HTMLElement | null,
+  typeKey?: (key: string) => boolean,
 ): () => void {
   const onKey = (e: KeyboardEvent) => {
     if (e.defaultPrevented) return;
     const focus = keyFocus(target.document.activeElement);
     if (typeInto && focus === 'control' && isTyping(e) && !blocked()) {
-      // Moving focus during keydown sends the character to the newly focused field.
-      typeInto()?.focus();
-      return;
+      const field = typeInto();
+      if (field) {
+        // Moving focus during keydown sends the character to the newly focused field.
+        field.focus();
+        return;
+      }
     }
     const result = catalog.forEvent(e, focus);
-    if (!result) return;
+    if (!result) {
+      const typed = isTyping(e) || (e.key === 'Backspace' && !e.metaKey && !e.ctrlKey && !e.altKey);
+      if (typeKey && focus !== 'text' && typed && !blocked() && typeKey(e.key)) e.preventDefault();
+      return;
+    }
     if (result.kind === 'wait') {
       e.preventDefault();
       return;

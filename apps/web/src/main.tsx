@@ -35,6 +35,7 @@ function start(): void {
     catalog,
     () => app.blocked(),
     () => document.querySelector<HTMLElement>('[data-ab-line]'),
+    (key) => app.typeKey(key),
   );
   if (import.meta.env.DEV) Object.assign(globalThis, { abacite: { app, catalog } });
 

@@ -6,5 +6,5 @@ Each slice leaves `just check` green and the app working. PRD sections in bracke
 - [x] **2. Variables and memory** (§5, §7.2). Waits on 1.
 - [ ] **3. Tape files.** Tape format read and write (§8.1), store interface and adapters, tape folder, saving, conflicts, recovery, trash (§8.2, §8.3), undo (§7.3), tape context menu (§7.1), `abacite tape` (§13). Waits on 2.
 - [x] **4. Unit conversion** (§6). Waits on 1.
-- [ ] **5. Classic entry** (§9.3). Waits on 1.
+- [x] **5. Classic entry** (§9.3). Waits on 1.
 - [ ] **6. Release prep.** Icon, README and docs, CHANGELOG, CI and release workflows, update check (§12), accessibility pass (§14). Waits on 1–5.

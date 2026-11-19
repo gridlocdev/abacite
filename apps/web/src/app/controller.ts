@@ -4,6 +4,7 @@ import {
   EMPTY_TAPE,
   commit,
   defaultRandom,
+  evaluate,
   expandInput,
   formatDecimal,
   memoryLine,
@@ -15,8 +16,29 @@ import {
   type Env,
   type Tape,
 } from '@abacite/core';
-import { after, type Angle, type Mode, type Settings, type SettingsStorage, type Theme } from '@abacite/ui';
-import { type KeyDef } from './keyDefs.ts';
+import {
+  type Angle,
+  type Entry,
+  type Mode,
+  type Settings,
+  type SettingsStorage,
+  type Theme,
+} from '@abacite/ui';
+import {
+  EMPTY_CLASSIC,
+  classicBackspace,
+  classicClear,
+  classicEmpty,
+  classicKey,
+  classicSegment,
+  classicText,
+  formatEntry,
+  typedKey,
+  type ClassicState,
+} from './classic.ts';
+import { ALL_KEYS, type KeyDef } from './keyDefs.ts';
+import { Notices, type Notice } from './notices.ts';
+import { windowWidth, type Ghost, type Shown } from './view.ts';
 import {
   EMPTY_LINE,
   backspace,
@@ -30,43 +52,6 @@ import {
 } from './lineEdit.ts';
 
 export type DialogKind = 'commands' | 'shortcuts' | 'settings';
-
-export interface Notice {
-  readonly text: string;
-  readonly tone: 'info' | 'error';
-  readonly action?: { readonly label: string; readonly run: () => void };
-}
-
-/** How long a notice stays; one with an action stays longer, so there is time to use it. */
-export const NOTICE_MS = 4_000;
-export const NOTICE_ACTION_MS = 10_000;
-
-/** What the display shows (PRD §9.1). */
-export type Shown =
-  /** The committed result, or the last one while the line is empty. */
-  | { readonly kind: 'result'; readonly text: string }
-  /** The live result of the expression line. */
-  | { readonly kind: 'live'; readonly text: string }
-  /** The line isn't finished: the last complete result, greyed. */
-  | { readonly kind: 'pending'; readonly text: string }
-  | { readonly kind: 'error'; readonly text: string };
-
-/** What the expression line draws behind the typed text (PRD §7.1, §4.1). */
-export interface Ghost {
-  /** `ans ` in front of a leading operator. */
-  readonly ans: boolean;
-  /** `)`s the end of the line closes. */
-  readonly missingParens: number;
-  /** Where to underline an error in the typed text, or null. */
-  readonly errorAt: number | null;
-}
-
-/** Window widths the desktop app grows to (PRD §9.1). */
-export const WIDTHS = { basic: 400, scientific: 720, tape: 260 } as const;
-
-export function windowWidth(mode: Mode, tape: boolean): number {
-  return WIDTHS[mode] + (tape ? WIDTHS.tape : 0);
-}
 
 export interface ControllerOptions {
   readonly settings: SettingsStorage;
@@ -90,12 +75,15 @@ export class AppController {
   readonly line = signal<LineState>(EMPTY_LINE);
   readonly shown = signal<Shown>(ZERO_SHOWN);
   readonly ghost = signal<Ghost>(NO_GHOST);
+  /** The calculation in classic entry (PRD §9.3). */
+  readonly classic = signal<ClassicState>(EMPTY_CLASSIC);
   /** The 2nd key is on (PRD §9.2). */
   readonly second = signal(false);
   readonly dialog = signal<DialogKind | null>(null);
-  readonly notice = signal<Notice | null>(null);
+  readonly #notices = new Notices();
+  readonly notice = this.#notices.notice;
   /** What the screen reader's live region says (PRD §14). */
-  readonly announcement = signal('');
+  readonly announcement = this.#notices.announcement;
 
   readonly #storage: SettingsStorage;
   readonly #random: () => Decimal;
@@ -113,7 +101,6 @@ export class AppController {
   #pool: Decimal[] = [];
   /** Where ↑/↓ is in the tape's inputs, and what was being typed before (PRD §7.1). */
   #history: { index: number; draft: string } | null = null;
-  #noticeTimer: (() => void) | null = null;
   #droppedShown = false;
 
   constructor(options: ControllerOptions) {
@@ -145,6 +132,32 @@ export class AppController {
   toggleTape(): void {
     this.update({ showTape: !this.settings.value.showTape });
     this.#fit();
+  }
+
+  /** Expression or classic entry (PRD §9.3). Each starts afresh; the expression line keeps its text. */
+  setEntry(entry: Entry): void {
+    if (entry === this.settings.value.entry) return;
+    batch(() => {
+      this.update({ entry });
+      this.classic.value = EMPTY_CLASSIC;
+      this.#history = null;
+      this.#refresh();
+    });
+    this.say(entry === 'classic' ? 'Classic entry is on.' : 'Expression entry is on.');
+  }
+
+  toggleEntry(): void {
+    this.setEntry(this.classicEntry() ? 'expression' : 'classic');
+  }
+
+  /** True in classic entry, where keys build the calculation and there is no expression line. */
+  classicEntry(): boolean {
+    return this.settings.value.entry === 'classic';
+  }
+
+  /** True while there is something C would clear, so the key reads C rather than AC (PRD §9.2). */
+  hasEntry(): boolean {
+    return this.classicEntry() ? !classicEmpty(this.classic.value) : !!this.line.value.text;
   }
 
   setAngle(angle: Angle): void {
@@ -189,28 +202,15 @@ export class AppController {
   }
 
   say(text: string, options: { tone?: Notice['tone']; action?: Notice['action'] } = {}): void {
-    this.#noticeTimer?.();
-    this.notice.value = {
-      text,
-      tone: options.tone ?? 'info',
-      ...(options.action ? { action: options.action } : {}),
-    };
-    this.#announce(text);
-    this.#noticeTimer = after(options.action ? NOTICE_ACTION_MS : NOTICE_MS, () => this.dismissNotice());
-  }
-
-  /**
-   * Says `text` through the live region. The same text twice in a row gets a trailing no-break space, so the
-   * region changes and screen readers read it again (PRD §14).
-   */
-  #announce(text: string): void {
-    this.announcement.value = this.announcement.value === text ? `${text}\u00a0` : text;
+    this.#notices.say(text, options);
   }
 
   dismissNotice(): void {
-    this.#noticeTimer?.();
-    this.#noticeTimer = null;
-    this.notice.value = null;
+    this.#notices.dismiss();
+  }
+
+  #announce(text: string): void {
+    this.#notices.announce(text);
   }
 
   // The expression line
@@ -245,7 +245,10 @@ export class AppController {
   /** Esc: clears the line, or with the line empty, the last result too (`C` then `AC`, PRD §9.2). */
   clear(): void {
     batch(() => {
-      if (this.line.value.text) {
+      const classic = this.classicEntry() ? classicClear(this.classic.value) : null;
+      if (classic) {
+        this.#setClassic(classic);
+      } else if (!this.classicEntry() && this.line.value.text) {
         this.setLine(EMPTY_LINE);
       } else {
         this.#last = null;
@@ -257,10 +260,28 @@ export class AppController {
     });
   }
 
+  /** A typed key in classic entry, where there is no expression line: true when it pressed a keypad key. */
+  typeKey(key: string): boolean {
+    if (!this.classicEntry()) return false;
+    const id = typedKey(key);
+    const def = id === null ? undefined : ALL_KEYS.find((k) => k.id === id);
+    if (!def) return false;
+    this.press(def);
+    return true;
+  }
+
   /** A keypad key (PRD §9.2). */
   press(key: KeyDef): void {
     const def = this.second.value && key.second ? key.second : key;
     const action = def.action;
+    if (this.classicEntry() && !['commit', 'clear', 'second', 'angle', 'memory'].includes(action.type)) {
+      const s = this.classic.value;
+      this.#setClassic(
+        action.type === 'backspace' ? classicBackspace(s) : (classicKey(s, def, this.#start()) ?? s),
+      );
+      if (def !== key) this.second.value = false;
+      return;
+    }
     const s = this.line.value;
     switch (action.type) {
       case 'insert':
@@ -308,8 +329,25 @@ export class AppController {
    * (PRD §7.1).
    */
   commit(): void {
-    const text = this.line.value.text.trim() ? this.line.value.text : repeatInput(this.tape.value);
+    const typed = this.classicEntry()
+      ? classicText(this.classic.value)
+      : this.line.value.text.trim()
+        ? this.line.value.text
+        : null;
+    const text = typed ?? repeatInput(this.tape.value);
     if (text !== null) this.#commitText(text);
+  }
+
+  /** The classic calculation changed (PRD §9.3). */
+  #setClassic(state: ClassicState): void {
+    this.#lastError = null;
+    this.classic.value = state;
+    this.#refresh();
+  }
+
+  /** The operand a classic calculation starts from: the last result, or 0 after AC. */
+  #start(): string {
+    return this.#last ? 'ans' : '0';
   }
 
   /** Puts `text` on the tape as the next line and shows its result. */
@@ -323,6 +361,7 @@ export class AppController {
       this.#history = null;
       this.#lastLive = null;
       this.line.value = EMPTY_LINE;
+      this.classic.value = EMPTY_CLASSIC;
       this.ghost.value = NO_GHOST;
       this.#lastError = null;
       if (line.result.kind === 'value') {
@@ -347,18 +386,22 @@ export class AppController {
    * current result, so a typed line is committed first and its result is the one added.
    */
   memory(operation: 'clear' | 'add' | 'subtract' | 'recall'): void {
+    const classic = this.classicEntry();
     if (operation === 'recall') {
-      this.setLine(insertText(this.line.value, 'mem'));
+      if (classic) this.#setClassic({ ...this.classic.value, entry: 'mem', typing: false });
+      else this.setLine(insertText(this.line.value, 'mem'));
       return;
     }
     if (operation === 'clear') {
-      // MC leaves what is being typed in the expression line.
+      // MC leaves what is being typed.
       const typing = this.line.value;
+      const calculation = this.classic.value;
       this.#commitText(memoryLine('clear'));
-      if (typing.text) this.setLine(typing);
+      if (classic) this.#setClassic(calculation);
+      else if (typing.text) this.setLine(typing);
       return;
     }
-    const typed = !!this.line.value.text.trim();
+    const typed = classic ? !classicEmpty(this.classic.value) : !!this.line.value.text.trim();
     if (typed ? this.shown.value.kind !== 'live' : this.#lastError !== null) {
       this.say('There’s no result to put in memory.', { tone: 'error' });
       return;
@@ -374,6 +417,7 @@ export class AppController {
 
   /** ↑: the previous tape input (PRD §7.1). */
   historyBack(): void {
+    if (this.classicEntry()) return;
     const lines = this.tape.value.lines;
     if (lines.length === 0) return;
     const h = this.#history ?? { index: lines.length, draft: this.line.value.text };
@@ -383,6 +427,7 @@ export class AppController {
 
   /** ↓: the next tape input, then what was being typed. */
   historyForward(): void {
+    if (this.classicEntry()) return;
     const h = this.#history;
     if (!h) return;
     const lines = this.tape.value.lines;
@@ -476,16 +521,16 @@ export class AppController {
 
   /** Works out the display and the ghost text from the line (PRD §9.1). */
   #refresh(): void {
+    if (this.classicEntry()) {
+      this.#refreshClassic();
+      return;
+    }
     const text = this.line.value.text;
     const tape = this.tape.value;
     if (!text.trim()) {
       this.#lastLive = null;
       this.ghost.value = NO_GHOST;
-      if (this.#lastError !== null) this.shown.value = { kind: 'error', text: this.#lastError };
-      else
-        this.shown.value = this.#last
-          ? { kind: 'result', text: this.#formatResult(this.#last, this.#lastUnit) }
-          : ZERO_SHOWN;
+      this.#showLast();
       return;
     }
     const evaluation = preview(tape, text, this.#env());
@@ -510,5 +555,37 @@ export class AppController {
       missingParens: evaluation.missingParens,
       errorAt,
     };
+  }
+
+  /** The last result, or the last line's error, or 0. */
+  #showLast(): void {
+    if (this.#lastError !== null) this.shown.value = { kind: 'error', text: this.#lastError };
+    else
+      this.shown.value = this.#last
+        ? { kind: 'result', text: this.#formatResult(this.#last, this.#lastUnit) }
+        : ZERO_SHOWN;
+  }
+
+  /**
+   * The display in classic entry (PRD §9.3): the number being typed as typed, else the value of the entry or of
+   * the part of the calculation already worked out.
+   */
+  #refreshClassic(): void {
+    const s = this.classic.value;
+    this.ghost.value = NO_GHOST;
+    if (s.typing) {
+      this.shown.value = { kind: 'live', text: formatEntry(s.entry!, this.settings.value.groupDigits) };
+      return;
+    }
+    const text = s.entry ?? classicSegment(s);
+    if (text === null) {
+      if (classicEmpty(s)) this.#showLast();
+      else this.shown.value = { kind: 'pending', text: this.shown.value.text };
+      return;
+    }
+    const result = evaluate(text, this.tape.value.scope, this.#env()).result;
+    if (result.kind === 'value')
+      this.shown.value = { kind: 'live', text: this.#formatResult(result.value, result.unit) };
+    else if (result.kind === 'error') this.shown.value = { kind: 'error', text: result.message };
   }
 }

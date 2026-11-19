@@ -3,6 +3,7 @@ import { Icon } from '@abacite/ui';
 import type { AppController } from './controller.ts';
 import { Dialogs } from './Dialogs.tsx';
 import { ExpressionLine } from './ExpressionLine.tsx';
+import { classicPending } from './classic.ts';
 import { Keypad } from './Keypad.tsx';
 import { TapePanel } from './TapePanel.tsx';
 
@@ -11,6 +12,7 @@ function Display({ app }: { readonly app: AppController }) {
   const shown = app.shown.value;
   const angle = app.settings.value.angle;
   const long = shown.kind === 'error' ? 0 : shown.text.length;
+  const classic = app.classicEntry();
   return (
     <section class="ab-display" aria-label="Display">
       <div class="ab-display-flags">
@@ -19,7 +21,13 @@ function Display({ app }: { readonly app: AppController }) {
         </span>
         {app.memorySet() && <span title="Memory is set">M</span>}
         {app.second.value && <span>2nd</span>}
+        {classic && <span title="Classic entry (⌘E)">CLASSIC</span>}
       </div>
+      {classic && (
+        <div class="ab-display-pending" data-testid="pending">
+          {classicPending(app.classic.value)}
+        </div>
+      )}
       <output
         class={`ab-value ab-value-${shown.kind}`}
         data-testid="display"
@@ -80,7 +88,7 @@ export function App({ app, catalog }: { readonly app: AppController; readonly ca
       <div class="ab-body">
         <main class="ab-calc">
           <Display app={app} />
-          <ExpressionLine app={app} />
+          {!app.classicEntry() && <ExpressionLine app={app} />}
           <Keypad app={app} />
         </main>
         {showTape && <TapePanel app={app} />}

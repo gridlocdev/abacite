@@ -37,6 +37,18 @@
   letter-spacing: 0.04em;
   color: var(--ab-text-3);
 }
+
+/* Classic entry: the calculation so far, in small text above the number (PRD §9.3). */
+.ab-display-pending {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 18px;
+  overflow: hidden;
+  font-family: var(--ab-mono);
+  font-size: 13px;
+  color: var(--ab-text-2);
+  white-space: pre;
+}
 .ab-value {
   display: block;
   overflow-x: auto;

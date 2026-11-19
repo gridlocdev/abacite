@@ -1,16 +1,17 @@
 // What the web app's tests reach. The page itself starts from main.tsx.
+export { AppController, type ControllerOptions, type DialogKind } from './app/controller.ts';
+export { NOTICE_ACTION_MS, NOTICE_MS, type Notice } from './app/notices.ts';
+export { WIDTHS, windowWidth, type Ghost, type Shown } from './app/view.ts';
 export {
-  AppController,
-  NOTICE_ACTION_MS,
-  NOTICE_MS,
-  WIDTHS,
-  windowWidth,
-  type ControllerOptions,
-  type DialogKind,
-  type Ghost,
-  type Notice,
-  type Shown,
-} from './app/controller.ts';
+  EMPTY_CLASSIC,
+  atomic,
+  classicKey,
+  classicPending,
+  classicSegment,
+  classicText,
+  formatEntry,
+  type ClassicState,
+} from './app/classic.ts';
 export { buildCommands } from './app/commands.ts';
 export { menuSender, nativeMenu } from './app/nativeMenu.ts';
 export { shortcutGroups, type ShortcutGroup, type ShortcutLine } from './app/shortcuts.ts';

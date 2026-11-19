@@ -104,6 +104,16 @@ export function buildCommands(app: AppController): CommandCatalog {
       run: () => app.setMode('scientific'),
     },
     {
+      id: 'view.classic',
+      title: 'Classic Entry',
+      description: 'Work the keypad like a pocket calculator, with no expression line.',
+      group: 'View',
+      shortcuts: ['mod+e'],
+      keywords: 'entry mode calculator immediate',
+      checked: () => s().entry === 'classic',
+      run: () => app.toggleEntry(),
+    },
+    {
       id: 'view.tape',
       title: 'Show Tape',
       description: 'Show or hide the tape of past calculations.',

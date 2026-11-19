@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'preact/hooks';
 import {
   ANGLES,
+  ENTRIES,
   Dialog,
   ListPopup,
   MODES,
@@ -8,6 +9,7 @@ import {
   filterEntries,
   isMac,
   type Angle,
+  type Entry as EntryMode,
   type CommandCatalog,
   type MenuEntry,
   type Mode,
@@ -146,6 +148,7 @@ function ShortcutsDialog({
 
 const THEME_TITLES: Readonly<Record<Theme, string>> = { system: 'System', light: 'Light', dark: 'Dark' };
 const MODE_TITLES: Readonly<Record<Mode, string>> = { basic: 'Basic', scientific: 'Scientific' };
+const ENTRY_TITLES: Readonly<Record<EntryMode, string>> = { expression: 'Expression', classic: 'Classic' };
 const ANGLE_TITLES: Readonly<Record<Angle, string>> = { deg: 'Degrees', rad: 'Radians' };
 
 function Choice<T extends string>(props: {
@@ -204,6 +207,14 @@ function SettingsDialog({ app }: { readonly app: AppController }) {
         titles={MODE_TITLES}
         value={s.mode}
         onPick={(m) => app.setMode(m)}
+      />
+      <Choice
+        id="ab-entry-label"
+        label="Entry"
+        items={ENTRIES}
+        titles={ENTRY_TITLES}
+        value={s.entry}
+        onPick={(e) => app.setEntry(e)}
       />
       <Choice
         id="ab-angle-label"

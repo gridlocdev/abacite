@@ -7,7 +7,7 @@ function Key({ app, def }: { readonly app: AppController; readonly def: KeyDef }
   const shown = second && def.second ? def.second : def;
   let label = shown.label;
   let name = shown.name;
-  if (def.id === 'clear' && app.line.value.text) {
+  if (def.id === 'clear' && app.hasEntry()) {
     label = 'C';
     name = 'Clear';
   }
@@ -26,8 +26,9 @@ function Key({ app, def }: { readonly app: AppController; readonly def: KeyDef }
       aria-pressed={pressed}
       title={shown.hint ? `${name} (${shown.hint})` : name}
       onPointerDown={(e) => {
-        // The expression line keeps focus and its selection.
-        if (document.activeElement?.hasAttribute('data-ab-line')) e.preventDefault();
+        // The expression line keeps focus and its selection; in classic entry keys never take focus, so Enter
+        // stays Calculate.
+        if (app.classicEntry() || document.activeElement?.hasAttribute('data-ab-line')) e.preventDefault();
       }}
       onClick={() => app.press(def)}
     >

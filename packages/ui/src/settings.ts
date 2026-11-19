@@ -8,12 +8,17 @@ export type Theme = (typeof THEMES)[number];
 export const MODES = ['basic', 'scientific'] as const;
 export type Mode = (typeof MODES)[number];
 
+/** Expression entry types into the expression line; classic entry works like a pocket calculator (PRD §9.3). */
+export const ENTRIES = ['expression', 'classic'] as const;
+export type Entry = (typeof ENTRIES)[number];
+
 export const ANGLES = ['deg', 'rad'] as const;
 export type Angle = (typeof ANGLES)[number];
 
 export interface Settings {
   readonly theme: Theme;
   readonly mode: Mode;
+  readonly entry: Entry;
   /** The angle unit (PRD §4.5). */
   readonly angle: Angle;
   /** Commas in the integer part of results (PRD §3.2). */
@@ -24,6 +29,7 @@ export interface Settings {
 export const DEFAULT_SETTINGS: Settings = {
   theme: 'system',
   mode: 'basic',
+  entry: 'expression',
   angle: 'deg',
   groupDigits: true,
   showTape: false,
@@ -38,6 +44,7 @@ export function parseSettings(raw: unknown): Settings {
   return {
     theme: oneOf(THEMES, o.theme, d.theme),
     mode: oneOf(MODES, o.mode, d.mode),
+    entry: oneOf(ENTRIES, o.entry, d.entry),
     angle: oneOf(ANGLES, o.angle, d.angle),
     groupDigits: bool(o.groupDigits, d.groupDigits),
     showTape: bool(o.showTape, d.showTape),
