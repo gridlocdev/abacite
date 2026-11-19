@@ -131,6 +131,11 @@ describe('domain errors', () => {
     expect(call).toThrow(message);
   });
 
+  it('keeps sinh odd for large arguments', () => {
+    expect(show(f.sinh(d('-2302584')))).toBe(`-${show(f.sinh(d('2302584')))}`);
+    expect(() => f.sinh(d('-3000000'))).toThrow('Result is too large.');
+  });
+
   it('underflows exp to 0', () => {
     expect(show(f.exp(d('-3000000')))).toBe('0');
   });

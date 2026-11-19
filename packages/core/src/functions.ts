@@ -440,6 +440,8 @@ const tiny = (x: Decimal, p: number) => adjusted(x) < -(p + 5);
 
 export function sinh(x: Decimal, p: number = PRECISION): Decimal {
   if (isZero(x) || tiny(x, p)) return round(x, p);
+  // sinh is odd; working on |x| keeps e^x from underflowing to 0 for a large negative x.
+  if (sign(x) < 0) return neg(sinh(neg(x), p));
   const wp = p + GUARD + nearZeroDigits(x, p);
   const ex = expOf(x, wp);
   return round(div(sub(ex, div(ONE, ex, wp), wp), TWO, wp), p);
