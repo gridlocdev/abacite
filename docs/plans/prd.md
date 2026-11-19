@@ -112,6 +112,7 @@ Abacite is a calculator for one person, replacing the macOS Calculator. It runs 
 - `<expr> <unit> to <unit>` (also `in`, `->` and `→`) converts: `5 km to mi`, `(3+2) kg in lb`, `100 F to C`. The conversion applies to the whole line; it can't appear inside a larger expression.
 - The result shows its unit: `5 km to mi` is `3.1068559611866698480871709218166 mi` (to 32 digits, trailing zeros dropped). `ans` after a conversion is the number without the unit.
 - Converting between units of different kinds is the error "Can't convert km to kg."
+- A unit to convert to with none to convert from (`2 to in`) is the error "Put a unit after the number to convert, as in `2 mm to in`.", naming a unit of the same kind.
 - Factors are exact decimals where the definition is exact (1 in = 0.0254 m, 1 lb = 0.45359237 kg, 1 US gal = 3.785411784 L).
 - Categories and units, each with its symbol and plural and singular names (`km`, `kilometer`, `kilometers`, `kilometre`):
   - Length: mm, cm, m, km, in, ft, yd, mi, nmi.

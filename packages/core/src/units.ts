@@ -199,6 +199,21 @@ export function splitUnit(text: string): { expr: string; unit: Unit; name: strin
   return null;
 }
 
+/**
+ * `2 to in`: a unit to convert to, but none to convert from. Where the `to` is, and a line that would work, with
+ * a unit of the same kind; null when that isn't what `text` is.
+ */
+export function missingFromUnit(text: string): { at: number; example: string } | null {
+  for (const separator of [...text.matchAll(SEPARATOR)].reverse()) {
+    const toName = text.slice(separator.index + separator[0].length).trim();
+    const to = findUnit(toName);
+    if (!to || splitUnit(text.slice(0, separator.index))) continue;
+    const from = TABLE[to.category].find(([symbol]) => symbol !== to.symbol)?.[0] ?? to.symbol;
+    return { at: separator.index, example: `2 ${from} to ${toName}` };
+  }
+  return null;
+}
+
 /** The conversion `text` asks for, or null when it isn't one (then it's an ordinary expression). */
 export function findConversion(text: string): Conversion | null {
   const separators = [...text.matchAll(SEPARATOR)].reverse();

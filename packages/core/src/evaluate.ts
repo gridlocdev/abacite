@@ -24,7 +24,7 @@ import * as f from './functions.ts';
 import { MEMORY } from './memory.ts';
 import { isReserved } from './names.ts';
 import { parseStatement, stripComment, type Node } from './parse.ts';
-import { convert, findConversion, splitUnit } from './units.ts';
+import { convert, findConversion, missingFromUnit, splitUnit } from './units.ts';
 
 export type AngleUnit = f.AngleUnit;
 
@@ -274,14 +274,14 @@ export function evaluate(line: string, scope: Scope = EMPTY_SCOPE, env: Env = DE
     if (!(error instanceof CalcError)) throw error;
     // `5 km` or `5 km to`: the conversion isn't finished, which isn't an error yet.
     const incomplete = error.incomplete || (!conversion && unfinishedConversion(text));
+    // `2 to in` fails at its `to`; `3 M to m` fails earlier, at the `M`, and keeps that error.
+    const missing = incomplete || conversion ? null : missingFromUnit(text);
+    const fromMissing = missing !== null && (error.at ?? -1) >= missing.at;
+    let message = error.message;
+    if (incomplete && !error.incomplete) message = 'The conversion needs a unit to convert to.';
+    else if (fromMissing) message = `Put a unit after the number to convert, as in \`${missing.example}\`.`;
     return {
-      result: {
-        kind: 'error',
-        message:
-          incomplete && !error.incomplete ? 'The conversion needs a unit to convert to.' : error.message,
-        at: error.at,
-        incomplete,
-      },
+      result: { kind: 'error', message, at: fromMissing ? missing.at : error.at, incomplete },
       scope,
       missingParens,
     };

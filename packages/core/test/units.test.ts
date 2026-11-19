@@ -88,4 +88,10 @@ describe('unit conversion (PRD §6)', () => {
     expect(shown('5 km')).toBe('error: The conversion needs a unit to convert to. (unfinished)');
     expect(shown('5 km to ')).toBe('error: The conversion needs a unit to convert to. (unfinished)');
   });
+
+  it('says which unit is missing when only the target has one', () => {
+    expect(shown('2 to in')).toBe('error: Put a unit after the number to convert, as in `2 mm to in`.');
+    expect(shown('(1+2) -> mi')).toBe('error: Put a unit after the number to convert, as in `2 mm to mi`.');
+    expect(shown('100 to F')).toBe('error: Put a unit after the number to convert, as in `2 °C to F`.');
+  });
 });
