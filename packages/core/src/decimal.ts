@@ -241,6 +241,7 @@ export function parseDecimal(text: string): Decimal | null {
   const frac = m[2] ?? '';
   if (!whole && !frac) return null;
   const exp = m[3] ? Number(m[3]) : 0;
+  if (/^0*$/.test(whole + frac)) return ZERO;
   if (!Number.isSafeInteger(exp)) {
     if (exp < 0) return ZERO;
     throw new CalcError('Result is too large.');

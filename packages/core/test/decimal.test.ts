@@ -46,6 +46,8 @@ describe('parseDecimal', () => {
     );
     expect(() => parseDecimal('1e1000000')).toThrow('Result is too large.');
     expect(parseDecimal('1e-1000000')).toEqual({ c: 0n, e: 0 });
+    expect(parseDecimal('0e99999999999999999999')).toEqual({ c: 0n, e: 0 });
+    expect(parseDecimal('0.000e1000000')).toEqual({ c: 0n, e: 0 });
   });
 });
 
