@@ -56,12 +56,14 @@ const FETCH_NAMES = ['fetch'];
 const RENDERER = ['packages/ui', 'apps/web'];
 
 /**
- * Things the page may do only in the folders or files listed. The store adapters join `fetch` and `storage`
- * when they arrive. The test fails on an entry that doesn't exist, so a stale entry can't allow nothing.
+ * Things the page may do only in the folders or files listed. The test fails on an entry that doesn't exist, so a stale entry can't allow nothing.
  */
 const CONFINED: { rule: Rule; allowed: readonly string[] }[] = [
   { rule: 'fetch', allowed: [] },
-  { rule: 'storage', allowed: ['packages/ui/src/settings.ts'] },
+  {
+    rule: 'storage',
+    allowed: ['packages/ui/src/settings.ts', 'packages/ui/src/platform/browserStorage.ts'],
+  },
   { rule: 'key-listener', allowed: ['packages/ui/src/commands/'] },
   { rule: 'timer', allowed: ['packages/ui/src/schedule.ts'] },
   {

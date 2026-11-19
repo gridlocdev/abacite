@@ -57,6 +57,7 @@ export { focusables, trapIndex, trapTab } from './components/focusTrap.ts';
 export { Icon } from './components/Icon.tsx';
 export { ListPopup, listStep } from './components/ListPopup.tsx';
 export {
+  BROWSER_LABEL,
   HandleFolder,
   MemoryFolder,
   NativeFolder,
@@ -64,15 +65,25 @@ export {
   StoreError,
   TRASH,
   TapeLibrary,
+  allowFolder,
+  browserFolder,
+  canPickFolder,
   checkTapeName,
   copyName,
+  forgetPickedFolder,
   freeName,
+  localKeep,
   pathParts,
+  pickFolder,
+  pickedFolder,
+  storageKeep,
   versionOf,
   versionOfBytes,
   type FileRead,
   type Folder,
   type NativeFolderCall,
   type NativeReply,
+  type Snapshot,
   type StoreErrorKind,
+  type TapeKeep,
 } from './platform/index.ts';
