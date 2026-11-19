@@ -217,7 +217,9 @@ export function mod(a: Decimal, b: Decimal, p: number = PRECISION): Decimal {
     r = finish((a.c < 0n ? -1n : 1n) * (A % B), e, Math.max(p, digitCount(B)));
   }
   if (r.c !== 0n && sign(r) !== sign(b)) r = add(r, b, p);
-  return round(r, p);
+  r = round(r, p);
+  // A remainder too small to show beside b rounds up to b itself; the result must stay below |b|.
+  return eq(r, b) ? ZERO : r;
 }
 
 /** 10^n mod m. */

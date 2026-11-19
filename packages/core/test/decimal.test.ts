@@ -113,6 +113,11 @@ describe('mod', () => {
     expect(full(mod(d('6'), d('3')))).toBe('0');
   });
 
+  it('never returns the divisor itself', () => {
+    expect(full(mod(d('-1e-40'), d('3')))).toBe('0');
+    expect(full(mod(d('1e-40'), d('-3')))).toBe('0');
+  });
+
   it('stays exact for huge dividends', () => {
     expect(full(mod(d('1e100'), d('7')))).toBe(String(10n ** 100n % 7n));
     expect(full(mod(d('1e30'), d('360')))).toBe('280');
