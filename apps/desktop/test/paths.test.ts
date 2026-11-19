@@ -1,6 +1,15 @@
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, utimesSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { appFile, dataPaths, isAppUrl, isHeadless } from '../src/index.ts';
+import {
+  appFile,
+  dataPaths,
+  HEADLESS_PREFIX,
+  isAppUrl,
+  isHeadless,
+  removeStaleHeadlessProfiles,
+} from '../src/index.ts';
 
 describe('dataPaths', () => {
   it('moves the app files only when a check asks', () => {
@@ -42,5 +51,39 @@ describe('app:// files', () => {
     expect(isAppUrl('app://abacite.evil/index.html')).toBe(false);
     expect(isAppUrl('https://example.com/')).toBe(false);
     expect(isAppUrl(undefined)).toBe(false);
+  });
+});
+
+describe('removeStaleHeadlessProfiles', () => {
+  it('removes old, unlocked headless profiles and nothing else', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'abacite-sweep-'));
+    try {
+      const make = (name: string, ageMs: number, lock = false) => {
+        const folder = path.join(root, name);
+        mkdirSync(folder);
+        writeFileSync(path.join(folder, 'Preferences'), '{}');
+        if (lock) writeFileSync(path.join(folder, 'SingletonLock'), '');
+        const when = (Date.now() - ageMs) / 1000;
+        utimesSync(folder, when, when);
+      };
+      make(`${HEADLESS_PREFIX}old`, 3_600_000);
+      make(`${HEADLESS_PREFIX}running`, 3_600_000, true);
+      make(`${HEADLESS_PREFIX}starting`, 1_000);
+      make('someone-else', 3_600_000);
+      expect(removeStaleHeadlessProfiles(root).map((f) => path.basename(f))).toEqual([
+        `${HEADLESS_PREFIX}old`,
+      ]);
+      expect(readdirSync(root).sort()).toEqual([
+        `${HEADLESS_PREFIX}running`,
+        `${HEADLESS_PREFIX}starting`,
+        'someone-else',
+      ]);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('does nothing when the folder can’t be read', () => {
+    expect(removeStaleHeadlessProfiles(path.join(tmpdir(), 'abacite-no-such-folder'))).toEqual([]);
   });
 });

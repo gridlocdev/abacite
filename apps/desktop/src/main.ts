@@ -9,7 +9,14 @@ import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { Channels } from './bridge.ts';
 import { editMenuTemplate, toTemplate, withStandardMenus } from './menu.ts';
-import { appFile, dataPaths, isAppUrl, isHeadless } from './paths.ts';
+import {
+  appFile,
+  dataPaths,
+  HEADLESS_PREFIX,
+  isAppUrl,
+  isHeadless,
+  removeStaleHeadlessProfiles,
+} from './paths.ts';
 import {
   loadSavedWindow,
   placeWindow,
@@ -51,7 +58,10 @@ interface HeadlessLog {
 const headlessLog: HeadlessLog = { contextMenus: [], openedLinks: [] };
 if (headless) (globalThis as { abaciteHeadless?: HeadlessLog }).abaciteHeadless = headlessLog;
 
-const paths = dataPaths(process.env, headless, () => mkdtempSync(path.join(tmpdir(), 'abacite-headless-')));
+const paths = dataPaths(process.env, headless, () => {
+  removeStaleHeadlessProfiles(tmpdir());
+  return mkdtempSync(path.join(tmpdir(), HEADLESS_PREFIX));
+});
 if (paths.userData) app.setPath('userData', paths.userData);
 const windowFile = path.join(app.getPath('userData'), 'window-state.json');
 

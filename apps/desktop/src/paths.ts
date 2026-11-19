@@ -1,5 +1,11 @@
 /** Where the desktop app keeps its own files (PRD §12). No Electron imports, so the tests run it in Node. */
+import { lstatSync, readdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
+
+/** The start of the name of each headless run's profile folder in the system's temporary folder. */
+export const HEADLESS_PREFIX = 'abacite-headless-';
+/** A profile younger than this may belong to a run that is still starting. */
+const STALE_MS = 60_000;
 
 export interface DataPaths {
   /** Overrides Electron's user-data folder, or null for the default. */
@@ -42,4 +48,35 @@ export function appFile(root: string, pathname: string): string | null {
   }
   const file = path.normalize(path.join(root, decoded === '/' ? '/index.html' : decoded));
   return file.startsWith(root + path.sep) ? file : null;
+}
+
+/**
+ * Removes earlier headless runs' profiles from `tempRoot`: folders named for them that no running copy holds
+ * (Chromium keeps a `SingletonLock` in a profile while it runs) and that are over a minute old. A profile
+ * can't go when its own run quits, because Chromium still writes to it after the main process's last event.
+ * Returns the folders removed; one that can't be removed is left for the next run.
+ */
+export function removeStaleHeadlessProfiles(tempRoot: string, now = Date.now()): string[] {
+  let names: string[];
+  try {
+    names = readdirSync(tempRoot);
+  } catch {
+    return [];
+  }
+  const removed: string[] = [];
+  for (const name of names) {
+    if (!name.startsWith(HEADLESS_PREFIX)) continue;
+    const folder = path.join(tempRoot, name);
+    try {
+      const stat = lstatSync(folder);
+      if (!stat.isDirectory() || now - stat.mtimeMs < STALE_MS) continue;
+      if (readdirSync(folder).includes('SingletonLock')) continue;
+      rmSync(folder, { recursive: true, force: true });
+      removed.push(folder);
+    } catch {
+      // Gone already, or not ours to remove: the next run tries again.
+      continue;
+    }
+  }
+  return removed;
 }
