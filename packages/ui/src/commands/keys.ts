@@ -13,22 +13,43 @@ export function keyFocus(el: Element | null): KeyFocus {
 
 /**
  * Sends key presses on `target` to the catalog. `blocked` is true while a dialog is open; then only commands
- * the catalog's gate lets through (those that toggle their own window) run. Returns a function that stops
- * listening.
+ * the catalog's gate lets through (those that toggle their own window) run, and a blocked shortcut with ⌘ or
+ * Ctrl still doesn't reach the browser (Ctrl+Shift+C would open its inspector). With nothing blocked, a
+ * printable key pressed on a button goes to `typeInto` (the expression line keeps the typing, PRD §10).
+ * Returns a function that stops listening.
  */
-export function listenForKeys(target: Window, catalog: CommandCatalog, blocked: () => boolean): () => void {
+export function listenForKeys(
+  target: Window,
+  catalog: CommandCatalog,
+  blocked: () => boolean,
+  typeInto?: () => HTMLElement | null,
+): () => void {
   const onKey = (e: KeyboardEvent) => {
     if (e.defaultPrevented) return;
-    const result = catalog.forEvent(e, keyFocus(target.document.activeElement));
+    const focus = keyFocus(target.document.activeElement);
+    if (typeInto && focus === 'control' && isTyping(e) && !blocked()) {
+      // Moving focus during keydown sends the character to the newly focused field.
+      typeInto()?.focus();
+      return;
+    }
+    const result = catalog.forEvent(e, focus);
     if (!result) return;
     if (result.kind === 'wait') {
       e.preventDefault();
       return;
     }
-    if (blocked() && !catalog.gate?.(result.command)) return;
+    if (blocked() && !catalog.gate?.(result.command)) {
+      if (e.metaKey || e.ctrlKey) e.preventDefault();
+      return;
+    }
     e.preventDefault();
     catalog.run(result.command.id);
   };
   target.addEventListener('keydown', onKey);
   return () => target.removeEventListener('keydown', onKey);
+}
+
+/** A key that types a character: one character, not a space (which presses the button), no ⌘, Ctrl or ⌥. */
+function isTyping(e: KeyboardEvent): boolean {
+  return [...e.key].length === 1 && e.key !== ' ' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.isComposing;
 }

@@ -30,7 +30,12 @@ function start(): void {
     else html.dataset.theme = theme;
   });
 
-  listenForKeys(window, catalog, () => app.blocked());
+  listenForKeys(
+    window,
+    catalog,
+    () => app.blocked(),
+    () => document.querySelector<HTMLElement>('[data-ab-line]'),
+  );
   if (import.meta.env.DEV) Object.assign(globalThis, { abacite: { app, catalog } });
 
   if (native) {

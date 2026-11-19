@@ -66,6 +66,13 @@ test.describe('Keypads', () => {
     await expect(expression(page)).toBeFocused();
   });
 
+  test('typing after tabbing to a key goes to the expression line', async ({ page }) => {
+    await key(page, '7').focus();
+    await page.keyboard.type('12');
+    await expect(expression(page)).toHaveValue('12');
+    await expect(expression(page)).toBeFocused();
+  });
+
   test('Scientific adds functions, with second functions on 2nd', async ({ page }) => {
     await page.keyboard.press('ControlOrMeta+2');
     await expect(page.getByRole('group', { name: 'Scientific keys' })).toBeVisible();
@@ -128,6 +135,19 @@ test.describe('Commands and shortcuts', () => {
     await runCommand(page, 'Scientific');
     await expect(page.getByRole('group', { name: 'Scientific keys' })).toBeVisible();
     await expect(expression(page)).toBeFocused();
+  });
+
+  test('a shortcut blocked by an open window doesn’t reach the browser', async ({ page }) => {
+    await page.keyboard.press('ControlOrMeta+K');
+    await page.evaluate(() => {
+      window.addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() === 'c')
+          (globalThis as { prevented?: boolean }).prevented = e.defaultPrevented;
+      });
+    });
+    await page.keyboard.press('ControlOrMeta+Shift+C');
+    const prevented = await page.evaluate(() => (globalThis as { prevented?: boolean }).prevented);
+    expect(prevented).toBe(true);
   });
 
   test('the Keyboard Shortcuts window lists the keys', async ({ page }) => {
