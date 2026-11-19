@@ -291,7 +291,7 @@ function sinCosSeries(r: Decimal, wp: number): { sin: Decimal; cos: Decimal } {
 type Exact = { readonly sin: Decimal; readonly cos: Decimal };
 
 /** The angle in radians within [−π, π], or the exact values at multiples of 90° (PRD §4.5). */
-function reduce(x: Decimal, unit: AngleUnit, wp: number): { r: Decimal; exact: Exact | null; deg: Decimal } {
+function reduce(x: Decimal, unit: AngleUnit, wp: number): { r: Decimal; exact: Exact | null } {
   if (unit === 'deg') {
     const d = mod(x, fromInt(360), Math.max(PRECISION, digitCount(x.c) + 4));
     const quarter = mod(d, fromInt(90));
@@ -303,10 +303,10 @@ function reduce(x: Decimal, unit: AngleUnit, wp: number): { r: Decimal; exact: E
         { sin: ZERO, cos: neg(ONE) },
         { sin: neg(ONE), cos: ZERO },
       ];
-      return { r: ZERO, exact: table[q]!, deg: d };
+      return { r: ZERO, exact: table[q]! };
     }
     const signed = cmp(d, fromInt(180)) > 0 ? sub(d, fromInt(360)) : d;
-    return { r: div(mul(signed, pi(wp), wp), fromInt(180), wp), exact: null, deg: d };
+    return { r: div(mul(signed, pi(wp), wp), fromInt(180), wp), exact: null };
   }
   if (adjusted(x) > ANGLE_MAX_EXPONENT) throw new CalcError('Angle is too large.');
   // Reducing cancels the leading digits; near a multiple of π it cancels more, so when r comes out small the
@@ -318,7 +318,7 @@ function reduce(x: Decimal, unit: AngleUnit, wp: number): { r: Decimal; exact: E
     const r = sub(x, mul(k, twoPi, w), w);
     const lost = isZero(r) ? 0 : -adjusted(r);
     if (lost <= 0 || w >= wp + Math.max(0, adjusted(x)) + lost + GUARD || lost > REDUCTION_MAX_DIGITS)
-      return { r: round(r, wp), exact: null, deg: ZERO };
+      return { r: round(r, wp), exact: null };
     w = wp + Math.max(0, adjusted(x)) + lost + GUARD;
   }
 }
@@ -345,9 +345,9 @@ export function cos(x: Decimal, unit: AngleUnit, p: number = PRECISION): Decimal
 
 export function tan(x: Decimal, unit: AngleUnit, p: number = PRECISION): Decimal {
   const wp = p + GUARD;
-  const { r, exact, deg } = reduce(x, unit, wp);
+  const { r, exact } = reduce(x, unit, wp);
   if (exact) {
-    if (isZero(exact.cos)) throw new CalcError(`tan is undefined at ${formatDecimal(deg, { digits: 12 })}°.`);
+    if (isZero(exact.cos)) throw new CalcError(`tan is undefined at ${formatDecimal(x, { digits: 12 })}°.`);
     return ZERO;
   }
   const sc = sinCosSeries(r, wp);

@@ -58,7 +58,8 @@ describe('exact cases', () => {
     expect(formatDecimal(f.tan(d('45'), 'deg'))).toBe('1');
     expect(formatDecimal(f.sin(d('30'), 'deg'))).toBe('0.5');
     expect(() => f.tan(d('90'), 'deg')).toThrow('tan is undefined at 90°.');
-    expect(() => f.tan(d('-90'), 'deg')).toThrow('tan is undefined at 270°.');
+    expect(() => f.tan(d('-90'), 'deg')).toThrow('tan is undefined at -90°.');
+    expect(() => f.tan(d('-270'), 'deg')).toThrow('tan is undefined at -270°.');
   });
 
   it('shows tiny radian results as 0', () => {
