@@ -26,6 +26,8 @@ const LAYERS: Record<string, readonly string[]> = {
   'apps/web': ['packages/ui', 'packages/core'],
   'apps/cli': ['packages/core'],
   'apps/desktop': ['packages/core'],
+  // The browser scenarios: tests only, which import the parts above freely.
+  e2e: [],
 };
 
 /**
@@ -150,7 +152,7 @@ const FIX: Record<Rule, string> = {
 // ── Scanning ──────────────────────────────────────────────────────────────
 
 const SKIP_DIRS = new Set(['node_modules', 'dist', 'out', 'release', '.types', 'demo']);
-const SOURCE = /\.(ts|tsx|mts|cts)$/;
+const SOURCE = /\.(ts|tsx|mts|cts|js|mjs|cjs)$/;
 const TIMERS = new Set(['setTimeout', 'setInterval', 'requestAnimationFrame', 'requestIdleCallback']);
 const NATIVE_DIALOGS = new Set(['alert', 'confirm', 'prompt']);
 const EFFECT_HOOKS = new Set(['useEffect', 'useLayoutEffect']);
@@ -185,8 +187,24 @@ function listFiles(part: string): string[] {
     .map((file) => `${part}/${file}`);
 }
 
+/** A file in a part's `test/` folder, or a browser scenario. */
 function isTest(repoPath: string): boolean {
-  return repoPath.includes('/test/');
+  const part = partOf(repoPath);
+  return part === 'e2e' || (part !== undefined && repoPath.startsWith(`${part}/test/`));
+}
+
+/**
+ * The suppression comments on one line: `eslint-disable` in any form, bare (every rule) or naming rules, and
+ * `@ts-ignore`, `@ts-expect-error` or `@ts-nocheck`.
+ */
+export function suppressions(line: string): { lint: string | null; ts: string | null } {
+  const lint =
+    /\/[/*]\s*eslint-disable(?:-next-line|-line)?(?![\w-])\s*([^*\n]*?)(?:\s+--.*)?\s*(?:\*\/|$)/.exec(line);
+  const suppress = /@ts-(ignore|expect-error|nocheck)/.exec(line);
+  return {
+    lint: lint ? (lint[1] ?? '').trim() || 'every rule' : null,
+    ts: suppress ? suppress[0] : null,
+  };
 }
 
 class Report {
@@ -460,15 +478,9 @@ function checkCode(file: string, source: ts.SourceFile, report: Report): void {
     .getFullText()
     .split('\n')
     .forEach((text, index) => {
-      const lint = /\/[/*]\s*eslint-disable(?:-next-line|-line)?\s+([^*\n]*?)(?:\s+--.*)?(?:\*\/|$)/.exec(
-        text,
-      );
-      if (lint) {
-        const rules = (lint[1] ?? '').trim() || 'every rule';
-        report.add('lint-disable', rules, `turns off ${rules}`, index + 1, true);
-      }
-      const suppress = /@ts-(ignore|expect-error|nocheck)/.exec(text);
-      if (suppress) report.add('ts-suppress', suppress[0], `uses ${suppress[0]}`, index + 1, true);
+      const found = suppressions(text);
+      if (found.lint) report.add('lint-disable', found.lint, `turns off ${found.lint}`, index + 1, true);
+      if (found.ts) report.add('ts-suppress', found.ts, `uses ${found.ts}`, index + 1, true);
     });
 
   if (!test && source.getLineAndCharacterOfPosition(source.end).line + 1 > MAX_LINES) {
@@ -481,7 +493,11 @@ function scan(): Finding[] {
   for (const part of parts) {
     for (const file of listFiles(part)) {
       const text = readFileSync(path.join(ROOT, file), 'utf8');
-      const kind = file.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS;
+      const kind = file.endsWith('x')
+        ? ts.ScriptKind.TSX
+        : /\.[mc]?js$/.test(file)
+          ? ts.ScriptKind.JS
+          : ts.ScriptKind.TS;
       const source = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, kind);
       const report = new Report(file, source);
       checkImports(file, source, report);
@@ -550,6 +566,16 @@ describe('architecture', () => {
 
   const baseline = readList(BASELINE);
   const allowed = readList(EXCEPTIONS);
+  it('finds every form of suppression comment', () => {
+    expect(suppressions('// eslint-disable-next-line').lint).toBe('every rule');
+    expect(suppressions('/* eslint-disable */').lint).toBe('every rule');
+    expect(suppressions('// eslint-disable-line no-console -- why').lint).toBe('no-console');
+    expect(suppressions('/* eslint-disable no-console, no-alert */').lint).toBe('no-console, no-alert');
+    expect(suppressions('// eslint-enable').lint).toBeNull();
+    expect(suppressions('// eslint-disabled things').lint).toBeNull();
+    expect(suppressions('// @ts-expect-error').ts).toBe('@ts-expect-error');
+  });
+
   it('finds the workspace parts', () => {
     expect(packageNames.size).toBeGreaterThan(0);
   });
