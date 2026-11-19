@@ -4,7 +4,7 @@ import { type Decimal, div, formatDecimal, parseDecimal } from '../src/index.ts'
 const d = (text: string): Decimal => parseDecimal(text)!;
 
 describe('formatDecimal', () => {
-  it('shows plain notation from 1e-7 to below 1e21, as JavaScript does', () => {
+  it('shows plain notation from 1e-7 to below 1e21', () => {
     expect(formatDecimal(d('123456789012345678901'))).toBe('123456789012345678901');
     expect(formatDecimal(d('1e21'))).toBe('1e+21');
     expect(formatDecimal(d('0.0000001'))).toBe('0.0000001');

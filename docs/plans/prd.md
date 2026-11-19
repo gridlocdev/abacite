@@ -33,7 +33,7 @@ Abacite is a calculator for one person, replacing the macOS Calculator. It runs 
 
 - Results are shown rounded to **32 significant digits**, so the rounding of the 34th digit never shows: `1/3*3` shows `1`. The tape file and `--full` in the CLI keep all 34.
 - Trailing zeros after the decimal point are dropped (`2.50` shows `2.5`).
-- Plain notation when the decimal exponent is between −7 and 21 (as JavaScript does); otherwise scientific notation, `1.5e+25`, `3e-9`.
+- Plain notation from `0.0000001` up to below `1e21` (the leading digit's exponent from −7 to 20); otherwise scientific notation, `1.5e+25`, `3e-9`.
 - The app groups the integer part with a thin space or comma according to the **Group Digits** setting (§11), on by default with commas: `1,234,567.89`. Copying a result always copies it ungrouped (`1234567.89`). The CLI and the tape file never group.
 - The decimal mark is always `.`. Locales with a decimal comma are out of scope for 1.0.
 

@@ -11,7 +11,7 @@ export interface FormatOptions {
   readonly group?: boolean;
 }
 
-/** Plain notation when the leading digit's exponent is from -7 to 20 (as JavaScript does). */
+/** Plain notation when the leading digit's exponent is from -7 to 20: from 0.0000001 to below 1e21 (PRD §3.2). */
 const PLAIN_MIN = -7;
 const PLAIN_MAX = 20;
 
