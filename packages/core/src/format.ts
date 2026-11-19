@@ -1,5 +1,5 @@
 /** Turning a decimal into text (PRD §3.2). */
-import { PRECISION, adjusted, round, type Decimal } from './decimal.ts';
+import { PRECISION, adjusted, roundUnchecked, type Decimal } from './decimal.ts';
 
 /** Significant digits a result shows (PRD §3.2). */
 export const SHOWN_DIGITS = 32;
@@ -20,7 +20,8 @@ function groupThousands(digits: string): string {
 }
 
 export function formatDecimal(d: Decimal, options: FormatOptions = {}): string {
-  const r = round(d, Math.min(options.digits ?? SHOWN_DIGITS, PRECISION));
+  // A result just under the limit can round up past it for showing (9.99…e999999 shows 1e+1000000).
+  const r = roundUnchecked(d.c, d.e, Math.min(options.digits ?? SHOWN_DIGITS, PRECISION));
   if (r.c === 0n) return '0';
   const negative = r.c < 0n;
   const digits = (negative ? -r.c : r.c).toString();

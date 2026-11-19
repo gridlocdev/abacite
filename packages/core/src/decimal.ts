@@ -71,6 +71,15 @@ function normalize(c: bigint, e: number): Decimal {
  * error, too small is zero (PRD §3.1).
  */
 export function finish(c: bigint, e: number, p: number = PRECISION): Decimal {
+  const d = roundUnchecked(c, e, p);
+  const adj = adjusted(d);
+  if (adj > MAX_EXPONENT) throw new CalcError('Result is too large.');
+  if (adj < -MAX_EXPONENT) return ZERO;
+  return d;
+}
+
+/** Rounds c × 10^e to `p` significant digits, half to even, with no range check: for showing a result. */
+export function roundUnchecked(c: bigint, e: number, p: number = PRECISION): Decimal {
   if (c === 0n) return ZERO;
   const digits = digitCount(c);
   if (digits > p) {
@@ -83,11 +92,7 @@ export function finish(c: bigint, e: number, p: number = PRECISION): Decimal {
     c = q;
     e += drop;
   }
-  const d = normalize(c, e);
-  const adj = adjusted(d);
-  if (adj > MAX_EXPONENT) throw new CalcError('Result is too large.');
-  if (adj < -MAX_EXPONENT) return ZERO;
-  return d;
+  return normalize(c, e);
 }
 
 export function round(d: Decimal, p: number = PRECISION): Decimal {

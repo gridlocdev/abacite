@@ -13,6 +13,13 @@ describe('formatDecimal', () => {
     expect(formatDecimal(d('3e-9'))).toBe('3e-9');
   });
 
+  it('shows a result just under the largest exponent that rounds up past it', () => {
+    expect(formatDecimal(d('9.999999999999999999999999999999999e999999'))).toBe('1e+1000000');
+    expect(formatDecimal(d('9.999999999999999999999999999999999e999999'), { digits: 34 })).toBe(
+      '9.999999999999999999999999999999999e+999999',
+    );
+  });
+
   it('drops trailing zeros and never shows -0', () => {
     expect(formatDecimal(d('2.50'))).toBe('2.5');
     expect(formatDecimal({ c: 0n, e: 0 })).toBe('0');
