@@ -73,6 +73,8 @@ export function defaultRandom(): Decimal {
 export const DEFAULT_ENV: Env = { angle: 'deg', random: defaultRandom };
 
 const HUNDRED = fromInt(100);
+/** A precision no product of two results reaches: arithmetic at it is exact. */
+const EXACT = Number.MAX_SAFE_INTEGER;
 
 type Fn = {
   readonly min: number;
@@ -200,7 +202,9 @@ type BinaryNode = Extract<Node, { kind: 'binary' }>;
 function applyBinary(node: BinaryNode, left: Decimal, scope: Scope, env: Env): Decimal {
   if ((node.op === '+' || node.op === '-') && node.right.kind === 'percent') {
     // `200 + 10%` is 200 + 10% of 200 (PRD §4.2).
-    const share = div(mul(left, evalNode(node.right.arg, scope, env), PRECISION + 4), HUNDRED, PRECISION + 4);
+    // The share is exact (a product, then two places down), so the sum rounds once.
+    const product = mul(left, evalNode(node.right.arg, scope, env), EXACT);
+    const share = finish(product.c, product.e - 2, EXACT);
     return node.op === '+' ? add(left, share) : sub(left, share);
   }
   const right = evalNode(node.right, scope, env);

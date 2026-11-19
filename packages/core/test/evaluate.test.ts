@@ -104,6 +104,17 @@ describe('percent (PRD §4.2)', () => {
   ])('%s = %s', (line, expected) => {
     expect(value(line)).toBe(expected);
   });
+
+  it('rounds a percent of the left operand once', () => {
+    const a = '213457274187761.7474613794952221043';
+    const b = '49.18397082057447195983456007574976%';
+    const full = (line: string) => {
+      const { result } = evaluate(line);
+      return result.kind === 'value' ? formatDecimal(result.value, { digits: 34 }) : result.kind;
+    };
+    expect(full(`${a} + ${b}`)).toBe('318444037638664.1295303423423596561');
+    expect(full(`${a} - ${b}`)).toBe('108470510736859.3653924166480845525');
+  });
 });
 
 describe('constants and functions (PRD §4.3, §4.4)', () => {
