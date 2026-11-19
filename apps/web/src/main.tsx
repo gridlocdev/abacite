@@ -39,14 +39,17 @@ function start(): void {
   if (import.meta.env.DEV) Object.assign(globalThis, { abacite: { app, catalog } });
 
   if (native) {
+    const menu = menuSender((items) => native.setMenu(items));
     native.onCommand((id) => {
+      // A clicked checkbox item flips its own checkmark; send the menu again so it shows the real state.
+      menu.forget();
+      queueMicrotask(() => menu.send(nativeMenu(catalog)));
       // Menu accelerators reach the app before the page. In a dialog's text field, the field keeps its keys.
       const el = document.activeElement;
       const inText = !!el?.closest('input, textarea, select') && !el.closest('[data-ab-line]');
       if (inText && !catalog.get(id)?.global) return;
       catalog.run(id);
     });
-    const menu = menuSender((items) => native.setMenu(items));
     addEventListener('focus', () => {
       menu.forget();
       menu.send(nativeMenu(catalog));

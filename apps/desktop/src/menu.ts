@@ -26,6 +26,7 @@ export function toTemplate(
     if (item.submenu) opts.submenu = toTemplate(item.submenu, send);
     else if (item.command) {
       const id = item.command;
+      opts.id = id;
       opts.click = () => send(id);
     }
     return opts;

@@ -53,6 +53,14 @@ test.describe('Desktop and browser', () => {
         await window.keyboard.press('Enter');
         await window.keyboard.press('ControlOrMeta+2');
         await expect(window.getByRole('group', { name: 'Scientific keys' })).toBeVisible();
+        // Choosing the mode that is already on: Electron unticks the item, and the page puts the tick back.
+        const scientificChecked = () =>
+          app.evaluate(({ Menu }) => Menu.getApplicationMenu()?.getMenuItemById('view.scientific')?.checked);
+        await expect.poll(scientificChecked).toBe(true);
+        await app.evaluate(({ Menu }) =>
+          Menu.getApplicationMenu()?.getMenuItemById('view.scientific')?.click(),
+        );
+        await expect.poll(scientificChecked, { message: 'the menu shows the real mode again' }).toBe(true);
         expect(
           await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().some((w) => w.isVisible())),
           'no window shows on the screen',
