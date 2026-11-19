@@ -2,9 +2,11 @@
 
 Abacite is a calculator with exact decimal arithmetic, a tape of every calculation, and Basic and Scientific keypads. It runs as a desktop app, in the browser and on the command line, on the same engine.
 
+![Abacite with the Scientific keypad and the tape](docs/images/screenshot.png)
+
 - **Exact decimals.** `0.1 + 0.2` is `0.3`, to 34 significant digits, with no floating-point noise.
 - **Type the whole calculation.** The result shows as you type, and the keypads type into the same line.
-- **A tape.** Every calculation stays on the tape, ready to bring back with ↑ or a click.
+- **A tape you keep.** Every calculation goes on the tape, a plain text file saved as you go, ready to bring back with ↑ or a click.
 
 ## Getting started
 
