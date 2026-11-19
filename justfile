@@ -51,6 +51,11 @@ build-web:
 build-desktop: build-web
     pnpm --filter @abacite/desktop build
 
+# Regenerate the app icon files in apps/desktop/build from assets/icon.svg (needs Inkscape; .icns needs macOS).
+[group('build')]
+icons:
+    ./scripts/make-icons.sh
+
 # ── Quality ───────────────────────────────────────────────────────────────
 
 # Everything CI checks: format, lint, typecheck, tests, build.

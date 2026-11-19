@@ -39,3 +39,11 @@ just e2e-desktop  # the desktop app, headless, on a throwaway profile
 ```
 
 `just check` must pass before every commit. The browser scenarios run on port 8798.
+
+## The app icon
+
+The icon is drawn by hand in `assets/icon.svg`: an abacus on an orange tile, on Apple's icon grid (an 824-unit tile at 100,100 on a 1024 canvas). After editing it, render the platform files and commit them, so builds don't need Inkscape:
+
+```bash
+just icons  # icon.icns (macOS), icon.ico (Windows) and icon.png in apps/desktop/build
+```

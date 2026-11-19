@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Abacite's icon source: an abacus on an orange tile. 1024 canvas on Apple's icon grid: an 824-unit tile at
+     (100,100) with a transparent margin. scripts/make-icons.sh crops to the tile for Windows and Linux, so the
+     tile stays there. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="tile" gradientUnits="userSpaceOnUse" x1="0" y1="100" x2="0" y2="924">
+      <stop offset="0" stop-color="#F7A83E" />
+      <stop offset="1" stop-color="#C96500" />
+    </linearGradient>
+  </defs>
+
+  <rect x="100" y="100" width="824" height="824" rx="185" fill="url(#tile)" />
+
+  <g fill="#FFFFFF">
+    <rect x="252" y="272" width="520" height="480" rx="56" fill="none" stroke="#FFFFFF" stroke-width="44" />
+    <g stroke="#FFFFFF" stroke-width="28" opacity="0.75">
+      <line x1="274" y1="392" x2="750" y2="392" />
+      <line x1="274" y1="512" x2="750" y2="512" />
+      <line x1="274" y1="632" x2="750" y2="632" />
+    </g>
+    <ellipse cx="350" cy="392" rx="44" ry="40" />
+    <ellipse cx="442" cy="392" rx="44" ry="40" />
+    <ellipse cx="674" cy="392" rx="44" ry="40" />
+    <ellipse cx="350" cy="512" rx="44" ry="40" />
+    <ellipse cx="582" cy="512" rx="44" ry="40" />
+    <ellipse cx="674" cy="512" rx="44" ry="40" />
+    <ellipse cx="350" cy="632" rx="44" ry="40" />
+    <ellipse cx="442" cy="632" rx="44" ry="40" />
+    <ellipse cx="534" cy="632" rx="44" ry="40" />
+  </g>
+</svg>

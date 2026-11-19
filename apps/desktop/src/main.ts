@@ -145,6 +145,8 @@ function createWindow(): BrowserWindow {
     minWidth: MIN_SIZE.width,
     minHeight: MIN_SIZE.height,
     title: 'Abacite',
+    // macOS ignores this and shows the bundle's icon.icns.
+    ...(process.platform === 'darwin' ? {} : { icon: path.join(here, '..', 'build', 'icon.png') }),
     show: false,
     // The page's window grey (--ab-window), so a slow first paint doesn't flash.
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#1c1c1e' : '#ececee',

@@ -13,3 +13,4 @@ coverage/
 .e2e-soak/
 .types-e2e/
 .headless-data/
+/build/
