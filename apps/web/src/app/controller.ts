@@ -5,15 +5,11 @@ import {
   commit,
   defaultRandom,
   deleteLine,
-  evaluate,
   evaluateTape,
-  expandInput,
   formatDecimal,
   memoryLine,
   memorySet,
-  preview,
   repeatInput,
-  startsWithOperator,
   type Decimal,
   type Env,
   type Tape,
@@ -25,12 +21,11 @@ import {
   classicClear,
   classicEmpty,
   classicKey,
-  classicSegment,
   classicText,
-  formatEntry,
   typedKey,
   type ClassicState,
 } from './classic.ts';
+import { NO_GHOST, ZERO_SHOWN, classicDisplay, lineDisplay } from './display.ts';
 import { ALL_KEYS, type KeyDef } from './keyDefs.ts';
 import { Notices, type Notice } from './notices.ts';
 import { UndoStack } from './undo.ts';
@@ -59,9 +54,6 @@ export interface ControllerOptions {
   /** Grows the desktop window to at least this width. */
   readonly fitWidth?: (width: number) => void;
 }
-
-const NO_GHOST: Ghost = { ans: false, missingParens: 0, errorAt: null };
-const ZERO_SHOWN: Shown = { kind: 'result', text: '0' };
 
 export class AppController {
   readonly version: string;
@@ -514,40 +506,35 @@ export class AppController {
 
   /** Works out the display and the ghost text from the line (PRD §9.1). */
   #refresh(): void {
+    const tape = this.tape.value;
+    const format = (value: Decimal, unit: string | null) => this.#formatResult(value, unit);
     if (this.classicEntry()) {
-      this.#refreshClassic();
+      this.ghost.value = NO_GHOST;
+      const env = this.#env();
+      const shown = classicDisplay({
+        state: this.classic.value,
+        group: this.settings.value.groupDigits,
+        tape,
+        env,
+        format,
+      });
+      if (shown === 'last') this.#showLast();
+      else if (shown === 'pending') this.shown.value = { kind: 'pending', text: this.shown.value.text };
+      else if (shown !== 'keep') this.shown.value = shown;
       return;
     }
     const text = this.line.value.text;
-    const tape = this.tape.value;
     if (!text.trim()) {
       this.#lastLive = null;
       this.ghost.value = NO_GHOST;
       this.#showLast();
       return;
     }
-    const evaluation = preview(tape, text, this.#env());
-    const ans = expandInput(text, tape) !== text;
-    const result = evaluation.result;
-    let errorAt: number | null = null;
-    if (result.kind === 'value') {
-      this.#lastLive = this.#formatResult(result.value, result.unit);
-      this.shown.value = { kind: 'live', text: this.#lastLive };
-    } else if (result.kind === 'error' && !result.incomplete && !/[A-Za-z_]$/.test(text)) {
-      // A complete line that fails (`1/0`); a name still being typed (`si`) isn't an error yet.
-      this.shown.value = { kind: 'error', text: result.message };
-      errorAt = result.at;
-    } else {
-      this.shown.value = {
-        kind: 'pending',
-        text: this.#lastLive ?? (this.#last ? this.#formatResult(this.#last, this.#lastUnit) : '0'),
-      };
-    }
-    this.ghost.value = {
-      ans: ans && startsWithOperator(text),
-      missingParens: evaluation.missingParens,
-      errorAt,
-    };
+    const last = this.#last ? this.#formatResult(this.#last, this.#lastUnit) : '0';
+    const view = lineDisplay({ text, tape, env: this.#env(), format, live: this.#lastLive, last });
+    this.#lastLive = view.live;
+    this.shown.value = view.shown;
+    this.ghost.value = view.ghost;
   }
 
   /** The last result, or the last line's error, or 0. */
@@ -557,28 +544,5 @@ export class AppController {
       this.shown.value = this.#last
         ? { kind: 'result', text: this.#formatResult(this.#last, this.#lastUnit) }
         : ZERO_SHOWN;
-  }
-
-  /**
-   * The display in classic entry (PRD §9.3): the number being typed as typed, else the value of the entry or of
-   * the part of the calculation already worked out.
-   */
-  #refreshClassic(): void {
-    const s = this.classic.value;
-    this.ghost.value = NO_GHOST;
-    if (s.typing) {
-      this.shown.value = { kind: 'live', text: formatEntry(s.entry!, this.settings.value.groupDigits) };
-      return;
-    }
-    const text = s.entry ?? classicSegment(s);
-    if (text === null) {
-      if (classicEmpty(s)) this.#showLast();
-      else this.shown.value = { kind: 'pending', text: this.shown.value.text };
-      return;
-    }
-    const result = evaluate(text, this.tape.value.scope, this.#env()).result;
-    if (result.kind === 'value')
-      this.shown.value = { kind: 'live', text: this.#formatResult(result.value, result.unit) };
-    else if (result.kind === 'error') this.shown.value = { kind: 'error', text: result.message };
   }
 }
