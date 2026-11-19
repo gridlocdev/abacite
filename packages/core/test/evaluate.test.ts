@@ -205,6 +205,12 @@ describe('errors (PRD §4.6)', () => {
     expect(error(line).incomplete).toBe(true);
   });
 
+  it('treats a function with its `(` just typed as unfinished', () => {
+    for (const line of ['sin(', 'sqrt(', 'max(', 'rand(', '2 * log('])
+      expect(error(line).incomplete).toBe(true);
+    expect(error('rand(1').message).toBe('`rand` takes no arguments.');
+  });
+
   it('names the operator a number is missing after', () => {
     expect(error('2 *').message).toBe('Missing a number after `*` at 3.');
   });

@@ -263,7 +263,9 @@ class Parser {
           const at = this.peek().at;
           throw new CalcError(`Expected \`(\` after \`${t.text}\` at ${at + 1}.`, at);
         }
-        this.next();
+        const open = this.next();
+        // `sin(` is still being typed, not a call with no arguments.
+        if (this.peek().kind === 'end') throw new CalcError('The expression isn’t finished.', open.at, true);
         const args: Node[] = [];
         if (!this.isOp(')') && this.peek().kind !== 'end') {
           args.push(this.additive());
