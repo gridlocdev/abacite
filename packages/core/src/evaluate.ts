@@ -180,32 +180,43 @@ function evalNode(node: Node, scope: Scope, env: Env): Decimal {
     case 'percent':
       return div(evalNode(node.arg, scope, env), HUNDRED);
     case 'binary': {
-      const left = evalNode(node.left, scope, env);
-      if ((node.op === '+' || node.op === '-') && node.right.kind === 'percent') {
-        // `200 + 10%` is 200 + 10% of 200 (PRD §4.2).
-        const share = div(
-          mul(left, evalNode(node.right.arg, scope, env), PRECISION + 4),
-          HUNDRED,
-          PRECISION + 4,
-        );
-        return node.op === '+' ? add(left, share) : sub(left, share);
+      // A chain like `1+2+3+…` leans left; walking down its left side in a loop keeps a long chain off the stack.
+      const chain: BinaryNode[] = [];
+      let first: Node = node;
+      while (first.kind === 'binary') {
+        chain.push(first);
+        first = first.left;
       }
-      const right = evalNode(node.right, scope, env);
-      switch (node.op) {
-        case '+':
-          return add(left, right);
-        case '-':
-          return sub(left, right);
-        case '*':
-          return mul(left, right);
-        case '/':
-          return div(left, right);
-        case 'mod':
-          return mod(left, right);
-        case '^':
-          return f.pow(left, right);
-      }
+      let value = evalNode(first, scope, env);
+      for (let i = chain.length - 1; i >= 0; i--) value = applyBinary(chain[i]!, value, scope, env);
+      return value;
     }
+  }
+}
+
+type BinaryNode = Extract<Node, { kind: 'binary' }>;
+
+/** `node`'s operator applied to its already evaluated left side. */
+function applyBinary(node: BinaryNode, left: Decimal, scope: Scope, env: Env): Decimal {
+  if ((node.op === '+' || node.op === '-') && node.right.kind === 'percent') {
+    // `200 + 10%` is 200 + 10% of 200 (PRD §4.2).
+    const share = div(mul(left, evalNode(node.right.arg, scope, env), PRECISION + 4), HUNDRED, PRECISION + 4);
+    return node.op === '+' ? add(left, share) : sub(left, share);
+  }
+  const right = evalNode(node.right, scope, env);
+  switch (node.op) {
+    case '+':
+      return add(left, right);
+    case '-':
+      return sub(left, right);
+    case '*':
+      return mul(left, right);
+    case '/':
+      return div(left, right);
+    case 'mod':
+      return mod(left, right);
+    case '^':
+      return f.pow(left, right);
   }
 }
 

@@ -103,8 +103,16 @@ export function tokenize(text: string): Token[] {
 
 const describe = (t: Token) => (t.kind === 'end' ? 'the end' : `\`${t.text}\``);
 
+/**
+ * How deeply parentheses, signs, powers and calls may nest. Parsing and evaluating recurse once per level, so a
+ * limit keeps a pasted `((((…` an error instead of a stack overflow. Long chains like `1+1+…` don't nest.
+ */
+export const MAX_NESTING = 500;
+
 class Parser {
   private i = 0;
+  /** How many `unary` calls are open: the nesting so far. */
+  private depth = 0;
   missingParens = 0;
   readonly grouped = new WeakSet<Node>();
 
@@ -185,6 +193,18 @@ class Parser {
   }
 
   private unary(): Node {
+    if (++this.depth > MAX_NESTING) {
+      const at = this.peek().at;
+      throw new CalcError(`The expression is nested too deeply at ${at + 1}.`, at);
+    }
+    try {
+      return this.unaryInner();
+    } finally {
+      this.depth--;
+    }
+  }
+
+  private unaryInner(): Node {
     const t = this.peek();
     if (t.kind === 'op' && (t.text === '-' || t.text === '+')) {
       this.next();

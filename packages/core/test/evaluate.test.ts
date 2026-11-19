@@ -234,4 +234,18 @@ describe('errors (PRD §4.6)', () => {
     ])
       expect(() => evaluate(line)).not.toThrow();
   });
+
+  it('evaluates a very long chain and refuses deep nesting with an error', () => {
+    expect(value(`${'1+'.repeat(200_000)}1`)).toBe('200001');
+    expect(value(`${'2*'.repeat(100)}1`)).toBe(value('2^100'));
+    expect(value(`${'2*'.repeat(20_000)}1`)).toMatch(/^3\.98027684033796659235430720619\d+e\+6020$/);
+    for (const deep of [
+      `${'('.repeat(100_000)}1`,
+      `${'-'.repeat(100_000)}1`,
+      `${'sqrt('.repeat(5_000)}1`,
+      `${'2^'.repeat(5_000)}1`,
+    ])
+      expect(error(deep).message).toMatch(/^The expression is nested too deeply at \d+\.$/);
+    expect(value(`${'('.repeat(400)}1${')'.repeat(400)}`)).toBe('1');
+  });
 });
