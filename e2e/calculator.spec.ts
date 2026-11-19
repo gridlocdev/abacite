@@ -353,6 +353,42 @@ test.describe('Settings and appearance', () => {
   });
 });
 
+test.describe('Accessibility', () => {
+  test('every button has a name, results are announced, and Tab reaches the keypad and the tape', async ({
+    page,
+  }) => {
+    await page.keyboard.press('ControlOrMeta+2');
+    await page.keyboard.press('ControlOrMeta+KeyT');
+    await page.keyboard.type('2+2');
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.ab-live')).toHaveText('Result 4');
+    const buttons = page.getByRole('button');
+    expect(await buttons.count()).toBeGreaterThan(40);
+    await expect(page.getByRole('button', { name: /\S/ })).toHaveCount(await buttons.count());
+
+    const reached = new Set<string>();
+    for (let i = 0; i < 80; i++) {
+      await page.keyboard.press('Tab');
+      reached.add(
+        await page.evaluate(() => {
+          const el = document.activeElement;
+          if (el?.closest('[aria-label="Scientific keys"]')) return 'scientific';
+          if (el?.closest('[aria-label="Keys"]')) return 'basic';
+          if (el?.closest('aside')) return 'tape';
+          return el?.tagName ?? 'none';
+        }),
+      );
+    }
+    expect([...reached]).toEqual(expect.arrayContaining(['basic', 'scientific', 'tape']));
+  });
+
+  test('reduced motion turns off key animations', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    const transition = await key(page, '7').evaluate((el) => getComputedStyle(el).transitionProperty);
+    expect(transition).toBe('none');
+  });
+});
+
 test.describe('Command line', () => {
   test('abacite evaluates an argument or stdin lines', () => {
     expect(cli(['2 * (3 + 4)'])).toBe('14');
