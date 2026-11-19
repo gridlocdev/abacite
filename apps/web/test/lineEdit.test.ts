@@ -53,6 +53,14 @@ describe('negate', () => {
     expect(negate(lineAt('12+34', 1))).toEqual(lineAt('-12+34', 2));
   });
 
+  it('flips a whole number with its exponent, and leaves digits in names alone', () => {
+    expect(negate(lineAt('2e5'))).toEqual(lineAt('-2e5', 4));
+    expect(negate(lineAt('-1e-5'))).toEqual(lineAt('1e-5', 4));
+    expect(negate(lineAt('1+1.5E3'))).toEqual(lineAt('1+-1.5E3', 8));
+    expect(negate(lineAt('r2'))).toEqual(lineAt('-(r2)'));
+    expect(negate(lineAt('x1+3', 2))).toEqual(lineAt('-(x1+3)'));
+  });
+
   it('leaves subtraction alone: 3-4 becomes 3--4', () => {
     expect(negate(lineAt('3-4'))).toEqual(lineAt('3--4'));
   });
@@ -73,6 +81,11 @@ describe('cleanPaste', () => {
     expect(cleanPaste('1,234,567.89 × 2')).toBe('1234567.89 × 2');
     expect(cleanPaste('1 234 567')).toBe('1234567');
     expect(cleanPaste('max(1,2)')).toBe('max(1,2)');
+    expect(cleanPaste('max(1,234)')).toBe('max(1,234)');
+    expect(cleanPaste('atan2(1,100)')).toBe('atan2(1,100)');
+    expect(cleanPaste('max(1 234 567, 2)')).toBe('max(1234567, 2)');
+    expect(cleanPaste('1,234 + 12,345,678')).toBe('1234 + 12345678');
+    expect(cleanPaste('1,2345')).toBe('1,2345');
     expect(cleanPaste('2\n+3\n')).toBe('2 +3');
   });
 });

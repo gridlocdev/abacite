@@ -45,15 +45,21 @@ export function backspace(s: LineState): LineState {
   return { text: before.slice(0, -drop) + s.text.slice(s.start), start: s.start - drop, end: s.start - drop };
 }
 
-const NUMBER_CHAR = /[0-9._]/;
+/**
+ * Number literals, exponent included (`2e5`, `1.5E-3`), but not digits that end a name (`r2`), which
+ * belong to the name.
+ */
+const NUMBER_LITERAL =
+  /(?<![A-Za-z0-9_.])(?:[0-9](?:_?[0-9])*(?:\.(?:[0-9](?:_?[0-9])*)?)?|\.[0-9](?:_?[0-9])*)(?:[eE][+-]?[0-9]+)?/g;
 
 /** The number the cursor is in or just after, as [start, end), or null. */
 function numberAt(text: string, cursor: number): [number, number] | null {
-  let start = cursor;
-  while (start > 0 && NUMBER_CHAR.test(text[start - 1]!)) start--;
-  let end = cursor;
-  while (end < text.length && NUMBER_CHAR.test(text[end]!)) end++;
-  return start === end ? null : [start, end];
+  for (const m of text.matchAll(NUMBER_LITERAL)) {
+    const start = m.index;
+    const end = start + m[0].length;
+    if (start <= cursor && cursor <= end) return [start, end];
+  }
+  return null;
 }
 
 /** True when the `-` at `at` is a sign rather than subtraction: at the start, or after an operator or `(`. */
@@ -100,6 +106,22 @@ function balanced(text: string): boolean {
 export function cleanPaste(text: string): string {
   return text
     .replace(/\r?\n/g, ' ')
-    .replace(/(\d)[,\u00a0\u2009\u202f ](?=\d{3}(?!\d))/g, '$1')
+    .replace(GROUPED, (run: string, separator: string, at: number, whole: string) =>
+      // Inside parentheses a comma separates arguments: `max(1,234)` is two numbers.
+      separator === ',' && depthAt(whole, at) > 0 ? run : run.replaceAll(separator, ''),
+    )
     .trim();
+}
+
+/** A run of digits grouped in threes with one separator throughout: `1,234,567`, `12 345`. */
+const GROUPED = /(?<![0-9.])[0-9]{1,3}([,\u00a0\u2009\u202f ])[0-9]{3}(?:\1[0-9]{3})*(?![0-9])/g;
+
+/** How many parentheses are open before `at`. */
+function depthAt(text: string, at: number): number {
+  let depth = 0;
+  for (const ch of text.slice(0, at)) {
+    if (ch === '(') depth++;
+    else if (ch === ')') depth = Math.max(0, depth - 1);
+  }
+  return depth;
 }
