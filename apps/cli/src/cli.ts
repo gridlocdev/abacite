@@ -27,6 +27,8 @@ export interface CliIo {
   readLines(): AsyncIterable<string>;
   /** stdin is a terminal: show the `> ` prompt. */
   readonly interactive: boolean;
+  /** Where the prompt goes; stdout when left out. The process sends it to stderr when stdout isn't a terminal. */
+  prompt?(text: string): void;
 }
 
 export interface CliContext {
@@ -90,8 +92,9 @@ const FLAGS: Readonly<Record<string, 'rad' | 'full' | 'json' | 'help' | 'version
 };
 
 /**
- * Splits options from the expression. Anything that isn't a known option is part of the expression, so
- * `abacite -5 + 3` and `abacite 2 - -x` work; an unknown `--name` is a usage error, and `--` ends the options.
+ * Splits options from the expression. Options come first: the first word that isn't one starts the expression,
+ * so `abacite -5 + 3` and `abacite 3 - -v` are expressions. An unknown `--name` is a usage error, and `--` ends
+ * the options.
  */
 export function parseArgv(argv: readonly string[]): { flags: Set<string>; words: string[] } | string {
   const flags = new Set<string>();
@@ -102,7 +105,10 @@ export function parseArgv(argv: readonly string[]): { flags: Set<string>; words:
     if (options && arg === '--') options = false;
     else if (options && flag) flags.add(flag);
     else if (options && arg.startsWith('--')) return `unknown option ${arg}`;
-    else words.push(arg);
+    else {
+      options = false;
+      words.push(arg);
+    }
   }
   return { flags, words };
 }
@@ -139,12 +145,22 @@ export async function runCli(argv: readonly string[], io: CliIo, context: CliCon
     evaluateLine(run, input);
     return run.failed ? EXIT_ERROR : EXIT_OK;
   }
-  if (io.interactive) io.stdout('> ');
-  for await (const line of io.readLines()) {
-    if (io.interactive && line.trim() === 'exit') break;
-    evaluateLine(run, line);
-    if (io.interactive) io.stdout('> ');
+  const prompt = (text: string) => {
+    if (io.interactive) (io.prompt ?? io.stdout)(text);
+  };
+  prompt('> ');
+  try {
+    for await (const line of io.readLines()) {
+      if (io.interactive && line.trim() === 'exit') break;
+      evaluateLine(run, line);
+      prompt('> ');
+    }
+  } catch (error) {
+    io.stderr(
+      `abacite: couldn’t read the input: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
+    return EXIT_ERROR;
   }
-  if (io.interactive) io.stdout('\n');
+  prompt('\n');
   return run.failed ? EXIT_ERROR : EXIT_OK;
 }

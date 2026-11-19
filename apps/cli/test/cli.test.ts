@@ -1,4 +1,4 @@
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { parseDecimal } from '@abacite/core';
@@ -96,6 +96,23 @@ describe('abacite with stdin', () => {
     const r = await run([], ['2+2', 'exit', '3+3'], true);
     expect(r).toMatchObject({ code: EXIT_OK, out: '> 4\n> \n' });
   });
+
+  it('sends the prompt where the process asks, keeping results apart', async () => {
+    let out = '';
+    let prompts = '';
+    await runCli(
+      [],
+      {
+        stdout: (text) => (out += text),
+        stderr: () => {},
+        readLines: () => linesOf(['2+2']),
+        interactive: true,
+        prompt: (text) => (prompts += text),
+      },
+      { version: '9.9.9' },
+    );
+    expect({ out, prompts }).toEqual({ out: '4\n', prompts: '> > \n' });
+  });
 });
 
 describe('usage', () => {
@@ -111,10 +128,38 @@ describe('usage', () => {
   });
 
   it('splits options from the expression', () => {
-    expect(parseArgv(['--rad', '-x', '+', '1', '--', '--json'])).toEqual({
+    expect(parseArgv(['--rad', '--', '--json'])).toEqual({ flags: new Set(['rad']), words: ['--json'] });
+  });
+
+  it('ends the options at the first word of the expression', async () => {
+    expect(parseArgv(['--rad', '-x', '+', '1', '--json'])).toEqual({
       flags: new Set(['rad']),
       words: ['-x', '+', '1', '--json'],
     });
+    expect(await run(['3', '-', '-v'])).toMatchObject({ code: EXIT_ERROR, out: '' });
+    expect((await run(['3', '-', '-5'])).out).toBe('8\n');
+  });
+});
+
+describe('reading stdin', () => {
+  it('reports a read error with exit code 1', async () => {
+    let err = '';
+    const code = await runCli(
+      [],
+      {
+        stdout: () => {},
+        stderr: (text) => (err += text),
+        readLines: () => ({
+          [Symbol.asyncIterator]: () => ({
+            next: () => Promise.reject(new Error('EISDIR: illegal operation on a directory, read')),
+          }),
+        }),
+        interactive: false,
+      },
+      { version: '9.9.9' },
+    );
+    expect(code).toBe(EXIT_ERROR);
+    expect(err).toBe('abacite: couldn’t read the input: EISDIR: illegal operation on a directory, read\n');
   });
 });
 
@@ -124,5 +169,13 @@ describe('the abacite bin', () => {
   it('runs from source and reads stdin', () => {
     expect(execFileSync(process.execPath, [BIN, '2^10'], { encoding: 'utf8' })).toBe('1024\n');
     expect(execFileSync(process.execPath, [BIN], { input: 'a = 3\na^2\n', encoding: 'utf8' })).toBe('3\n9\n');
+  });
+
+  it('stops quietly when the reader closes the pipe', () => {
+    const r = spawnSync('sh', ['-c', `yes 2 | "${process.execPath}" "${BIN}" | head -n 1`], {
+      encoding: 'utf8',
+    });
+    expect(r.stdout).toBe('2\n');
+    expect(r.stderr).toBe('');
   });
 });
