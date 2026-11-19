@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact';
-import { useEffect, useRef } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
 import { isComposingKey } from '../commands/shortcut.ts';
 
 /**
@@ -35,7 +35,8 @@ export function ListPopup(props: {
 }) {
   const input = useRef<HTMLInputElement>(null);
   const list = useRef<HTMLUListElement>(null);
-  useEffect(() => {
+  // Before the browser paints, so keys typed right after the click that opened the list reach its field.
+  useLayoutEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     input.current?.focus();
     return () => {

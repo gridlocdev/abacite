@@ -1,5 +1,5 @@
 import type { ComponentChildren } from 'preact';
-import { useEffect, useId, useRef, useState } from 'preact/hooks';
+import { useId, useLayoutEffect, useRef, useState } from 'preact/hooks';
 import { isComposingKey, isSubmitKey, isUndoKey } from '../commands/shortcut.ts';
 import { trapTab } from './focusTrap.ts';
 
@@ -19,7 +19,8 @@ export function Dialog(props: {
   const titleId = useId();
   // Taken while rendering: the body's own effects run first and may already have moved focus inside.
   const [previous] = useState(() => document.activeElement as HTMLElement | null);
-  useEffect(() => {
+  // Before the browser paints, so keys typed right after the dialog opens reach it.
+  useLayoutEffect(() => {
     const root = ref.current;
     const first =
       root?.querySelector<HTMLElement>('[data-autofocus]') ??
