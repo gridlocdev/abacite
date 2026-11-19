@@ -47,6 +47,14 @@ describe('abacite <expression>', () => {
     expect((await run(['--', '--5'])).out).toBe('5\n');
   });
 
+  it('converts units, printing the unit after the number', async () => {
+    expect((await run(['5', 'km', 'to', 'mi'])).out).toBe('3.1068559611866698480871709218166 mi\n');
+    expect(await run(['5 km to kg'])).toMatchObject({
+      code: EXIT_ERROR,
+      err: 'error: Can’t convert km to kg.\n',
+    });
+  });
+
   it('prints an error on stderr with exit code 1', async () => {
     expect(await run(['1/0'])).toMatchObject({
       code: EXIT_ERROR,
@@ -66,12 +74,16 @@ describe('abacite <expression>', () => {
   });
 
   it('prints JSON with --json', async () => {
-    expect((await run(['--json', '6*7'])).out).toBe('{"input":"6*7","result":"42","error":null}\n');
+    expect((await run(['--json', '6*7'])).out).toBe(
+      '{"input":"6*7","result":"42","unit":null,"error":null}\n',
+    );
+    expect(JSON.parse((await run(['--json', '1 kg to g'])).out)).toMatchObject({ result: '1000', unit: 'g' });
     const failed = await run(['--json', '2+']);
     expect(failed.code).toBe(EXIT_ERROR);
     expect(JSON.parse(failed.out)).toEqual({
       input: '2+',
       result: null,
+      unit: null,
       error: 'Missing a number after `+` at 2.',
     });
   });

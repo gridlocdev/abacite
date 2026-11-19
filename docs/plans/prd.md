@@ -110,7 +110,7 @@ Abacite is a calculator for one person, replacing the macOS Calculator. It runs 
 ## §6 Unit conversion
 
 - `<expr> <unit> to <unit>` (also `in`, `->` and `→`) converts: `5 km to mi`, `(3+2) kg in lb`, `100 F to C`. The conversion applies to the whole line; it can't appear inside a larger expression.
-- The result shows its unit: `3.106855961185328 mi` (to 32 digits, trailing zeros dropped). `ans` after a conversion is the number without the unit.
+- The result shows its unit: `5 km to mi` is `3.1068559611866698480871709218166 mi` (to 32 digits, trailing zeros dropped). `ans` after a conversion is the number without the unit.
 - Converting between units of different kinds is the error "Can't convert km to kg."
 - Factors are exact decimals where the definition is exact (1 in = 0.0254 m, 1 lb = 0.45359237 kg, 1 US gal = 3.785411784 L).
 - Categories and units, each with its symbol and plural and singular names (`km`, `kilometer`, `kilometers`, `kilometre`):
@@ -240,7 +240,7 @@ Stored in the app's own storage (desktop: its data folder; browser: local storag
 - `abacite "2 * (3 + 4)"` prints `14`. Several arguments are joined with spaces (`abacite 2 + 2`). Exit code 0 on success, 1 on an evaluation or syntax error (the message on stderr), 2 on a usage error.
 - With no expression and stdin not a terminal, each stdin line is a tape line: evaluated in order, with `ans` and variables, printing one result per line (`error: …` for an error line, exit code 1 if any line failed).
 - With no expression on a terminal, a simple prompt (`> `) reads lines until EOF or `exit`, keeping `ans` and variables.
-- `--rad` sets radians (default degrees). `--full` prints all 34 digits instead of 32. `--json` prints `{"input", "result", "error"}` per line.
+- `--rad` sets radians (default degrees). `--full` prints all 34 digits instead of 32. `--json` prints `{"input", "result", "unit", "error"}` per line (`unit` is null unless the line converts, §6).
 - `abacite tape <file.txt>` evaluates a tape file and prints it in the tape format with fresh results (§8.1); `--write` writes those results back to the file atomically.
 - The CLI groups no digits and needs no settings file.
 

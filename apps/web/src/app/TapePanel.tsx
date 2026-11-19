@@ -49,6 +49,7 @@ export function TapePanel({ app }: { readonly app: AppController }) {
                       <>
                         {r.assigned && <span class="ab-tape-var">{r.assigned} = </span>}
                         {value}
+                        {r.unit && <span class="ab-tape-unit"> {r.unit}</span>}
                       </>
                     ) : r.kind === 'error' ? (
                       r.message

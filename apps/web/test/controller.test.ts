@@ -190,6 +190,17 @@ describe('Copy Result', () => {
     expect(copied).toEqual(['1234000']);
   });
 
+  it('shows a conversion with its unit, and copies the number alone', async () => {
+    const { app, copied } = makeApp();
+    type(app, '1500 m to km');
+    expect(app.shown.value).toMatchObject({ kind: 'live', text: '1.5 km' });
+    enter(app, '');
+    enter(app, '2 mi to ft');
+    expect(app.shown.value).toMatchObject({ kind: 'result', text: '10,560 ft' });
+    await app.copyResult();
+    expect(copied).toEqual(['10560']);
+  });
+
   it('says so when there is nothing to copy', async () => {
     const { app, copied } = makeApp();
     type(app, '1/0');

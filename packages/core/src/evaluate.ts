@@ -23,7 +23,8 @@ import { CalcError } from './errors.ts';
 import * as f from './functions.ts';
 import { MEMORY } from './memory.ts';
 import { isReserved } from './names.ts';
-import { parseStatement, type Node } from './parse.ts';
+import { parseStatement, stripComment, type Node } from './parse.ts';
+import { convert, findConversion, splitUnit } from './units.ts';
 
 export type AngleUnit = f.AngleUnit;
 
@@ -43,7 +44,13 @@ export interface Env {
 
 export type LineResult =
   | { readonly kind: 'empty' }
-  | { readonly kind: 'value'; readonly value: Decimal; readonly assigned: string | null }
+  | {
+      readonly kind: 'value';
+      readonly value: Decimal;
+      readonly assigned: string | null;
+      /** The unit a conversion gave the value (`mi`), shown after it; null for a plain number (PRD §6). */
+      readonly unit: string | null;
+    }
   | {
       readonly kind: 'error';
       readonly message: string;
@@ -229,26 +236,52 @@ function applyBinary(node: BinaryNode, left: Decimal, scope: Scope, env: Env): D
   }
 }
 
-/** Evaluates one tape line (PRD §4, §5). */
+/** A line that ends in a unit, or in a unit and `to`, is a conversion still being typed. */
+const CONVERSION_STARTED = /(?:\s(?:to|in)|->|→)\s*$/;
+
+function unfinishedConversion(text: string): boolean {
+  const separator = CONVERSION_STARTED.exec(text);
+  return splitUnit(separator ? text.slice(0, separator.index) : text) !== null;
+}
+
+/** Evaluates one tape line (PRD §4, §5, §6). */
 export function evaluate(line: string, scope: Scope = EMPTY_SCOPE, env: Env = DEFAULT_ENV): Evaluation {
   let missingParens = 0;
+  const text = stripComment(line);
+  const conversion = findConversion(text);
   try {
-    const statement = parseStatement(line);
+    const statement = parseStatement(conversion ? conversion.expr : line);
     if (!statement) return { result: { kind: 'empty' }, scope, missingParens };
     missingParens = statement.missingParens;
     if (statement.assign !== null && isReserved(statement.assign))
       throw new CalcError(`\`${statement.assign}\` is a built-in name and can’t be assigned.`, 0);
-    const value = round(evalNode(statement.expr, scope, env));
+    let value = round(evalNode(statement.expr, scope, env));
+    if (conversion) {
+      try {
+        value = convert(value, conversion.from, conversion.to, conversion.fromName, conversion.toName);
+      } catch (error) {
+        if (error instanceof CalcError) throw new CalcError(error.message, conversion.fromAt);
+        throw error;
+      }
+    }
     const vars = statement.assign === null ? scope.vars : new Map(scope.vars).set(statement.assign, value);
     return {
-      result: { kind: 'value', value, assigned: statement.assign },
+      result: { kind: 'value', value, assigned: statement.assign, unit: conversion?.to.symbol ?? null },
       scope: { vars, ans: value },
       missingParens,
     };
   } catch (error) {
     if (!(error instanceof CalcError)) throw error;
+    // `5 km` or `5 km to`: the conversion isn't finished, which isn't an error yet.
+    const incomplete = error.incomplete || (!conversion && unfinishedConversion(text));
     return {
-      result: { kind: 'error', message: error.message, at: error.at, incomplete: error.incomplete },
+      result: {
+        kind: 'error',
+        message:
+          incomplete && !error.incomplete ? 'The conversion needs a unit to convert to.' : error.message,
+        at: error.at,
+        incomplete,
+      },
       scope,
       missingParens,
     };

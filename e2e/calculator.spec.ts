@@ -120,6 +120,22 @@ test.describe('Memory', () => {
   });
 });
 
+test.describe('Unit conversion', () => {
+  test('converts a value with units and shows the unit beside the result', async ({ page }) => {
+    await page.keyboard.type('5 in to cm');
+    await expect(display(page)).toHaveText('12.7 cm');
+    await page.keyboard.press('Enter');
+    await page.keyboard.type('5 km to kg');
+    await page.keyboard.press('Enter');
+    await expect(display(page)).toHaveText('Can’t convert km to kg.');
+    await page.keyboard.press('ControlOrMeta+T');
+    await expect(tape(page).getByRole('listitem')).toHaveText([
+      /5 in to cm\s*12\.7 cm/,
+      /5 km to kg\s*Can’t convert km to kg\./,
+    ]);
+  });
+});
+
 test.describe('Tape', () => {
   test('keeps every committed line, and ↑ brings one back', async ({ page }) => {
     await page.keyboard.press('ControlOrMeta+KeyT');
@@ -199,7 +215,7 @@ test.describe('Settings and appearance', () => {
 test.describe('Command line', () => {
   test('abacite evaluates an argument or stdin lines', () => {
     expect(cli(['2 * (3 + 4)'])).toBe('14');
-    expect(cli(['--json', '0.1+0.2'])).toBe('{"input":"0.1+0.2","result":"0.3","error":null}');
+    expect(cli(['--json', '0.1+0.2'])).toBe('{"input":"0.1+0.2","result":"0.3","unit":null,"error":null}');
     expect(cli([], 'x = 4\nx^2\n+ 1\n')).toBe('4\n16\n17');
   });
 });

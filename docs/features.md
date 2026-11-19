@@ -18,6 +18,10 @@ The Basic keypad has digits, the four operations, parentheses, percent and chang
 
 The Scientific keypad has the memory keys. **m+** adds the result to memory and **m−** subtracts it (a calculation still being typed goes on the tape first), **mc** clears memory, and **mr** inserts it into the expression line. Memory is the variable `mem`, so each key puts an ordinary line on the tape (`mem = mem + 15`) and you can type `mem` too. The display shows **M** while memory isn't 0.
 
+## Unit conversion
+
+Type a value with a unit, then `to` or `in` and another unit: `5 km to mi`, `100 F to C`, `(3+2) kg in lb`, `1 GiB -> MB`. Abacite converts length, mass, volume, temperature, time, area, speed and data with exact factors, so `1 in to cm` is exactly 2.54. The result shows its unit in the display, on the tape and in the command line, while **⇧⌘C** copies the number alone and the next line's `ans` is the number. Unit names are case-sensitive (`MB` is a megabyte, `mB` is nothing), and units of different kinds give an error.
+
 ## Tape
 
 **⌘T** shows the tape: every line you committed, with its result or its error. **↑** and **↓** bring earlier lines back into the expression line. Click a line to insert its result, or **⌥-click** (Alt-click) to insert its expression. **⇧⌘⌫** clears the tape, with Undo in the status bar. In this version the tape lasts until the window closes.

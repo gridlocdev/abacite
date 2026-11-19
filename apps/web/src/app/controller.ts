@@ -103,6 +103,8 @@ export class AppController {
   readonly #fitWidth: ((width: number) => void) | undefined;
   /** The last result the display shows while the line is empty; AC clears it. */
   #last: Decimal | null = null;
+  /** The unit of the last result, after a conversion (PRD §6). */
+  #lastUnit: string | null = null;
   /** The error the last committed line gave, shown while the line stays empty. */
   #lastError: string | null = null;
   /** The last complete live result, shown greyed while the line is unfinished. */
@@ -325,7 +327,8 @@ export class AppController {
       this.#lastError = null;
       if (line.result.kind === 'value') {
         this.#last = line.result.value;
-        this.#announce(`Result ${this.format(line.result.value)}`);
+        this.#lastUnit = line.result.unit;
+        this.#announce(`Result ${this.#formatResult(line.result.value, line.result.unit)}`);
       } else if (line.result.kind === 'error') {
         this.#lastError = line.result.message;
         this.#announce(line.result.message);
@@ -418,6 +421,7 @@ export class AppController {
           const last = before.lines.at(-1)?.result;
           this.tape.value = before;
           this.#last = last?.kind === 'value' ? last.value : null;
+          this.#lastUnit = last?.kind === 'value' ? last.unit : null;
           this.#refresh();
         },
       },
@@ -427,7 +431,10 @@ export class AppController {
   /** The number on the display, or null when it shows an error or an unfinished line. */
   currentValue(): string | null {
     const shown = this.shown.value;
-    return shown.kind === 'result' || shown.kind === 'live' ? shown.text.replaceAll(',', '') : null;
+    // The number alone: no grouping commas, and no unit after a conversion.
+    return shown.kind === 'result' || shown.kind === 'live'
+      ? shown.text.split(' ')[0]!.replaceAll(',', '')
+      : null;
   }
 
   /** ⇧⌘C: copies the number on the display, without grouping commas. */
@@ -447,6 +454,11 @@ export class AppController {
 
   format(value: Decimal): string {
     return formatDecimal(value, { group: this.settings.value.groupDigits });
+  }
+
+  /** A result as shown: the number, then its unit after a conversion (`3.1 mi`). */
+  #formatResult(value: Decimal, unit: string | null): string {
+    return unit ? `${this.format(value)} ${unit}` : this.format(value);
   }
 
   /** The engine's env: the angle unit, and `rand()` drawing from the preview pool first. */
@@ -470,7 +482,10 @@ export class AppController {
       this.#lastLive = null;
       this.ghost.value = NO_GHOST;
       if (this.#lastError !== null) this.shown.value = { kind: 'error', text: this.#lastError };
-      else this.shown.value = this.#last ? { kind: 'result', text: this.format(this.#last) } : ZERO_SHOWN;
+      else
+        this.shown.value = this.#last
+          ? { kind: 'result', text: this.#formatResult(this.#last, this.#lastUnit) }
+          : ZERO_SHOWN;
       return;
     }
     const evaluation = preview(tape, text, this.#env());
@@ -478,7 +493,7 @@ export class AppController {
     const result = evaluation.result;
     let errorAt: number | null = null;
     if (result.kind === 'value') {
-      this.#lastLive = this.format(result.value);
+      this.#lastLive = this.#formatResult(result.value, result.unit);
       this.shown.value = { kind: 'live', text: this.#lastLive };
     } else if (result.kind === 'error' && !result.incomplete && !/[A-Za-z_]$/.test(text)) {
       // A complete line that fails (`1/0`); a name still being typed (`si`) isn't an error yet.
@@ -487,7 +502,7 @@ export class AppController {
     } else {
       this.shown.value = {
         kind: 'pending',
-        text: this.#lastLive ?? (this.#last ? this.format(this.#last) : '0'),
+        text: this.#lastLive ?? (this.#last ? this.#formatResult(this.#last, this.#lastUnit) : '0'),
       };
     }
     this.ghost.value = {

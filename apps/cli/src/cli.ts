@@ -48,7 +48,7 @@ export function helpText(): string {
     'Options:',
     '  --rad        Trigonometry in radians (default: degrees)',
     `  --full       Print all ${PRECISION} digits (default: ${SHOWN_DIGITS})`,
-    '  --json       Print {"input", "result", "error"} per line',
+    '  --json       Print {"input", "result", "unit", "error"} per line',
     '  -h, --help   Show this help',
     '  -v, --version',
     '',
@@ -74,11 +74,12 @@ function evaluateLine(run: Run, input: string): void {
   const result = tape.lines.at(-1)!.result;
   if (result.kind === 'empty') return;
   const value = result.kind === 'value' ? formatDecimal(result.value, { digits: run.digits }) : null;
+  const unit = result.kind === 'value' ? result.unit : null;
   const error = result.kind === 'error' ? result.message : null;
   if (error !== null) run.failed = true;
-  if (run.json) run.io.stdout(`${JSON.stringify({ input, result: value, error })}\n`);
+  if (run.json) run.io.stdout(`${JSON.stringify({ input, result: value, unit, error })}\n`);
   else if (error !== null) run.io.stderr(`error: ${error}\n`);
-  else run.io.stdout(`${value}\n`);
+  else run.io.stdout(unit ? `${value} ${unit}\n` : `${value}\n`);
 }
 
 const FLAGS: Readonly<Record<string, 'rad' | 'full' | 'json' | 'help' | 'version'>> = {

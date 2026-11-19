@@ -62,6 +62,7 @@ export {
 } from './functions.ts';
 export { SHOWN_DIGITS, formatDecimal, type FormatOptions } from './format.ts';
 export { MEMORY, memoryLine, memorySet, memoryValue, type MemoryOperation } from './memory.ts';
+export { convert, findConversion, findUnit, type Conversion, type Unit, type UnitCategory } from './units.ts';
 export { CONSTANT_NAMES, FUNCTION_NAMES, KEYWORDS, isReserved } from './names.ts';
 export { parseStatement, stripComment, tokenize, type Node, type Statement } from './parse.ts';
 export {
