@@ -39,8 +39,8 @@ describe('committing lines (PRD §7.1)', () => {
   });
 
   it('puts ans in front of a leading operator once there is a result', () => {
-    const tape = commitAll(['10', '* 2', '- 5', 'mod 4', '^2', '×3', '÷ 2']);
-    expect(results(tape)).toEqual(['10', '20', '15', '3', '9', '27', '13.5']);
+    const tape = commitAll(['10', '* 2', '- 5', 'mod 4', '^2', '×3', '÷ 2', '· 2']);
+    expect(results(tape)).toEqual(['10', '20', '15', '3', '9', '27', '13.5', '27']);
     expect(expandInput('-5', EMPTY_TAPE)).toBe('-5');
     expect(expandInput('-5', tape)).toBe('ans -5');
     expect(expandInput('model', tape)).toBe('model');

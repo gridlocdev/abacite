@@ -26,7 +26,7 @@ export interface Tape {
 export const EMPTY_TAPE: Tape = { lines: [], scope: EMPTY_SCOPE, dropped: false };
 
 const ANS_PREFIX = 'ans ';
-const LEADING_OPERATOR = /^\s*(?:\*\*|[+\-*/^%×÷−]|mod\b)/;
+const LEADING_OPERATOR = /^\s*(?:\*\*|[+\-*/^%×÷−·]|mod\b)/;
 
 /** True when the line starts with an operator, so it continues from `ans` (PRD §7.1). */
 export function startsWithOperator(input: string): boolean {
