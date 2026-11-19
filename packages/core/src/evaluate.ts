@@ -21,6 +21,7 @@ import {
 } from './decimal.ts';
 import { CalcError } from './errors.ts';
 import * as f from './functions.ts';
+import { MEMORY } from './memory.ts';
 import { isReserved } from './names.ts';
 import { parseStatement, type Node } from './parse.ts';
 
@@ -161,7 +162,11 @@ function evalNode(node: Node, scope: Scope, env: Env): Decimal {
     case 'number':
       return node.value;
     case 'name': {
-      const value = constant(node.name, scope) ?? scope.vars.get(node.name);
+      const value =
+        constant(node.name, scope) ??
+        scope.vars.get(node.name) ??
+        // Memory is 0 until set (PRD §5).
+        (node.name === MEMORY && !node.called ? ZERO : undefined);
       if (value !== undefined) return value;
       if (node.called) throw new CalcError(`Unknown function \`${node.name}\` at ${node.at + 1}.`, node.at);
       throw new CalcError(`\`${node.name}\` isn’t defined.`, node.at);

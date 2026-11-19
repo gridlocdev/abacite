@@ -12,7 +12,11 @@ Every number is a decimal, computed to 34 significant digits and shown to 32, so
 
 ## Keypads
 
-The Basic keypad has digits, the four operations, parentheses, percent and change sign; **⌘2** adds the Scientific keypad beside it with powers, roots, logarithms, trigonometry, hyperbolic functions, π, e, factorial and a random number. **2nd** switches some keys to their inverses (arcsine, 2ˣ, log₂). Every key types into the expression line, so the keyboard and the keys mix freely. The angle key, or **⇧⌘R**, switches trigonometry between degrees and radians. In the desktop app the window grows to fit the Scientific keypad or the tape. **⌘1** goes back to Basic.
+The Basic keypad has digits, the four operations, parentheses, percent and change sign; **⌘2** adds the Scientific keypad beside it with memory keys, powers, roots, logarithms, trigonometry, hyperbolic functions, π, e, factorial and a random number. **2nd** switches some keys to their inverses (arcsine, 2ˣ, log₂). Every key types into the expression line, so the keyboard and the keys mix freely. The angle key, or **⇧⌘R**, switches trigonometry between degrees and radians. In the desktop app the window grows to fit the Scientific keypad or the tape. **⌘1** goes back to Basic.
+
+## Memory
+
+The Scientific keypad has the memory keys. **m+** adds the result to memory and **m−** subtracts it (a calculation still being typed goes on the tape first), **mc** clears memory, and **mr** inserts it into the expression line. Memory is the variable `mem`, so each key puts an ordinary line on the tape (`mem = mem + 15`) and you can type `mem` too. The display shows **M** while memory isn't 0.
 
 ## Tape
 

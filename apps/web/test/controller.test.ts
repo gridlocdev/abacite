@@ -257,3 +257,52 @@ describe('the display after a commit (PRD §9.1, §14)', () => {
     expect(app.shown.value.text).toBe('0.5');
   });
 });
+
+describe('memory keys (PRD §5)', () => {
+  const inputs = (app: ReturnType<typeof makeApp>['app']) => app.tape.value.lines.map((l) => l.input);
+
+  it('adds the typed line’s result after committing it, and shows M', () => {
+    const { app } = makeApp();
+    type(app, '5*3');
+    expect(app.memorySet()).toBe(false);
+    app.press(key('madd'));
+    expect(inputs(app)).toEqual(['5*3', 'mem = mem + 15']);
+    expect(app.memorySet()).toBe(true);
+    app.press(key('msubtract'));
+    expect(inputs(app).at(-1)).toBe('mem = mem - 15');
+    expect(app.memorySet()).toBe(false);
+  });
+
+  it('uses the last result on an empty line, and 0 with none', () => {
+    const { app } = makeApp();
+    app.press(key('madd'));
+    expect(inputs(app)).toEqual(['mem = mem + 0']);
+    enter(app, '2^10');
+    app.press(key('msubtract'));
+    expect(inputs(app).at(-1)).toBe('mem = mem - 1024');
+    expect(app.shown.value.text).toBe('-1,024');
+  });
+
+  it('clears memory with a line, and recalls it into the expression line', () => {
+    const { app } = makeApp();
+    enter(app, '7');
+    app.press(key('madd'));
+    type(app, '2*');
+    app.press(key('mrecall'));
+    expect(app.line.value.text).toBe('2*mem');
+    expect(app.shown.value.text).toBe('14');
+    app.press(key('mclear'));
+    expect(inputs(app).at(-1)).toBe('mem = 0');
+    expect(app.memorySet()).toBe(false);
+    expect(app.line.value.text, 'MC keeps the typing').toBe('2*mem');
+    expect(app.shown.value.text).toBe('0');
+  });
+
+  it('adds nothing when the line has no result', () => {
+    const { app } = makeApp();
+    type(app, '1/0');
+    app.press(key('madd'));
+    expect(inputs(app)).toEqual([]);
+    expect(app.notice.value?.text).toBe('There’s no result to put in memory.');
+  });
+});

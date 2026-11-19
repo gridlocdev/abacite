@@ -100,6 +100,26 @@ test.describe('Keypads', () => {
   });
 });
 
+test.describe('Memory', () => {
+  test('m+ adds the result, mr recalls it, mc clears it, and M shows while it is set', async ({ page }) => {
+    await page.keyboard.press('ControlOrMeta+2');
+    const flags = page.locator('.ab-display-flags');
+    await page.keyboard.type('5*3');
+    await key(page, 'Memory add').click();
+    await expect(flags).toContainText('M');
+    await expect(tape(page)).toBeHidden();
+    await page.keyboard.type('2*');
+    await key(page, 'Memory recall').click();
+    await expect(expression(page)).toHaveValue('2*mem');
+    await expect(display(page)).toHaveText('30');
+    await page.keyboard.press('Escape');
+    await key(page, 'Memory clear').click();
+    await expect(flags).not.toContainText('M');
+    await page.keyboard.press('ControlOrMeta+T');
+    await expect(tape(page).getByRole('button')).toContainText(['5*3', 'mem = mem + 15', 'mem = 0']);
+  });
+});
+
 test.describe('Tape', () => {
   test('keeps every committed line, and ↑ brings one back', async ({ page }) => {
     await page.keyboard.press('ControlOrMeta+KeyT');

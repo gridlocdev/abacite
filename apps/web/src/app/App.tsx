@@ -17,6 +17,7 @@ function Display({ app }: { readonly app: AppController }) {
         <span title={angle === 'deg' ? 'Angles are in degrees' : 'Angles are in radians'}>
           {angle === 'deg' ? 'DEG' : 'RAD'}
         </span>
+        {app.memorySet() && <span title="Memory is set">M</span>}
         {app.second.value && <span>2nd</span>}
       </div>
       <output

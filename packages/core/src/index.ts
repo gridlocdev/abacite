@@ -61,6 +61,7 @@ export {
   tanh,
 } from './functions.ts';
 export { SHOWN_DIGITS, formatDecimal, type FormatOptions } from './format.ts';
+export { MEMORY, memoryLine, memorySet, memoryValue, type MemoryOperation } from './memory.ts';
 export { CONSTANT_NAMES, FUNCTION_NAMES, KEYWORDS, isReserved } from './names.ts';
 export { parseStatement, stripComment, tokenize, type Node, type Statement } from './parse.ts';
 export {

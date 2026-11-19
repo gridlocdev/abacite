@@ -6,6 +6,8 @@ import {
   defaultRandom,
   expandInput,
   formatDecimal,
+  memoryLine,
+  memorySet,
   preview,
   repeatInput,
   startsWithOperator,
@@ -291,6 +293,9 @@ export class AppController {
       case 'angle':
         this.toggleAngle();
         return;
+      case 'memory':
+        this.memory(action.operation);
+        break;
     }
     // 2nd lasts for one function key.
     if (def !== key) this.second.value = false;
@@ -302,7 +307,11 @@ export class AppController {
    */
   commit(): void {
     const text = this.line.value.text.trim() ? this.line.value.text : repeatInput(this.tape.value);
-    if (text === null) return;
+    if (text !== null) this.#commitText(text);
+  }
+
+  /** Puts `text` on the tape as the next line and shows its result. */
+  #commitText(text: string): void {
     const before = this.tape.value;
     const tape = commit(before, text, this.#env());
     const line = tape.lines.at(-1)!;
@@ -328,6 +337,36 @@ export class AppController {
         this.say('The tape keeps 10,000 lines, so the oldest line was dropped.');
       }
     });
+  }
+
+  /**
+   * The memory keys (PRD §5). MR inserts `mem`. MC, M+ and M− commit a line setting `mem`; M+ and M− use the
+   * current result, so a typed line is committed first and its result is the one added.
+   */
+  memory(operation: 'clear' | 'add' | 'subtract' | 'recall'): void {
+    if (operation === 'recall') {
+      this.setLine(insertText(this.line.value, 'mem'));
+      return;
+    }
+    if (operation === 'clear') {
+      // MC leaves what is being typed in the expression line.
+      const typing = this.line.value;
+      this.#commitText(memoryLine('clear'));
+      if (typing.text) this.setLine(typing);
+      return;
+    }
+    const typed = !!this.line.value.text.trim();
+    if (typed ? this.shown.value.kind !== 'live' : this.#lastError !== null) {
+      this.say('There’s no result to put in memory.', { tone: 'error' });
+      return;
+    }
+    if (typed) this.commit();
+    this.#commitText(memoryLine(operation, this.#last ?? undefined));
+  }
+
+  /** True while memory isn't 0: the display shows "M". */
+  memorySet(): boolean {
+    return memorySet(this.tape.value.scope);
   }
 
   /** ↑: the previous tape input (PRD §7.1). */

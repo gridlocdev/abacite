@@ -4,7 +4,9 @@ export type KeyAction =
   | { readonly type: 'insert'; readonly text: string }
   | { readonly type: 'call'; readonly name: string }
   | { readonly type: 'wrap'; readonly prefix: string; readonly suffix: string }
-  | { readonly type: 'commit' | 'clear' | 'negate' | 'backspace' | 'second' | 'angle' };
+  | { readonly type: 'commit' | 'clear' | 'negate' | 'backspace' | 'second' | 'angle' }
+  /** The memory keys (PRD §5). */
+  | { readonly type: 'memory'; readonly operation: 'clear' | 'add' | 'subtract' | 'recall' };
 
 export type KeyKind = 'digit' | 'op' | 'fn' | 'util';
 
@@ -92,8 +94,30 @@ const fn = (
   ...(second ? { second } : {}),
 });
 
-/** The Scientific block to the left of the Basic keys (PRD §9.2). Memory keys join it in a later version. */
+const memory = (
+  operation: 'clear' | 'add' | 'subtract' | 'recall',
+  label: string,
+  name: string,
+  hint?: string,
+): KeyDef => ({
+  id: `m${operation}`,
+  label,
+  name,
+  kind: 'util',
+  action: { type: 'memory', operation },
+  ...(hint ? { hint } : {}),
+});
+
+/** The Scientific block to the left of the Basic keys (PRD §9.2). */
 export const SCIENTIFIC_ROWS: readonly (readonly KeyDef[])[] = [
+  [
+    { id: 'sciOpen', label: '(', name: 'Open parenthesis', kind: 'util', action: insert('('), hint: '(' },
+    { id: 'sciClose', label: ')', name: 'Close parenthesis', kind: 'util', action: insert(')'), hint: ')' },
+    memory('clear', 'mc', 'Memory clear', 'mem = 0'),
+    memory('add', 'm+', 'Memory add', 'mem = mem + …'),
+    memory('subtract', 'm−', 'Memory subtract', 'mem = mem - …'),
+    memory('recall', 'mr', 'Memory recall', 'mem'),
+  ],
   [
     fn('second', '2nd', 'Second functions', { type: 'second' }),
     fn('square', 'x²', 'Square', insert('^2'), '^2'),
