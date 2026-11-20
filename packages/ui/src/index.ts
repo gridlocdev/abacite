@@ -73,6 +73,7 @@ export {
   canPickFolder,
   checkSessionName,
   copyName,
+  sessionName,
   forgetPickedFolder,
   freeName,
   localKeep,

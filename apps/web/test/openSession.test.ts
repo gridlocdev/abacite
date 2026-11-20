@@ -19,13 +19,14 @@ async function startOpenSession(
 const disk = (folder: Folder) => (folder as MemoryFolder).files;
 
 describe('the open session (PRD §8.2)', () => {
-  it('gives an empty folder one session, Session.txt, and saves each change at once', async () => {
+  it('gives an empty folder one session, named for when it was made, and saves each change at once', async () => {
     const { app, current, folder } = await startOpenSession();
-    expect(current.name.value).toBe('Session');
-    expect(disk(folder).get('Session.txt')).toBe('');
+    const file = '2026-11-19 at 2.05 PM.txt';
+    expect(current.name.value).toBe('2026-11-19 at 2.05 PM');
+    expect(disk(folder).get(file)).toBe('');
     enter(app, '1 + 1');
     await current.flush();
-    expect(disk(folder).get('Session.txt')).toBe('1 + 1  # = 2\n');
+    expect(disk(folder).get(file)).toBe('1 + 1  # = 2\n');
     expect(current.state.value).toBe('saved');
   });
 
@@ -85,7 +86,7 @@ describe('the open session (PRD §8.2)', () => {
     enter(app, '3');
     await current.flush();
     expect(most).toBe(1);
-    expect(inner.files.get('Session.txt')).toBe('1  # = 1\n2  # = 2\n3  # = 3\n');
+    expect(inner.files.get('2026-11-19 at 2.05 PM.txt')).toBe('1  # = 1\n2  # = 2\n3  # = 3\n');
   });
 });
 
@@ -224,15 +225,16 @@ describe('recovery (PRD §8.3)', () => {
 describe('the folder’s sessions (PRD §8.2)', () => {
   it('New Session, Rename and Delete with Undo', async () => {
     const { app, current, folder } = await startOpenSession();
+    const first = '2026-11-19 at 2.05 PM';
     await current.newSession();
-    expect(current.name.value).toBe('Session 2');
-    expect(await current.rename('Session')).toBe('There’s already a session called Session.');
+    expect(current.name.value).toBe('2026-11-19 at 2.05.09 PM');
+    expect(await current.rename(first)).toBe(`There’s already a session called ${first}.`);
     expect(await current.rename('a/b')).toMatch(/can’t have/);
     expect(await current.rename('Groceries.txt')).toBeNull();
-    expect(current.names.value).toEqual(['Groceries', 'Session']);
+    expect(current.names.value).toEqual([first, 'Groceries']);
     enter(app, '3');
     await current.trash();
-    expect(current.name.value).toBe('Session');
+    expect(current.name.value).toBe(first);
     expect(app.notice.value?.text).toBe('Moved Groceries to the trash.');
     expect(disk(folder).get('.abacite/trash/Groceries.txt')).toBe('3  # = 3\n');
     expect(app.notice.value?.action?.label).toBe('Undo');
@@ -244,7 +246,8 @@ describe('the folder’s sessions (PRD §8.2)', () => {
   it('deleting the last session leaves a new one', async () => {
     const { current, folder } = await startOpenSession();
     await current.trash();
-    expect(current.name.value).toBe('Session');
-    expect([...disk(folder).keys()].sort()).toEqual(['.abacite/trash/Session.txt', 'Session.txt']);
+    const name = '2026-11-19 at 2.05 PM';
+    expect(current.name.value).toBe(name);
+    expect([...disk(folder).keys()].sort()).toEqual([`.abacite/trash/${name}.txt`, `${name}.txt`]);
   });
 });

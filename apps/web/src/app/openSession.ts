@@ -89,7 +89,7 @@ export class OpenSession {
   async start(): Promise<void> {
     let names = await this.#refreshNames();
     if (!names.length) {
-      await this.library.create('Session');
+      await this.library.createAt(this.#now());
       names = await this.#refreshNames();
     }
     const last = this.#keep.lastSession(this.#key);
@@ -302,10 +302,10 @@ export class OpenSession {
 
   // The folder's sessions (PRD §8.2)
 
-  /** ⌘N: a new session, `Session 2`, `Session 3`…, opened. */
+  /** ⌘N: a new session, named for when it was made, opened. */
   async newSession(): Promise<void> {
     await this.flush();
-    const { name } = await this.library.create('Session');
+    const { name } = await this.library.createAt(this.#now());
     await this.#refreshNames();
     await this.open(name);
   }

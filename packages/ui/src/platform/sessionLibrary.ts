@@ -33,6 +33,18 @@ export function freeName(base: string, taken: readonly string[]): string {
   for (let n = 2; ; n++) if (!used.has(`${base} ${n}`.toLowerCase())) return `${base} ${n}`;
 }
 
+/**
+ * A new session's name: when it was made, `2026-11-19 at 2.05 PM` (PRD §8.2). The date first, so the list sorts by
+ * day; a dot in the time, as macOS screenshots have, since a file name can't hold a colon everywhere.
+ */
+export function sessionName(at: Date, seconds = false): string {
+  const p = (n: number) => String(n).padStart(2, '0');
+  const hour = at.getHours() % 12 || 12;
+  const time = `${hour}.${p(at.getMinutes())}${seconds ? `.${p(at.getSeconds())}` : ''}`;
+  const date = `${at.getFullYear()}-${p(at.getMonth() + 1)}-${p(at.getDate())}`;
+  return `${date} at ${time} ${at.getHours() < 12 ? 'AM' : 'PM'}`;
+}
+
 /** The name of a copy saved from a conflict: `Session copy 2026-11-19-141503` (PRD §8.3). */
 export function copyName(name: string, at: Date): string {
   const p = (n: number) => String(n).padStart(2, '0');
@@ -78,6 +90,13 @@ export class SessionLibrary {
         if (!(e instanceof StoreError && e.kind === 'conflict')) throw e;
       }
     }
+  }
+
+  /** Makes an empty session named for `at`, with the seconds when one from the same minute exists. */
+  async createAt(at: Date): Promise<{ name: string; version: string }> {
+    const minute = sessionName(at);
+    const taken = (await this.names()).some((n) => n.toLowerCase() === minute.toLowerCase());
+    return this.create(taken ? sessionName(at, true) : minute);
   }
 
   /** Renames a session; `to` must be a good name (`checkSessionName`) that no other session has. */

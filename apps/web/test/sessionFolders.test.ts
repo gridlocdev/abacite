@@ -25,7 +25,7 @@ describe('session folders (PRD §8.2)', () => {
     await folders.useDefault();
     expect(app.dialog.value).toBe(null);
     expect(state.defaults).toEqual([true]);
-    expect(files(state.fallback.folder).get('Session.txt')).toBe('');
+    expect(files(state.fallback.folder).get('2026-11-19 at 2.05 PM.txt')).toBe('');
   });
 
   it('closing the question uses the default folder without remembering the choice', async () => {
@@ -61,11 +61,11 @@ describe('session folders (PRD §8.2)', () => {
     const next = new MemoryFolder('New', { 'Other.txt': '7\n' });
     state.choice = { folder: next, key: '/New' };
     await folders.choose();
-    expect(files(old).get('Session.txt')).toBe('2 + 2  # = 4\n');
+    expect(files(old).get('2026-11-19 at 2.05 PM.txt')).toBe('2 + 2  # = 4\n');
     expect(folders.current.value?.name.value).toBe('Other');
     enter(app, '* 2');
     await folders.current.value?.flush();
-    expect(files(old).get('Session.txt')).toBe('2 + 2  # = 4\n');
+    expect(files(old).get('2026-11-19 at 2.05 PM.txt')).toBe('2 + 2  # = 4\n');
     expect(files(next).get('Other.txt')).toBe('7  # = 7\n* 2  # = 14\n');
   });
 });
@@ -81,12 +81,12 @@ describe('the File commands (PRD §8.2)', () => {
     const { app, catalog, folders } = await started();
     const current = folders.current.value!;
     catalog.run('file.new');
-    await vi.waitFor(() => expect(current.name.value).toBe('Session 2'));
+    await vi.waitFor(() => expect(current.name.value).toBe('2026-11-19 at 2.05 PM'));
     catalog.run('file.delete');
     await vi.waitFor(() => expect(current.names.value).toEqual(['Session']));
     catalog.run('file.trash');
     await vi.waitFor(() => expect(app.dialog.value).toBe('trash'));
-    expect(current.trashed.value).toEqual(['Session 2']);
+    expect(current.trashed.value).toEqual(['2026-11-19 at 2.05 PM']);
   });
 
   it('Export Session hands the session text to the platform', async () => {

@@ -10,7 +10,14 @@ export {
 } from './folder.ts';
 export { HandleFolder } from './handleFolder.ts';
 export { MemoryFolder } from './memoryFolder.ts';
-export { TRASH, SessionLibrary, checkSessionName, copyName, freeName } from './sessionLibrary.ts';
+export {
+  TRASH,
+  SessionLibrary,
+  checkSessionName,
+  copyName,
+  freeName,
+  sessionName,
+} from './sessionLibrary.ts';
 export { NativeFolder, type NativeFolderCall, type NativeReply } from './nativeFolder.ts';
 export {
   forgetPickedFolder,

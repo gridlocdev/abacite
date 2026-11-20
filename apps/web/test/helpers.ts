@@ -93,7 +93,10 @@ export function memoryPlatform(first: OpenedFolder | FolderSetup = { kind: 'firs
 export function makeFolderApp(first?: OpenedFolder | FolderSetup) {
   const made = makeApp({ showSession: true });
   const { platform, state } = memoryPlatform(first);
-  const folders = new SessionFolders(made.app, platform, memoryKeep().keep, { retries: [0, 0] });
+  const folders = new SessionFolders(made.app, platform, memoryKeep().keep, {
+    retries: [0, 0],
+    now: () => new Date(2026, 10, 19, 14, 5, 9),
+  });
   const catalog = buildCommands(made.app, folders);
   return { ...made, catalog, folders, state };
 }

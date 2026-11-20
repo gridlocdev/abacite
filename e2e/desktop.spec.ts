@@ -1,7 +1,7 @@
 // Desktop smoke test: the built Electron app starts headless (no window, Dock icon or system dialog) on a
 // throwaway profile and calculates. `just e2e-desktop` builds it first. The throwaway profile matters: the app
 // must never read the owner's settings or window state.
-import { mkdtempSync, readFileSync, realpathSync, rmSync } from 'node:fs';
+import { mkdtempSync, readdirSync, readFileSync, realpathSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -59,10 +59,14 @@ test.describe('Desktop and browser', () => {
         await window.keyboard.type('2*(3+4)');
         await expect(display(window)).toHaveText('14');
         await window.keyboard.press('Enter');
-        const file = path.join(profile, 'Documents', 'Abacite', 'Session.txt');
-        await expect
-          .poll(() => readFileSync(file, 'utf8'), { message: 'the session is saved' })
-          .toBe('2*(3+4)  # = 14\n');
+        // The one session, named for when it was made (`2026-11-19 at 2.05 PM.txt`).
+        const folder = path.join(profile, 'Documents', 'Abacite');
+        const saved = () => {
+          const names = readdirSync(folder).filter((n) => n.endsWith('.txt'));
+          expect(names).toEqual([expect.stringMatching(/^\d{4}-\d{2}-\d{2} at \d{1,2}\.\d{2} [AP]M\.txt$/)]);
+          return readFileSync(path.join(folder, names[0]!), 'utf8');
+        };
+        await expect.poll(saved, { message: 'the session is saved' }).toBe('2*(3+4)  # = 14\n');
         // The page may write to the clipboard (Copy Result) and nothing else.
         const permission = (name: string) =>
           window.evaluate(

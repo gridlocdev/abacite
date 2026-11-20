@@ -17,7 +17,13 @@ export const test = base.extend<{ checkErrors: void }>({
 export { cli } from './server.ts';
 
 /** Open the app the way a user does, and wait until the expression line has focus. */
+/** The clock every scenario runs at, so a new session's name is known (the browser runs in UTC). */
+export const NOW = new Date('2026-11-19T14:05:09Z');
+/** The name of the session the app makes in an empty folder at NOW. */
+export const FIRST_SESSION = '2026-11-19 at 2.05 PM';
+
 export async function openApp(page: Page): Promise<void> {
+  await page.clock.setFixedTime(NOW);
   await page.goto('/');
   await waitForApp(page);
 }

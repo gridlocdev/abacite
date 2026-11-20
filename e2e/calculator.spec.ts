@@ -7,6 +7,7 @@ import {
   cli,
   display,
   expect,
+  FIRST_SESSION,
   expression,
   key,
   notice,
@@ -260,12 +261,12 @@ test.describe('Session files', () => {
 
   test('each change is saved in the browser and is there after a reload', async ({ page }) => {
     await page.keyboard.press('ControlOrMeta+KeyT');
-    await expect(sessionName(page)).toHaveText('Session');
+    await expect(sessionName(page)).toHaveText(FIRST_SESSION);
     await expect(page.getByText('Stored in this browser')).toBeVisible();
     await page.keyboard.type('1+2');
     await page.keyboard.press('Enter');
     await expect(session(page).getByRole('listitem')).toHaveText([/1\+2\s*3/]);
-    await expect.poll(() => storedSession(page, 'Session')).toBe('1+2  # = 3\n');
+    await expect.poll(() => storedSession(page, FIRST_SESSION)).toBe('1+2  # = 3\n');
     await page.reload();
     await waitForApp(page);
     await expect(session(page).getByRole('listitem')).toHaveText([/1\+2\s*3/]);
@@ -273,15 +274,15 @@ test.describe('Session files', () => {
 
   test('committing a line stays quick with a full session of 10,000 lines', async ({ page }) => {
     await page.evaluate(
-      async (text) => {
+      async ({ name, text }) => {
         const sessions = await (
           await navigator.storage.getDirectory()
         ).getDirectoryHandle('tapes', { create: true });
-        const file = await (await sessions.getFileHandle('Session.txt', { create: true })).createWritable();
+        const file = await (await sessions.getFileHandle(`${name}.txt`, { create: true })).createWritable();
         await file.write(text);
         await file.close();
       },
-      Array.from({ length: 10_000 }, (_, i) => `${i}+1`).join('\n'),
+      { name: FIRST_SESSION, text: Array.from({ length: 10_000 }, (_, i) => `${i}+1`).join('\n') },
     );
     await page.reload();
     await waitForApp(page);
@@ -311,14 +312,14 @@ test.describe('Session files', () => {
   test('new, rename, delete with Undo, restore from the trash, and switch sessions', async ({ page }) => {
     await page.keyboard.press('ControlOrMeta+KeyT');
     await runCommand(page, 'New Session');
-    await expect(sessionName(page)).toHaveText('Session 2');
+    await expect(sessionName(page)).toHaveText(`${FIRST_SESSION.replace(' PM', '')}.09 PM`);
 
     await runCommand(page, 'Rename Session');
     const rename = page.getByRole('dialog', { name: 'Rename Session' });
     await expect(rename.getByRole('textbox')).toBeFocused();
-    await page.keyboard.type('Session');
+    await page.keyboard.type(FIRST_SESSION);
     await page.keyboard.press('Enter');
-    await expect(rename.getByRole('alert')).toHaveText('There’s already a session called Session.');
+    await expect(rename.getByRole('alert')).toHaveText(`There’s already a session called ${FIRST_SESSION}.`);
     await page.keyboard.press('ControlOrMeta+KeyA');
     await page.keyboard.type('Groceries');
     await page.keyboard.press('Enter');
@@ -327,12 +328,12 @@ test.describe('Session files', () => {
 
     await runCommand(page, 'Delete Session');
     await expect(notice(page)).toContainText('Moved Groceries to the trash.');
-    await expect(sessionName(page)).toHaveText('Session');
+    await expect(sessionName(page)).toHaveText(FIRST_SESSION);
     await page.getByRole('button', { name: 'Undo' }).click();
     await expect(sessionName(page)).toHaveText('Groceries');
 
     await runCommand(page, 'Delete Session');
-    await expect(sessionName(page)).toHaveText('Session');
+    await expect(sessionName(page)).toHaveText(FIRST_SESSION);
     await runCommand(page, 'Open Trash');
     const trash = page.getByRole('dialog', { name: 'Trash' });
     await trash.getByRole('button', { name: 'Restore Groceries' }).click();
@@ -341,11 +342,11 @@ test.describe('Session files', () => {
 
     await sessionName(page).click();
     const list = page.getByRole('dialog', { name: 'Open Session' });
-    await expect(list.getByRole('option')).toHaveText([/Groceries/, /^Session$/]);
-    await page.keyboard.type('session');
+    await expect(list.getByRole('option')).toHaveText([FIRST_SESSION, /Groceries/]);
+    await page.keyboard.type('2.05 PM');
     await page.keyboard.press('Enter');
     await expect(list).toBeHidden();
-    await expect(sessionName(page)).toHaveText('Session');
+    await expect(sessionName(page)).toHaveText(FIRST_SESSION);
     await expect(expression(page)).toBeFocused();
   });
 
@@ -355,9 +356,9 @@ test.describe('Session files', () => {
     const download = page.waitForEvent('download');
     await runCommand(page, 'Export Session');
     const file = await download;
-    expect(file.suggestedFilename()).toBe('Session.txt');
+    expect(file.suggestedFilename()).toBe(`${FIRST_SESSION}.txt`);
     expect(readFileSync(await file.path(), 'utf8')).toBe('6*7  # = 42\n');
-    await expect(notice(page)).toContainText('Exported Session.');
+    await expect(notice(page)).toContainText(`Exported ${FIRST_SESSION}.`);
   });
 });
 
