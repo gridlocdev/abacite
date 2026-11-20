@@ -196,6 +196,7 @@ Abacite is a calculator for one person, replacing the macOS Calculator. It runs 
 - **Classic Entry** (a setting, and ⌘E to switch) makes the keypad work like the macOS Calculator: the display shows the number being entered, operators apply as they are pressed with normal precedence (`2 + 3 × 4 =` is `14`), `=` commits the whole calculation to the tape as an expression (`2 + 3 * 4  # = 14`), and pressing `=` again repeats the last operation.
 - Typing still works: digits, operators and Enter drive the same keys. The expression line is hidden and the display shows the pending calculation in small text above the number.
 - Functions apply to the number shown at once (`9 √` → `3`), like the macOS Calculator.
+- `%` after `+` or `−` shows the amount it adds or takes away (`200 + 10 %` shows `20`, then `=` gives `220`), like the macOS Calculator; elsewhere it shows `x / 100`.
 
 ## §10 Commands and keys
 

@@ -8,7 +8,7 @@ import {
   type Env,
   type Tape,
 } from '@abacite/core';
-import { classicEmpty, classicSegment, formatEntry, type ClassicState } from './classic.ts';
+import { classicEmpty, classicSegment, classicText, formatEntry, type ClassicState } from './classic.ts';
 import type { Ghost, Shown } from './view.ts';
 
 export const NO_GHOST: Ghost = { ans: false, missingParens: 0, errorAt: null };
@@ -62,9 +62,24 @@ export function classicDisplay(input: {
 }): Shown | 'last' | 'pending' | 'keep' {
   const s = input.state;
   if (s.typing) return { kind: 'live', text: formatEntry(s.entry!, input.group) };
-  const text = s.entry ?? classicSegment(s);
+  const text = percentShown(s) ?? s.entry ?? classicSegment(s);
   if (text === null) return classicEmpty(s) ? 'last' : 'pending';
   const result = evaluate(text, input.tape.scope, input.env).result;
   if (result.kind === 'value') return { kind: 'live', text: input.format(result.value, result.unit) };
   return result.kind === 'error' ? { kind: 'error', text: result.message } : 'keep';
+}
+
+/**
+ * After `+` or `−`, a percent is of the left operand (PRD §4), so `200 + 10 %` shows `20`, the amount it adds,
+ * as the macOS Calculator does. The expression for that amount, or null when the plain `x / 100` applies.
+ */
+function percentShown(s: ClassicState): string | null {
+  const op = s.parts.at(-1);
+  if (s.entry === null || !s.entry.endsWith('%') || (op !== '+' && op !== '-')) return null;
+  // Inside an open parenthesis or function the left operand is only part of the calculation.
+  if (s.parts.some((p) => p.endsWith('('))) return null;
+  const left = classicText({ parts: s.parts.slice(0, -1), entry: null, typing: false });
+  const whole = classicText(s);
+  if (left === null || whole === null) return null;
+  return op === '+' ? `(${whole}) - (${left})` : `(${left}) - (${whole})`;
 }

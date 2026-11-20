@@ -387,6 +387,23 @@ describe('classic entry (PRD §9.3)', () => {
     expect(app.shown.value).toMatchObject({ kind: 'result', text: '13' });
   });
 
+  it('shows a percent after + or − as the amount it adds or takes away, as the macOS Calculator does', () => {
+    const { app } = makeApp({ entry: 'classic' });
+    keys(app, '200+10');
+    app.press(key('percent'));
+    expect(app.shown.value.text).toBe('20');
+    keys(app, '=');
+    expect(app.shown.value.text).toBe('220');
+    keys(app, '200-10');
+    app.press(key('percent'));
+    expect(app.shown.value.text).toBe('20');
+    keys(app, '=');
+    expect(app.shown.value.text).toBe('180');
+    keys(app, '200*10');
+    app.press(key('percent'));
+    expect(app.shown.value.text).toBe('0.1');
+  });
+
   it('repeats the last operation when = is pressed again', () => {
     const { app } = makeApp({ entry: 'classic' });
     keys(app, '10+5==');

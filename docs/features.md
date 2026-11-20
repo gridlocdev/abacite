@@ -24,7 +24,7 @@ Type a value with a unit, then `to` or `in` and another unit: `5 km to mi`, `100
 
 ## Classic entry
 
-**⌘E** (or **Entry** in Settings) makes the keypad work like a pocket calculator. The expression line goes away and the display shows the number you're entering, with the calculation so far in small text above it. Operators apply as you press them, with normal precedence: `2 + 3 × 4 =` is 14. Function keys work on the number shown at once (`9 √` is 3). **=** puts the whole calculation on the tape as an expression (`2 + 3 * 4`), and pressing it again repeats the last operation. The keyboard drives the same keys: digits, `+ - * / ^ % ( )`, Enter, Backspace and Esc.
+**⌘E** (or **Entry** in Settings) makes the keypad work like a pocket calculator. The expression line goes away and the display shows the number you're entering, with the calculation so far in small text above it. Operators apply as you press them, with normal precedence: `2 + 3 × 4 =` is 14. Function keys work on the number shown at once (`9 √` is 3). After + or −, **%** shows the amount it adds or takes away: `200 + 10 %` shows 20, and **=** gives 220. **=** puts the whole calculation on the tape as an expression (`2 + 3 * 4`), and pressing it again repeats the last operation. The keyboard drives the same keys: digits, `+ - * / ^ % ( )`, Enter, Backspace and Esc.
 
 ## Tape
 
