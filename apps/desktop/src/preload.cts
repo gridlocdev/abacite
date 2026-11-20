@@ -16,6 +16,6 @@ contextBridge.exposeInMainWorld('abaciteNative', {
   useDefaultFolder: () => ipcRenderer.invoke('abacite:use-default-folder'),
   chooseFolder: () => ipcRenderer.invoke('abacite:choose-folder'),
   folder: (op: string, args: readonly unknown[]) => ipcRenderer.invoke('abacite:folder', op, args),
-  exportTape: (name: string, text: string) => ipcRenderer.invoke('abacite:export-tape', name, text),
+  exportSession: (name: string, text: string) => ipcRenderer.invoke('abacite:export-session', name, text),
   latestRelease: () => ipcRenderer.invoke('abacite:latest-release'),
 });

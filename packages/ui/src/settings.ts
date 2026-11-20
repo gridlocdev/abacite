@@ -1,5 +1,5 @@
 /**
- * Per-device settings (PRD §11): kept in this browser profile or this desktop app, never with the tapes. A
+ * Per-device settings (PRD §11): kept in this browser profile or this desktop app, never with the sessions. A
  * missing or wrong field takes its default, so one bad value never throws the rest away.
  */
 export const THEMES = ['system', 'light', 'dark'] as const;
@@ -23,7 +23,7 @@ export interface Settings {
   readonly angle: Angle;
   /** Commas in the integer part of results (PRD §3.2). */
   readonly groupDigits: boolean;
-  readonly showTape: boolean;
+  readonly showSession: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -32,7 +32,7 @@ export const DEFAULT_SETTINGS: Settings = {
   entry: 'expression',
   angle: 'deg',
   groupDigits: true,
-  showTape: false,
+  showSession: false,
 };
 
 export function parseSettings(raw: unknown): Settings {
@@ -47,7 +47,8 @@ export function parseSettings(raw: unknown): Settings {
     entry: oneOf(ENTRIES, o.entry, d.entry),
     angle: oneOf(ANGLES, o.angle, d.angle),
     groupDigits: bool(o.groupDigits, d.groupDigits),
-    showTape: bool(o.showTape, d.showTape),
+    // `showTape`: saved before sessions were renamed from tapes.
+    showSession: bool(o.showSession ?? o.showTape, d.showSession),
   };
 }
 

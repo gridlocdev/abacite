@@ -10,17 +10,18 @@ export {
 } from './folder.ts';
 export { HandleFolder } from './handleFolder.ts';
 export { MemoryFolder } from './memoryFolder.ts';
-export { TRASH, TapeLibrary, checkTapeName, copyName, freeName } from './tapeLibrary.ts';
+export { TRASH, SessionLibrary, checkSessionName, copyName, freeName } from './sessionLibrary.ts';
 export { NativeFolder, type NativeFolderCall, type NativeReply } from './nativeFolder.ts';
 export {
   forgetPickedFolder,
   localKeep,
   storageKeep,
   type Snapshot,
-  type TapeKeep,
+  type SessionKeep,
 } from './browserStorage.ts';
 export {
   BROWSER_LABEL,
+  STORAGE_FOLDER,
   allowFolder,
   browserFolder,
   canPickFolder,

@@ -1,18 +1,18 @@
 /**
- * The `abacite` command (PRD §13): evaluates an expression, or stdin line by line as a tape, with the same
+ * The `abacite` command (PRD §13): evaluates an expression, or stdin line by line as a session, with the same
  * engine as the app. It groups no digits and reads no settings.
  */
 import {
   DEFAULT_ENV,
-  EMPTY_TAPE,
+  EMPTY_SESSION,
   PRECISION,
   SHOWN_DIGITS,
   commit,
   formatDecimal,
-  readTape,
-  writeTapeText,
+  readSession,
+  writeSessionText,
   type Env,
-  type Tape,
+  type Session,
 } from '@abacite/core';
 
 export const EXIT_OK = 0;
@@ -33,7 +33,7 @@ export interface CliIo {
   prompt?(text: string): void;
 }
 
-/** Reading and writing tape files; tests pass their own. */
+/** Reading and writing session files; tests pass their own. */
 export interface CliFiles {
   read(path: string): Promise<string>;
   /** Replaces the file at once: a temporary file beside it, then a rename. */
@@ -50,18 +50,18 @@ export interface CliContext {
 export function helpText(): string {
   return [
     'Usage: abacite [options] [expression…]',
-    '       abacite tape [--write] <file.txt>',
+    '       abacite session [--write] <file.txt>',
     '',
     'Evaluates the expression and prints the result. Several arguments are joined with spaces.',
-    'With no expression, reads stdin one line at a time as a tape, keeping ans and variables;',
+    'With no expression, reads stdin one line at a time as a session, keeping ans and variables;',
     'on a terminal it shows a "> " prompt until end of input or "exit".',
-    '"abacite tape" evaluates a tape file and prints it with fresh results.',
+    '"abacite session" evaluates a session file and prints it with fresh results.',
     '',
     'Options:',
     '  --rad        Trigonometry in radians (default: degrees)',
     `  --full       Print all ${PRECISION} digits (default: ${SHOWN_DIGITS})`,
     '  --json       Print {"input", "result", "unit", "error"} per line',
-    '  --write      With tape: write the fresh results back to the file',
+    '  --write      With session: write the fresh results back to the file',
     '  -h, --help   Show this help',
     '  -v, --version',
     '',
@@ -71,7 +71,7 @@ export function helpText(): string {
 }
 
 interface Run {
-  tape: Tape;
+  session: Session;
   readonly env: Env;
   readonly digits: number;
   readonly json: boolean;
@@ -79,12 +79,12 @@ interface Run {
   failed: boolean;
 }
 
-/** Evaluates one line onto the tape and prints its result. Blank and comment-only lines print nothing. */
+/** Evaluates one line into the session and prints its result. Blank and comment-only lines print nothing. */
 function evaluateLine(run: Run, input: string): void {
-  const tape = commit(run.tape, input, run.env);
-  if (tape === run.tape) return;
-  run.tape = tape;
-  const result = tape.lines.at(-1)!.result;
+  const session = commit(run.session, input, run.env);
+  if (session === run.session) return;
+  run.session = session;
+  const result = session.lines.at(-1)!.result;
   if (result.kind === 'empty') return;
   const value = result.kind === 'value' ? formatDecimal(result.value, { digits: run.digits }) : null;
   const unit = result.kind === 'value' ? result.unit : null;
@@ -143,18 +143,18 @@ export async function runCli(argv: readonly string[], io: CliIo, context: CliCon
     io.stdout(`abacite ${context.version}\n`);
     return EXIT_OK;
   }
-  // `abacite tape [--write] <file>`; `tape` with anything else is an expression using a name.
-  const tapeArgs = words[0] === 'tape' ? words.slice(1).filter((w) => w !== '--write') : [];
-  if (tapeArgs.length === 1) {
+  // `abacite session [--write] <file>`; `session` with anything else is an expression using a name.
+  const sessionArgs = words[0] === 'session' ? words.slice(1).filter((w) => w !== '--write') : [];
+  if (sessionArgs.length === 1) {
     const write = flags.has('write') || words.includes('--write');
-    return runTape(tapeArgs[0]!, write, io, context);
+    return runSession(sessionArgs[0]!, write, io, context);
   }
   if (flags.has('write')) {
-    io.stderr(`abacite: --write goes with "abacite tape <file.txt>".\n\n${helpText()}`);
+    io.stderr(`abacite: --write goes with "abacite session <file.txt>".\n\n${helpText()}`);
     return EXIT_USAGE;
   }
   const run: Run = {
-    tape: EMPTY_TAPE,
+    session: EMPTY_SESSION,
     env: { angle: flags.has('rad') ? 'rad' : 'deg', random: context.random ?? DEFAULT_ENV.random },
     digits: flags.has('full') ? PRECISION : SHOWN_DIGITS,
     json: flags.has('json'),
@@ -193,10 +193,10 @@ export async function runCli(argv: readonly string[], io: CliIo, context: CliCon
 const message = (error: unknown) => (error instanceof Error ? error.message : String(error));
 
 /**
- * `abacite tape <file>` (PRD §13): evaluates a tape file from the top and prints it in the tape format with
+ * `abacite session <file>` (PRD §13): evaluates a session file from the top and prints it in the session format with
  * fresh results, or with `--write` writes them back when they changed. Exit code 1 when a line has an error.
  */
-async function runTape(path: string, write: boolean, io: CliIo, context: CliContext): Promise<number> {
+async function runSession(path: string, write: boolean, io: CliIo, context: CliContext): Promise<number> {
   if (!context.files) {
     io.stderr('abacite: this build can’t read files.\n');
     return EXIT_ERROR;
@@ -208,8 +208,11 @@ async function runTape(path: string, write: boolean, io: CliIo, context: CliCont
     io.stderr(`abacite: couldn’t read ${path}: ${message(error)}\n`);
     return EXIT_ERROR;
   }
-  const { tape, angle } = readTape(text, { ...DEFAULT_ENV, random: context.random ?? DEFAULT_ENV.random });
-  const fresh = writeTapeText(tape, angle);
+  const { session, angle } = readSession(text, {
+    ...DEFAULT_ENV,
+    random: context.random ?? DEFAULT_ENV.random,
+  });
+  const fresh = writeSessionText(session, angle);
   if (!write) io.stdout(fresh);
   else if (fresh !== text) {
     try {
@@ -219,5 +222,5 @@ async function runTape(path: string, write: boolean, io: CliIo, context: CliCont
       return EXIT_ERROR;
     }
   }
-  return tape.lines.some((l) => l.result.kind === 'error') ? EXIT_ERROR : EXIT_OK;
+  return session.lines.some((l) => l.result.kind === 'error') ? EXIT_ERROR : EXIT_OK;
 }

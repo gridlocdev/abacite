@@ -40,7 +40,7 @@ import {
   isHeadless,
   removeStaleHeadlessProfiles,
 } from './paths.ts';
-import { NodeFolder } from './tapeFolder.ts';
+import { NodeFolder } from './sessionFolder.ts';
 import { checkForUpdate, fetchLatestRelease, isNewer, parseRelease, type Release } from './updates.ts';
 import {
   loadSavedWindow,
@@ -92,8 +92,8 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 let win: BrowserWindow | null = null;
-/** The tape folder in use, once the page has one (PRD §8.2). */
-let tapeFolder: NodeFolder | null = null;
+/** The session folder in use, once the page has one (PRD §8.2). */
+let sessionFolder: NodeFolder | null = null;
 let lastWindow: SavedWindow | null = null;
 
 /** Only our own page may use the bridge. */
@@ -200,7 +200,7 @@ function createWindow(): BrowserWindow {
 }
 
 /**
- * Grows the window for the Scientific keypad or the tape, keeping it on its screen (PRD §9.1). `width` is in
+ * Grows the window for the Scientific keypad or the session, keeping it on its screen (PRD §9.1). `width` is in
  * the page's CSS pixels.
  */
 function fitWidth(width: number): void {
@@ -212,11 +212,11 @@ function fitWidth(width: number): void {
   if (next) win.setBounds(next, !headless);
 }
 
-/** Makes `dir` the tape folder and remembers it. */
+/** Makes `dir` the session folder and remembers it. */
 async function useFolder(dir: string): Promise<string> {
   await mkdir(dir, { recursive: true });
   await saveFolderChoice(folderFile, dir);
-  tapeFolder = new NodeFolder(dir);
+  sessionFolder = new NodeFolder(dir);
   return dir;
 }
 
@@ -227,18 +227,18 @@ function registerFolderIpc(): void {
     if (!trusted(e)) return refuse();
     const folder = await loadFolderChoice(folderFile);
     const missing = folder !== null && !(await folderExists(folder));
-    tapeFolder = folder && !missing ? new NodeFolder(folder) : null;
+    sessionFolder = folder && !missing ? new NodeFolder(folder) : null;
     return { folder, missing, defaultFolder: defaultFolder() };
   });
   ipcMain.handle(Channels.useDefaultFolder, (e) => (trusted(e) ? useFolder(defaultFolder()) : refuse()));
   ipcMain.handle(Channels.chooseFolder, async (e): Promise<string | null> => {
     if (!trusted(e)) return refuse();
     if (headless || !win) {
-      headlessLog.dialogs.push('Choose Tape Folder');
+      headlessLog.dialogs.push('Choose Session Folder');
       return null;
     }
     const picked = await dialog.showOpenDialog(win, {
-      title: 'Choose Tape Folder',
+      title: 'Choose Session Folder',
       buttonLabel: 'Use Folder',
       properties: ['openDirectory', 'createDirectory'],
     });
@@ -246,16 +246,16 @@ function registerFolderIpc(): void {
     return picked.canceled || !dir ? null : useFolder(dir);
   });
   ipcMain.handle(Channels.folder, (e, op: unknown, args: unknown) =>
-    trusted(e) ? folderCall(tapeFolder, op, args) : refuse(),
+    trusted(e) ? folderCall(sessionFolder, op, args) : refuse(),
   );
-  ipcMain.handle(Channels.exportTape, async (e, name: unknown, text: unknown): Promise<boolean> => {
+  ipcMain.handle(Channels.exportSession, async (e, name: unknown, text: unknown): Promise<boolean> => {
     if (!trusted(e) || typeof name !== 'string' || typeof text !== 'string') return refuse();
     if (headless || !win) {
-      headlessLog.dialogs.push('Export Tape');
+      headlessLog.dialogs.push('Export Session');
       return false;
     }
     const picked = await dialog.showSaveDialog(win, {
-      title: 'Export Tape',
+      title: 'Export Session',
       defaultPath: path.join(app.getPath('documents'), `${name}.txt`),
       filters: [{ name: 'Text', extensions: ['txt'] }],
     });

@@ -43,11 +43,11 @@ describe('live results (PRD §9.1)', () => {
   });
 });
 
-describe('the tape (PRD §7.1)', () => {
+describe('the session (PRD §7.1)', () => {
   it('commits a line, clears it and keeps the result on the display', () => {
     const { app } = makeApp();
     enter(app, '5+3');
-    expect(app.tape.value.lines.map((l) => l.input)).toEqual(['5+3']);
+    expect(app.session.value.lines.map((l) => l.input)).toEqual(['5+3']);
     expect(app.line.value.text).toBe('');
     expect(app.shown.value).toEqual({ kind: 'result', text: '8' });
     expect(app.announcement.value).toBe('Result 8');
@@ -68,7 +68,7 @@ describe('the tape (PRD §7.1)', () => {
     enter(app, '5+3');
     app.commit();
     app.commit();
-    expect(app.tape.value.lines.map((l) => l.input)).toEqual(['5+3', 'ans +3', 'ans +3']);
+    expect(app.session.value.lines.map((l) => l.input)).toEqual(['5+3', 'ans +3', 'ans +3']);
     expect(app.shown.value.text).toBe('14');
   });
 
@@ -77,13 +77,13 @@ describe('the tape (PRD §7.1)', () => {
     app.commit();
     enter(app, '7');
     app.commit();
-    expect(app.tape.value.lines).toHaveLength(1);
+    expect(app.session.value.lines).toHaveLength(1);
   });
 
   it('commits an error line and shows the error', () => {
     const { app } = makeApp();
     enter(app, '1/0');
-    expect(app.tape.value.lines[0]!.result.kind).toBe('error');
+    expect(app.session.value.lines[0]!.result.kind).toBe('error');
     expect(app.shown.value.kind).toBe('error');
   });
 
@@ -111,45 +111,45 @@ describe('the tape (PRD §7.1)', () => {
     expect(shown).toBe('0.25');
   });
 
-  it('clears the tape and puts it back with Undo', () => {
+  it('clears the session and puts it back with Undo', () => {
     const { app } = makeApp();
     enter(app, '1', '2');
-    app.clearTape();
-    expect(app.tape.value.lines).toHaveLength(0);
+    app.clearSession();
+    expect(app.session.value.lines).toHaveLength(0);
     expect(app.notice.value?.text).toBe('Cleared 2 lines.');
     app.notice.value!.action!.run();
-    expect(app.tape.value.lines).toHaveLength(2);
+    expect(app.session.value.lines).toHaveLength(2);
     expect(app.shown.value.text).toBe('2');
   });
 });
 
-describe('tape changes and undo (PRD §7.2, §7.3)', () => {
-  it('undoes and redoes commits, deleted lines and Clear Tape', () => {
+describe('session changes and undo (PRD §7.2, §7.3)', () => {
+  it('undoes and redoes commits, deleted lines and Clear Session', () => {
     const { app } = makeApp();
     enter(app, 'x = 4', 'x * 2');
     app.deleteLine(0);
-    expect(app.tape.value.lines.map((l) => l.input)).toEqual(['x * 2']);
+    expect(app.session.value.lines.map((l) => l.input)).toEqual(['x * 2']);
     expect(app.shown.value.kind).toBe('error');
-    app.clearTape();
-    expect(app.canStepTape('undo')).toBe(true);
-    app.stepTape('undo');
-    app.stepTape('undo');
-    expect(app.tape.value.lines).toHaveLength(2);
+    app.clearSession();
+    expect(app.canStepSession('undo')).toBe(true);
+    app.stepSession('undo');
+    app.stepSession('undo');
+    expect(app.session.value.lines).toHaveLength(2);
     expect(app.shown.value.text).toBe('8');
-    app.stepTape('undo');
-    expect(app.tape.value.lines.map((l) => l.input)).toEqual(['x = 4']);
-    app.stepTape('redo');
-    app.stepTape('redo');
-    expect(app.tape.value.lines.map((l) => l.input)).toEqual(['x * 2']);
+    app.stepSession('undo');
+    expect(app.session.value.lines.map((l) => l.input)).toEqual(['x = 4']);
+    app.stepSession('redo');
+    app.stepSession('redo');
+    expect(app.session.value.lines.map((l) => l.input)).toEqual(['x * 2']);
   });
 
   it('leaves ⌘Z to the expression line while it has text', () => {
     const { app } = makeApp();
     enter(app, '1');
     type(app, '2');
-    expect(app.canStepTape('undo')).toBe(false);
+    expect(app.canStepSession('undo')).toBe(false);
     app.clear();
-    expect(app.canStepTape('undo')).toBe(true);
+    expect(app.canStepSession('undo')).toBe(true);
   });
 });
 
@@ -163,7 +163,7 @@ describe('clearing (PRD §9.2)', () => {
     expect(app.shown.value.text).toBe('42');
     app.clear();
     expect(app.shown.value.text).toBe('0');
-    expect(app.tape.value.lines).toHaveLength(1);
+    expect(app.session.value.lines).toHaveLength(1);
   });
 });
 
@@ -171,7 +171,7 @@ describe('keypad keys', () => {
   it('type digits and operators, and = commits', () => {
     const { app } = makeApp();
     for (const id of ['d7', 'multiply', 'd6', 'equals']) app.press(key(id));
-    expect(app.tape.value.lines[0]!.input).toBe('7*6');
+    expect(app.session.value.lines[0]!.input).toBe('7*6');
     expect(app.shown.value.text).toBe('42');
   });
 
@@ -241,11 +241,11 @@ describe('Copy Result', () => {
 });
 
 describe('settings and the window (PRD §9.1, §11)', () => {
-  it('keeps settings and grows the window for Scientific and the tape', () => {
+  it('keeps settings and grows the window for Scientific and the session', () => {
     const { app, storage, widths } = makeApp();
     app.setMode('scientific');
-    app.toggleTape();
-    expect(storage.load()).toMatchObject({ mode: 'scientific', showTape: true });
+    app.toggleSession();
+    expect(storage.load()).toMatchObject({ mode: 'scientific', showSession: true });
     expect(widths).toEqual([windowWidth('scientific', false), windowWidth('scientific', true)]);
   });
 
@@ -319,7 +319,7 @@ describe('the display after a commit (PRD §9.1, §14)', () => {
 });
 
 describe('memory keys (PRD §5)', () => {
-  const inputs = (app: ReturnType<typeof makeApp>['app']) => app.tape.value.lines.map((l) => l.input);
+  const inputs = (app: ReturnType<typeof makeApp>['app']) => app.session.value.lines.map((l) => l.input);
 
   it('adds the typed line’s result after committing it, and shows M', () => {
     const { app } = makeApp();
@@ -383,7 +383,7 @@ describe('classic entry (PRD §9.3)', () => {
     expect(app.shown.value.text).toBe('14');
     app.press(key('back'));
     keys(app, '1=');
-    expect(app.tape.value.lines.map((l) => l.input)).toEqual(['2 + 3 * 4 - 1']);
+    expect(app.session.value.lines.map((l) => l.input)).toEqual(['2 + 3 * 4 - 1']);
     expect(app.shown.value).toMatchObject({ kind: 'result', text: '13' });
   });
 
@@ -407,7 +407,7 @@ describe('classic entry (PRD §9.3)', () => {
   it('repeats the last operation when = is pressed again', () => {
     const { app } = makeApp({ entry: 'classic' });
     keys(app, '10+5==');
-    expect(app.tape.value.lines.map((l) => l.input)).toEqual(['10 + 5', 'ans + 5']);
+    expect(app.session.value.lines.map((l) => l.input)).toEqual(['10 + 5', 'ans + 5']);
     expect(app.shown.value.text).toBe('20');
   });
 
@@ -418,7 +418,7 @@ describe('classic entry (PRD §9.3)', () => {
     expect(app.shown.value.text).toBe('3');
     app.commit();
     keys(app, '*2=');
-    expect(app.tape.value.lines.map((l) => l.input)).toEqual(['sqrt(9)', 'ans * 2']);
+    expect(app.session.value.lines.map((l) => l.input)).toEqual(['sqrt(9)', 'ans * 2']);
     expect(app.shown.value.text).toBe('6');
   });
 
@@ -443,7 +443,7 @@ describe('classic entry (PRD §9.3)', () => {
     expect(app.shown.value).toMatchObject({ kind: 'error', text: 'Can’t divide by zero.' });
     keys(app, '6*7');
     app.press(key('madd'));
-    expect(app.tape.value.lines.map((l) => l.input).slice(1)).toEqual(['6 * 7', 'mem = mem + 42']);
+    expect(app.session.value.lines.map((l) => l.input).slice(1)).toEqual(['6 * 7', 'mem = mem + 42']);
     app.press(key('mrecall'));
     expect(app.shown.value.text).toBe('42');
   });

@@ -2,7 +2,7 @@ import { parseDecimal, type Decimal } from '@abacite/core';
 import { MemoryFolder, memorySettings, storageKeep, type Settings } from '@abacite/ui';
 import {
   AppController,
-  TapeFolders,
+  SessionFolders,
   buildCommands,
   type ControllerOptions,
   type FolderPlatform,
@@ -50,7 +50,7 @@ export function enter(app: AppController, ...lines: string[]): void {
   }
 }
 
-/** A tape keep on a map, for tests. */
+/** A session keep on a map, for tests. */
 export function memoryKeep() {
   const map = new Map<string, string>();
   const keep = storageKeep({
@@ -80,7 +80,7 @@ export function memoryPlatform(first: OpenedFolder | FolderSetup = { kind: 'firs
       state.defaults.push(remember);
       return Promise.resolve(fallback);
     },
-    exportTape: (name, text) => {
+    exportSession: (name, text) => {
       state.exported.push([name, text]);
       return Promise.resolve(true);
     },
@@ -89,11 +89,11 @@ export function memoryPlatform(first: OpenedFolder | FolderSetup = { kind: 'firs
   return { platform, state };
 }
 
-/** An app with tape folders on a memory platform; every tape command is in its catalog. */
+/** An app with session folders on a memory platform; every session command is in its catalog. */
 export function makeFolderApp(first?: OpenedFolder | FolderSetup) {
-  const made = makeApp({ showTape: true });
+  const made = makeApp({ showSession: true });
   const { platform, state } = memoryPlatform(first);
-  const folders = new TapeFolders(made.app, platform, memoryKeep().keep, { retries: [0, 0] });
+  const folders = new SessionFolders(made.app, platform, memoryKeep().keep, { retries: [0, 0] });
   const catalog = buildCommands(made.app, folders);
   return { ...made, catalog, folders, state };
 }

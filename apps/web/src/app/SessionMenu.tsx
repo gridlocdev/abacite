@@ -2,8 +2,8 @@ import { usePopupFocus } from '@abacite/ui';
 import { useRef } from 'preact/hooks';
 import type { AppController } from './controller.ts';
 
-/** Where a tape line's menu opened: the line, and the point in the window. */
-export interface TapeMenuPlace {
+/** Where a session line's menu opened: the line, and the point in the window. */
+export interface SessionMenuPlace {
   readonly index: number;
   readonly x: number;
   readonly y: number;
@@ -13,20 +13,20 @@ const WIDTH = 190;
 const HEIGHT = 170;
 
 /**
- * A tape line's right-click menu (PRD §7.1): Copy Result, Copy Expression, Insert Result, Insert Expression
+ * A session line's right-click menu (PRD §7.1): Copy Result, Copy Expression, Insert Result, Insert Expression
  * and Delete Line. ↑ and ↓ move, Enter picks, Escape or a click elsewhere closes it, and the keyboard goes
  * back to where it was.
  */
-export function TapeMenu(props: {
+export function SessionMenu(props: {
   readonly app: AppController;
-  readonly place: TapeMenuPlace;
+  readonly place: SessionMenuPlace;
   readonly onClose: () => void;
 }) {
   const { app, place, onClose } = props;
   const menu = useRef<HTMLDivElement>(null);
   usePopupFocus(menu, onClose);
 
-  const line = app.tape.value.lines[place.index];
+  const line = app.session.value.lines[place.index];
   if (!line) return null;
   const r = line.result;
   const value = r.kind === 'value' ? app.format(r.value).replaceAll(',', '') : null;
@@ -48,13 +48,13 @@ export function TapeMenu(props: {
       ref={menu}
       class="ab-menu"
       role="menu"
-      aria-label="Tape line"
+      aria-label="Session line"
       style={{
         left: `${Math.max(0, Math.min(place.x, window.innerWidth - WIDTH))}px`,
         top: `${Math.max(0, Math.min(place.y, window.innerHeight - HEIGHT))}px`,
       }}
       onKeyDown={(e) => {
-        // The app's own keys (Escape clears the line, ↑ walks the tape) wait while the menu is open.
+        // The app's own keys (Escape clears the line, ↑ walks the session) wait while the menu is open.
         if (e.key === 'Escape' || e.key === 'Tab') onClose();
         else if (e.key === 'ArrowDown') move(1);
         else if (e.key === 'ArrowUp') move(-1);

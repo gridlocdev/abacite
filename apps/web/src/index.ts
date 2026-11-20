@@ -30,20 +30,20 @@ export {
 } from './app/lineEdit.ts';
 export {
   RETRIES,
-  OpenTape,
+  OpenSession,
   type Conflict,
   type Recovery,
   type SaveState,
-  type OpenTapeOptions,
-} from './app/openTape.ts';
+  type OpenSessionOptions,
+} from './app/openSession.ts';
 export { editByKey } from './app/lineEdit.ts';
 export {
   BROWSER_KEY,
-  TapeFolders,
+  SessionFolders,
   browserPlatform,
   desktopPlatform,
   inBrowserStorage,
   type FolderPlatform,
   type FolderSetup,
   type OpenedFolder,
-} from './app/tapeFolders.ts';
+} from './app/sessionFolders.ts';

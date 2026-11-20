@@ -5,7 +5,7 @@ import { folderContract } from './folderContract.ts';
 folderContract('memory', () => Promise.resolve(new MemoryFolder()));
 folderContract('file handle', () =>
   Promise.resolve(
-    new HandleFolder(new FakeDirectory('Tapes') as unknown as FileSystemDirectoryHandle, 'Tapes'),
+    new HandleFolder(new FakeDirectory('Sessions') as unknown as FileSystemDirectoryHandle, 'Sessions'),
   ),
 );
 

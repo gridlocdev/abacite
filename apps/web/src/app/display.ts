@@ -6,7 +6,7 @@ import {
   startsWithOperator,
   type Decimal,
   type Env,
-  type Tape,
+  type Session,
 } from '@abacite/core';
 import { classicEmpty, classicSegment, classicText, formatEntry, type ClassicState } from './classic.ts';
 import type { Ghost, Shown } from './view.ts';
@@ -20,7 +20,7 @@ export type FormatResult = (value: Decimal, unit: string | null) => string;
 /** The display for a typed expression line; `live` is the last complete result, kept greyed while unfinished. */
 export function lineDisplay(input: {
   readonly text: string;
-  readonly tape: Tape;
+  readonly session: Session;
   readonly env: Env;
   readonly format: FormatResult;
   /** The last complete live result before this edit. */
@@ -28,8 +28,8 @@ export function lineDisplay(input: {
   /** The last committed result, or 0. */
   readonly last: string;
 }): { shown: Shown; ghost: Ghost; live: string | null } {
-  const { text, tape, format } = input;
-  const evaluation = preview(tape, text, input.env);
+  const { text, session, format } = input;
+  const evaluation = preview(session, text, input.env);
   const result = evaluation.result;
   let live = input.live;
   let shown: Shown;
@@ -44,7 +44,7 @@ export function lineDisplay(input: {
   } else {
     shown = { kind: 'pending', text: live ?? input.last };
   }
-  const ans = expandInput(text, tape) !== text && startsWithOperator(text);
+  const ans = expandInput(text, session) !== text && startsWithOperator(text);
   return { shown, ghost: { ans, missingParens: evaluation.missingParens, errorAt }, live };
 }
 
@@ -56,7 +56,7 @@ export function lineDisplay(input: {
 export function classicDisplay(input: {
   readonly state: ClassicState;
   readonly group: boolean;
-  readonly tape: Tape;
+  readonly session: Session;
   readonly env: Env;
   readonly format: FormatResult;
 }): Shown | 'last' | 'pending' | 'keep' {
@@ -64,7 +64,7 @@ export function classicDisplay(input: {
   if (s.typing) return { kind: 'live', text: formatEntry(s.entry!, input.group) };
   const text = percentShown(s) ?? s.entry ?? classicSegment(s);
   if (text === null) return classicEmpty(s) ? 'last' : 'pending';
-  const result = evaluate(text, input.tape.scope, input.env).result;
+  const result = evaluate(text, input.session.scope, input.env).result;
   if (result.kind === 'value') return { kind: 'live', text: input.format(result.value, result.unit) };
   return result.kind === 'error' ? { kind: 'error', text: result.message } : 'keep';
 }

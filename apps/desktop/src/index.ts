@@ -32,7 +32,7 @@ export {
   type FolderInfo,
   type FolderReply,
 } from './folderChoice.ts';
-export { FolderError, NodeFolder, versionOf, type FileRead, type FolderErrorKind } from './tapeFolder.ts';
+export { FolderError, NodeFolder, versionOf, type FileRead, type FolderErrorKind } from './sessionFolder.ts';
 export {
   CHECK_INTERVAL_MS,
   RELEASES_API,

@@ -10,7 +10,7 @@ export const Channels = {
   useDefaultFolder: 'abacite:use-default-folder',
   chooseFolder: 'abacite:choose-folder',
   folder: 'abacite:folder',
-  exportTape: 'abacite:export-tape',
+  exportSession: 'abacite:export-session',
   latestRelease: 'abacite:latest-release',
 } as const;
 

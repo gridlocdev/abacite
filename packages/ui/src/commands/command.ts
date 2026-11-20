@@ -172,7 +172,7 @@ export class CommandCatalog {
 }
 
 /**
- * Command menu search (PRD §10). Spaces don't count, so "cleartape" and "clear tape" both find Clear Tape. Best
+ * Command menu search (PRD §10). Spaces don't count, so "clearsession" and "clear session" both find Clear Session. Best
  * first: the title starts with the query, then contains it, then the group or keywords contain it (or
  * every typed word appears somewhere), then the title holds the query's letters in order ("nwev").
  * Within a rank, recent entries lead and the rest keep their order. With nothing typed, recent first.

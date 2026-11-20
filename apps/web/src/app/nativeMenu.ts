@@ -17,9 +17,9 @@ const BREAKS = new Set([
   'file.export',
   'app.settings',
   'edit.copyResult',
-  'tape.clear',
+  'session.clear',
   'view.classic',
-  'view.tape',
+  'view.session',
   'view.angle',
   'view.themeSystem',
   'help.shortcuts',
@@ -102,7 +102,7 @@ export function watchMenuInputs(
   const stop = effect(() => {
     void app.settings.value;
     void app.dialog.value;
-    void app.tape.value;
+    void app.session.value;
     for (const s of more) void s.value;
     later.call();
   });

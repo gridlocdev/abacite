@@ -1,5 +1,5 @@
 /**
- * The browser's tape folders (PRD §8.2): a folder the user picked with the File System Access API, or the
+ * The browser's session folders (PRD §8.2): a folder the user picked with the File System Access API, or the
  * browser's own storage (the origin private file system), or memory where a browser has neither.
  */
 import { HandleFolder } from './handleFolder.ts';
@@ -9,6 +9,9 @@ import type { Folder } from './folder.ts';
 
 /** The label of the browser's own storage; the status bar says "Stored in this browser". */
 export const BROWSER_LABEL = 'this browser';
+
+/** The folder in the browser's own storage. Sessions were once called tapes; stored names keep the old word. */
+export const STORAGE_FOLDER = 'tapes';
 
 interface PermissionHandle {
   queryPermission(options: { mode: 'readwrite' }): Promise<PermissionState>;
@@ -30,9 +33,9 @@ export async function browserFolder(): Promise<Folder> {
   if (typeof storage?.getDirectory === 'function') {
     try {
       const root = await storage.getDirectory();
-      return new HandleFolder(await root.getDirectoryHandle('tapes', { create: true }), BROWSER_LABEL);
+      return new HandleFolder(await root.getDirectoryHandle(STORAGE_FOLDER, { create: true }), BROWSER_LABEL);
     } catch (e) {
-      // Storage refused (a private window, a full disk): this visit keeps tapes in memory.
+      // Storage refused (a private window, a full disk): this visit keeps sessions in memory.
       if (!(e instanceof DOMException)) throw e;
     }
   }

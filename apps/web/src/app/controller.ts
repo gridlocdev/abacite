@@ -1,18 +1,18 @@
 /** The app's state and what the UI does to it. Components read the signals and call the methods. */
 import { batch, signal, type Signal } from '@preact/signals';
 import {
-  EMPTY_TAPE,
+  EMPTY_SESSION,
   commit,
   defaultRandom,
   deleteLine,
-  evaluateTape,
+  evaluateSession,
   formatDecimal,
   memoryLine,
   memorySet,
   repeatInput,
   type Decimal,
   type Env,
-  type Tape,
+  type Session,
 } from '@abacite/core';
 import { type Angle, type Entry, type Mode, type Settings, type SettingsStorage } from '@abacite/ui';
 import {
@@ -42,7 +42,15 @@ import {
 } from './lineEdit.ts';
 
 export type DialogKind =
-  'commands' | 'shortcuts' | 'settings' | 'tapes' | 'rename' | 'trash' | 'conflict' | 'recovery' | 'folder';
+  | 'commands'
+  | 'shortcuts'
+  | 'settings'
+  | 'sessions'
+  | 'rename'
+  | 'trash'
+  | 'conflict'
+  | 'recovery'
+  | 'folder';
 
 export interface ControllerOptions {
   readonly settings: SettingsStorage;
@@ -58,7 +66,7 @@ export interface ControllerOptions {
 export class AppController {
   readonly version: string;
   readonly settings: Signal<Settings>;
-  readonly tape = signal<Tape>(EMPTY_TAPE);
+  readonly session = signal<Session>(EMPTY_SESSION);
   /** The expression line's text and selection. */
   readonly line = signal<LineState>(EMPTY_LINE);
   readonly shown = signal<Shown>(ZERO_SHOWN);
@@ -87,11 +95,11 @@ export class AppController {
   #lastLive: string | null = null;
   /** `rand()` values drawn while previewing, so the committed line gets the value that was shown. */
   #pool: Decimal[] = [];
-  /** Where ↑/↓ is in the tape's inputs, and what was being typed before (PRD §7.1). */
+  /** Where ↑/↓ is in the session's inputs, and what was being typed before (PRD §7.1). */
   #history: HistoryPlace | null = null;
   #droppedShown = false;
-  /** Earlier tapes, for ⌘Z (PRD §7.3). */
-  readonly #undo = new UndoStack<Tape>();
+  /** Earlier sessions, for ⌘Z (PRD §7.3). */
+  readonly #undo = new UndoStack<Session>();
 
   constructor(options: ControllerOptions) {
     this.version = options.version;
@@ -111,7 +119,7 @@ export class AppController {
     this.#storage.save(next);
   }
 
-  /** Another window changed the settings: take them without saving them back. The angle stays the tape's own. */
+  /** Another window changed the settings: take them without saving them back. The angle stays the session's own. */
   #takeOutside(outside: Settings): void {
     const before = this.settings.value;
     const next = { ...outside, angle: before.angle };
@@ -123,7 +131,7 @@ export class AppController {
       }
       if (next.entry !== before.entry || next.groupDigits !== before.groupDigits) this.#refresh();
     });
-    if (next.mode !== before.mode || next.showTape !== before.showTape) this.#fit();
+    if (next.mode !== before.mode || next.showSession !== before.showSession) this.#fit();
   }
 
   setMode(mode: Mode): void {
@@ -131,8 +139,8 @@ export class AppController {
     this.#fit();
   }
 
-  toggleTape(): void {
-    this.update({ showTape: !this.settings.value.showTape });
+  toggleSession(): void {
+    this.update({ showSession: !this.settings.value.showSession });
     this.#fit();
   }
 
@@ -162,10 +170,10 @@ export class AppController {
     return this.classicEntry() ? !classicEmpty(this.classic.value) : !!this.line.value.text;
   }
 
-  /** The open tape's angle unit, kept in its file (PRD §8.1): the tape is worked out again in it. */
+  /** The open session's angle unit, kept in its file (PRD §8.1): the session is worked out again in it. */
   setAngle(angle: Angle): void {
     this.update({ angle });
-    this.#showTape(evaluateTape(this.tape.value.lines, this.#env()));
+    this.#showSession(evaluateSession(this.session.value.lines, this.#env()));
     this.say(angle === 'rad' ? 'Angles are in radians.' : 'Angles are in degrees.');
   }
 
@@ -178,10 +186,10 @@ export class AppController {
     this.#refresh();
   }
 
-  /** Asks the desktop window to be wide enough for the mode and tape. */
+  /** Asks the desktop window to be wide enough for the mode and session. */
   #fit(): void {
-    const { mode, showTape } = this.settings.value;
-    this.#fitWidth?.(windowWidth(mode, showTape));
+    const { mode, showSession } = this.settings.value;
+    this.#fitWidth?.(windowWidth(mode, showSession));
   }
 
   // Dialogs and notices
@@ -240,7 +248,7 @@ export class AppController {
     this.setLine(insertText(this.line.value, cleanPaste(text)));
   }
 
-  /** Puts text at the cursor: a tape line's result or input (PRD §7.1). */
+  /** Puts text at the cursor: a session line's result or input (PRD §7.1). */
   insert(text: string): void {
     this.setLine(insertText(this.line.value, text));
   }
@@ -285,7 +293,7 @@ export class AppController {
       if (def !== key) this.second.value = false;
       return;
     }
-    const edited = editByKey(this.line.value, action, this.tape.value.lines.length > 0);
+    const edited = editByKey(this.line.value, action, this.session.value.lines.length > 0);
     if (edited) this.setLine(edited);
     switch (action.type) {
       case 'insert':
@@ -315,7 +323,7 @@ export class AppController {
   }
 
   /**
-   * Enter: commits the line to the tape. On an empty line, repeats the last operation on the last result
+   * Enter: commits the line to the session. On an empty line, repeats the last operation on the last result
    * (PRD §7.1).
    */
   commit(): void {
@@ -324,7 +332,7 @@ export class AppController {
       : this.line.value.text.trim()
         ? this.line.value.text
         : null;
-    const text = typed ?? repeatInput(this.tape.value);
+    const text = typed ?? repeatInput(this.session.value);
     if (text !== null) this.#commitText(text);
   }
 
@@ -340,14 +348,14 @@ export class AppController {
     return this.#last ? 'ans' : '0';
   }
 
-  /** Puts `text` on the tape as the next line and shows its result. */
+  /** Puts `text` in the session as the next line and shows its result. */
   #commitText(text: string): void {
-    const before = this.tape.value;
-    const tape = commit(before, text, this.#env());
-    const line = tape.lines.at(-1)!;
-    if (tape !== before) this.#undo.push(before);
+    const before = this.session.value;
+    const session = commit(before, text, this.#env());
+    const line = session.lines.at(-1)!;
+    if (session !== before) this.#undo.push(before);
     batch(() => {
-      this.tape.value = tape;
+      this.session.value = session;
       this.#pool = [];
       this.#history = null;
       this.#lastLive = null;
@@ -365,9 +373,9 @@ export class AppController {
       }
       // A comment line has no result: the display keeps the last one.
       this.#refresh();
-      if (tape.dropped && !this.#droppedShown) {
+      if (session.dropped && !this.#droppedShown) {
         this.#droppedShown = true;
-        this.say('The tape keeps 10,000 lines, so the oldest line was dropped.');
+        this.say('The session keeps 10,000 lines, so the oldest line was dropped.');
       }
     });
   }
@@ -403,72 +411,73 @@ export class AppController {
 
   /** True while memory isn't 0: the display shows "M". */
   memorySet(): boolean {
-    return memorySet(this.tape.value.scope);
+    return memorySet(this.session.value.scope);
   }
 
-  /** ↑ and ↓: walk back and forward through the tape's inputs, then to what was being typed (PRD §7.1). */
+  /** ↑ and ↓: walk back and forward through the session's inputs, then to what was being typed (PRD §7.1). */
   walkHistory(step: -1 | 1): void {
     const walk = this.classicEntry()
       ? null
-      : stepHistory(this.tape.value.lines, this.#history, this.line.value.text, step);
+      : stepHistory(this.session.value.lines, this.#history, this.line.value.text, step);
     if (!walk) return;
     this.line.value = lineAt(walk.text);
     this.#history = walk.history;
     this.#refresh();
   }
 
-  /** Clears the tape; the notice's Undo puts it back (PRD §7.3). */
-  clearTape(): void {
-    const count = this.tape.value.lines.length;
+  /** Clears the session; the notice's Undo puts it back (PRD §7.3). */
+  clearSession(): void {
+    const count = this.session.value.lines.length;
     if (count === 0) return;
-    this.editTape(EMPTY_TAPE);
+    this.editSession(EMPTY_SESSION);
     this.say(`Cleared ${count === 1 ? '1 line' : `${count.toLocaleString('en-US')} lines`}.`, {
       action: {
         label: 'Undo',
-        run: () => void (this.tape.value.lines.length === 0 && this.stepTape('undo')),
+        run: () => void (this.session.value.lines.length === 0 && this.stepSession('undo')),
       },
     });
   }
 
-  /** Deletes a tape line; the lines after it are worked out again (PRD §7.2). */
+  /** Deletes a session line; the lines after it are worked out again (PRD §7.2). */
   deleteLine(index: number): void {
-    this.editTape(deleteLine(this.tape.value, index, this.#env()));
+    this.editSession(deleteLine(this.session.value, index, this.#env()));
   }
 
   /**
-   * True when ⌘Z (or ⇧⌘Z) has a tape change to undo (redo). Only with nothing typed: while the expression line
+   * True when ⌘Z (or ⇧⌘Z) has a session change to undo (redo). Only with nothing typed: while the expression line
    * has text, the keys undo its typing (PRD §7.3).
    */
-  canStepTape(step: 'undo' | 'redo'): boolean {
+  canStepSession(step: 'undo' | 'redo'): boolean {
     return (step === 'undo' ? this.#undo.canUndo() : this.#undo.canRedo()) && !this.hasEntry();
   }
 
-  stepTape(step: 'undo' | 'redo'): void {
-    const tape = step === 'undo' ? this.#undo.undo(this.tape.value) : this.#undo.redo(this.tape.value);
-    if (tape) this.#showTape(tape);
+  stepSession(step: 'undo' | 'redo'): void {
+    const session =
+      step === 'undo' ? this.#undo.undo(this.session.value) : this.#undo.redo(this.session.value);
+    if (session) this.#showSession(session);
   }
 
-  /** Shows a tape just opened, in its file's angle unit, with nothing to undo (PRD §8.2). */
-  loadTape(tape: Tape, angle: Angle): void {
+  /** Shows a session just opened, in its file's angle unit, with nothing to undo (PRD §8.2). */
+  loadSession(session: Session, angle: Angle): void {
     batch(() => {
       this.#undo.clear();
       if (angle !== this.settings.value.angle) this.update({ angle });
-      this.#showTape(tape);
+      this.#showSession(session);
     });
   }
 
-  /** A change to the tape other than a commit, kept for ⌘Z. */
-  editTape(tape: Tape): void {
-    if (tape === this.tape.value) return;
-    this.#undo.push(this.tape.value);
-    this.#showTape(tape);
+  /** A change to the session other than a commit, kept for ⌘Z. */
+  editSession(session: Session): void {
+    if (session === this.session.value) return;
+    this.#undo.push(this.session.value);
+    this.#showSession(session);
   }
 
-  /** Shows `tape`, with its last line's result on the display. */
-  #showTape(tape: Tape): void {
-    const last = tape.lines.at(-1)?.result;
+  /** Shows `session`, with its last line's result on the display. */
+  #showSession(session: Session): void {
+    const last = session.lines.at(-1)?.result;
     batch(() => {
-      this.tape.value = tape;
+      this.session.value = session;
       this.#last = last?.kind === 'value' ? last.value : null;
       this.#lastUnit = last?.kind === 'value' ? last.unit : null;
       this.#lastError = last?.kind === 'error' ? last.message : null;
@@ -487,7 +496,7 @@ export class AppController {
     return this.copyText(this.currentValue());
   }
 
-  /** Copies text and says so: a result, or a tape line's input (PRD §7.1). Null when there's no result. */
+  /** Copies text and says so: a result, or a session line's input (PRD §7.1). Null when there's no result. */
   async copyText(text: string | null): Promise<void> {
     if (text === null) return this.say('There’s no result to copy.', { tone: 'error' });
     try {
@@ -522,7 +531,7 @@ export class AppController {
 
   /** Works out the display and the ghost text from the line (PRD §9.1). */
   #refresh(): void {
-    const tape = this.tape.value;
+    const session = this.session.value;
     const format = (value: Decimal, unit: string | null) => this.#formatResult(value, unit);
     if (this.classicEntry()) {
       this.ghost.value = NO_GHOST;
@@ -530,7 +539,7 @@ export class AppController {
       const shown = classicDisplay({
         state: this.classic.value,
         group: this.settings.value.groupDigits,
-        tape,
+        session,
         env,
         format,
       });
@@ -547,7 +556,7 @@ export class AppController {
       return;
     }
     const last = this.#last ? this.#formatResult(this.#last, this.#lastUnit) : '0';
-    const view = lineDisplay({ text, tape, env: this.#env(), format, live: this.#lastLive, last });
+    const view = lineDisplay({ text, session, env: this.#env(), format, live: this.#lastLive, last });
     this.#lastLive = view.live;
     this.shown.value = view.shown;
     this.ghost.value = view.ghost;

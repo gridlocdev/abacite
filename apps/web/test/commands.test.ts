@@ -11,12 +11,12 @@ describe('commands', () => {
     expect(app.settings.value).toMatchObject({ mode: 'scientific', angle: 'rad', theme: 'dark' });
   });
 
-  it('Clear Tape is off with an empty tape', () => {
+  it('Clear Session is off with an empty session', () => {
     const { app, catalog } = makeApp();
-    expect(catalog.run('tape.clear')).toBe(false);
+    expect(catalog.run('session.clear')).toBe(false);
     enter(app, '1');
-    expect(catalog.run('tape.clear')).toBe(true);
-    expect(app.tape.value.lines).toHaveLength(0);
+    expect(catalog.run('session.clear')).toBe(true);
+    expect(app.session.value.lines).toHaveLength(0);
   });
 
   it('let only the dialog toggles through while a dialog is open', () => {
@@ -52,7 +52,7 @@ describe('commands', () => {
     const lines = shortcutGroups(catalog, true).flatMap((g) =>
       g.lines.map((l) => `${l.title} ${l.keys.flat().join(' ')}`),
     );
-    expect(lines).toContain('Clear Tape ⇧⌘⌫');
+    expect(lines).toContain('Clear Session ⇧⌘⌫');
     expect(lines).toContain('Calculate ↩');
     expect(lines).toContain('Settings ⌘,');
   });

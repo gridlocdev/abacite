@@ -2,7 +2,7 @@
   "name": "abacite",
   "private": true,
   "type": "module",
-  "description": "Abacite — a calculator with exact decimal arithmetic and a tape, for the desktop (Electron), the browser and the command line.",
+  "description": "Abacite — a calculator with exact decimal arithmetic and a session, for the desktop (Electron), the browser and the command line.",
   "license": "MIT",
   "engines": {
     "node": ">=22.18"

@@ -142,7 +142,7 @@ check-arch:
 fuzz runs="500":
     FUZZ_RUNS={{ runs }} pnpm vitest run -t random --testTimeout=0
 
-# `--project=web` with the `=`: `--project` takes several names, so `just e2e tape` would read "tape" as one.
+# `--project=web` with the `=`: `--project` takes several names, so `just e2e session` would read "session" as one.
 # Browser scenarios against the built web client.
 [group('quality')]
 [positional-arguments]

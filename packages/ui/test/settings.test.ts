@@ -15,9 +15,20 @@ describe('settings', () => {
       entry: 'classic',
       angle: 'rad',
       groupDigits: 'yes',
-      showTape: true,
+      showSession: true,
     });
-    expect(s).toEqual({ ...DEFAULT_SETTINGS, theme: 'dark', entry: 'classic', angle: 'rad', showTape: true });
+    expect(s).toEqual({
+      ...DEFAULT_SETTINGS,
+      theme: 'dark',
+      entry: 'classic',
+      angle: 'rad',
+      showSession: true,
+    });
+  });
+
+  it('reads Show Tape, saved before sessions were renamed from tapes', () => {
+    expect(parseSettings({ showTape: true }).showSession).toBe(true);
+    expect(parseSettings({ showTape: true, showSession: false }).showSession).toBe(false);
   });
 
   it('reads anything that is not an object as the defaults', () => {
@@ -28,7 +39,7 @@ describe('settings', () => {
   it('reads another window’s settings from a storage event, and nothing else', () => {
     const newValue = JSON.stringify({ ...DEFAULT_SETTINGS, theme: 'dark' });
     expect(settingsFromEvent({ key: 'abacite.settings', newValue })?.theme).toBe('dark');
-    expect(settingsFromEvent({ key: 'abacite.lastTape', newValue })).toBeNull();
+    expect(settingsFromEvent({ key: 'abacite.lastSession', newValue })).toBeNull();
     expect(settingsFromEvent({ key: 'abacite.settings', newValue: '{oops' })).toBeNull();
     expect(settingsFromEvent({ key: null, newValue: null })).toEqual(DEFAULT_SETTINGS);
   });

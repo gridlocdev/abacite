@@ -112,7 +112,7 @@ export function outerWidth(pageWidth: number, zoom: number, frame: number): numb
 }
 
 /**
- * The window grown to at least `width` (the Scientific keypad or the tape, PRD §9.1), kept on its screen:
+ * The window grown to at least `width` (the Scientific keypad or the session, PRD §9.1), kept on its screen:
  * never wider than the screen, and moved left when it would run off the right edge. Null when it is wide enough.
  */
 export function widened(bounds: Rect, width: number, area: Rect): Rect | null {

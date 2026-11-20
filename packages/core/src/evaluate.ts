@@ -28,7 +28,7 @@ import { convert, findConversion, missingFromUnit, splitUnit } from './units.ts'
 
 export type AngleUnit = f.AngleUnit;
 
-/** What a tape knows before a line: its variables and the previous result (PRD §4.3, §7.2). */
+/** What a session knows before a line: its variables and the previous result (PRD §4.3, §7.2). */
 export interface Scope {
   readonly vars: ReadonlyMap<string, Decimal>;
   readonly ans: Decimal;
@@ -38,7 +38,7 @@ export const EMPTY_SCOPE: Scope = { vars: new Map(), ans: ZERO };
 
 export interface Env {
   readonly angle: AngleUnit;
-  /** A uniform random number in [0, 1); injected so tests and tapes can replay it (PRD §7.2). */
+  /** A uniform random number in [0, 1); injected so tests and sessions can replay it (PRD §7.2). */
   readonly random: () => Decimal;
 }
 
@@ -244,7 +244,7 @@ function unfinishedConversion(text: string): boolean {
   return splitUnit(separator ? text.slice(0, separator.index) : text) !== null;
 }
 
-/** Evaluates one tape line (PRD §4, §5, §6). */
+/** Evaluates one session line (PRD §4, §5, §6). */
 export function evaluate(line: string, scope: Scope = EMPTY_SCOPE, env: Env = DEFAULT_ENV): Evaluation {
   let missingParens = 0;
   const text = stripComment(line);

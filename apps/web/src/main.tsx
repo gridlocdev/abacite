@@ -8,7 +8,7 @@ import { buildCommands } from './app/commands.ts';
 import { AppController } from './app/controller.ts';
 import { nativeBridge, type Release } from './app/native.ts';
 import { menuSender, nativeMenu, watchMenuInputs } from './app/nativeMenu.ts';
-import { TapeFolders, browserPlatform, desktopPlatform } from './app/tapeFolders.ts';
+import { SessionFolders, browserPlatform, desktopPlatform } from './app/sessionFolders.ts';
 import pkg from '../package.json';
 
 const root = document.getElementById('app')!;
@@ -20,7 +20,7 @@ function start(): void {
     version: native?.version ?? pkg.version,
     ...(native ? { fitWidth: (width: number) => native.fitWidth(width) } : {}),
   });
-  const folders = new TapeFolders(app, native ? desktopPlatform(native) : browserPlatform(), localKeep());
+  const folders = new SessionFolders(app, native ? desktopPlatform(native) : browserPlatform(), localKeep());
   const catalog = buildCommands(app, folders);
   const release = signal<Release | null>(null);
   render(<App app={app} catalog={catalog} folders={folders} release={release} />, root);
@@ -29,7 +29,7 @@ function start(): void {
     ?.latestRelease()
     .then((r) => (release.value = r))
     .catch((e: unknown) => console.warn('Could not check for updates:', e));
-  watchTapeFolder(folders);
+  watchSessionFolder(folders);
 
   // The theme lives on <html>, so dialogs and the body follow it too (PRD §11).
   effect(() => {
@@ -73,10 +73,10 @@ function start(): void {
  * Picks up changes made elsewhere when the window comes to the front and every 15 s while it's in front, and
  * keeps a snapshot of unsaved work every 30 s and when the page goes away (PRD §8.3).
  */
-function watchTapeFolder(folders: TapeFolders): void {
+function watchSessionFolder(folders: SessionFolders): void {
   const inFront = () => document.visibilityState === 'visible' && document.hasFocus();
   const check = () => {
-    folders.current.value?.check().catch((e: unknown) => console.warn('Couldn’t check the tape file:', e));
+    folders.current.value?.check().catch((e: unknown) => console.warn('Couldn’t check the session file:', e));
   };
   const snapshot = () => folders.current.value?.snapshot();
   addEventListener('focus', check);

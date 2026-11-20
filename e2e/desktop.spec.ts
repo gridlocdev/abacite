@@ -27,9 +27,9 @@ async function closeApp(app: ElectronApplication): Promise<void> {
   await expect.poll(() => alive(pid), { message: 'no Electron process is left running' }).toBe(false);
 }
 
-/** A first start on a fresh profile asks where to keep tapes: take Documents/Abacite (inside the profile). */
+/** A first start on a fresh profile asks where to keep sessions: take Documents/Abacite (inside the profile). */
 async function firstStart(window: Page): Promise<void> {
-  const question = window.getByRole('dialog', { name: 'Where should Abacite keep tapes?' });
+  const question = window.getByRole('dialog', { name: 'Where should Abacite keep sessions?' });
   await question.getByRole('button', { name: 'Use Documents/Abacite' }).click();
   await expect(question).toBeHidden();
   await waitForApp(window);
@@ -59,9 +59,9 @@ test.describe('Desktop and browser', () => {
         await window.keyboard.type('2*(3+4)');
         await expect(display(window)).toHaveText('14');
         await window.keyboard.press('Enter');
-        const file = path.join(profile, 'Documents', 'Abacite', 'Tape.txt');
+        const file = path.join(profile, 'Documents', 'Abacite', 'Session.txt');
         await expect
-          .poll(() => readFileSync(file, 'utf8'), { message: 'the tape is saved' })
+          .poll(() => readFileSync(file, 'utf8'), { message: 'the session is saved' })
           .toBe('2*(3+4)  # = 14\n');
         // The page may write to the clipboard (Copy Result) and nothing else.
         const permission = (name: string) =>
@@ -100,7 +100,7 @@ test.describe('Desktop and browser', () => {
           window.getByRole('group', { name: 'Scientific keys' }),
           'the keypad is remembered',
         ).toBeVisible();
-        await expect(window.getByTestId('display'), 'the tape is reopened').toHaveText('14');
+        await expect(window.getByTestId('display'), 'the session is reopened').toHaveText('14');
         expect(errors).toEqual([]);
       } finally {
         await closeApp(again);

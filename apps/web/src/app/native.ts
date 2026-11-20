@@ -13,18 +13,18 @@ export interface AbaciteNative {
   setMenu(items: readonly NativeMenuItem[]): void;
   /** A menu bar item was chosen. */
   onCommand(fn: (id: string) => void): void;
-  /** Grows the window to at least this width, for the Scientific keypad or the tape (PRD §9.1). */
+  /** Grows the window to at least this width, for the Scientific keypad or the session (PRD §9.1). */
   fitWidth(width: number): void;
-  /** The remembered tape folder, whether it is there, and the default one (PRD §8.2). */
+  /** The remembered session folder, whether it is there, and the default one (PRD §8.2). */
   folderInfo(): Promise<{ folder: string | null; missing: boolean; defaultFolder: string }>;
-  /** Makes Documents/Abacite the tape folder, creating it. */
+  /** Makes Documents/Abacite the session folder, creating it. */
   useDefaultFolder(): Promise<string>;
-  /** Asks the user for a tape folder; null when they cancel. */
+  /** Asks the user for a session folder; null when they cancel. */
   chooseFolder(): Promise<string | null>;
-  /** One call on the tape folder: `list`, `read`, `write` or `move`. */
+  /** One call in the session folder: `list`, `read`, `write` or `move`. */
   folder(op: string, args: readonly unknown[]): Promise<NativeReply>;
-  /** Asks where to save a copy of the tape and writes it; false when the user cancels. */
-  exportTape(name: string, text: string): Promise<boolean>;
+  /** Asks where to save a copy of the session and writes it; false when the user cancels. */
+  exportSession(name: string, text: string): Promise<boolean>;
   /** A newer release than this one, checked at most once a day (PRD §12); null when there is none. */
   latestRelease(): Promise<Release | null>;
 }

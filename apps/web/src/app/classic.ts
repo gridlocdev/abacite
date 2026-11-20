@@ -1,6 +1,6 @@
 /**
  * Classic entry (PRD §9.3): the keypad works like a pocket calculator. Keys build an ordinary expression
- * (`2 + 3 * 4`), so the engine evaluates it with its usual precedence and `=` puts it on the tape as typed.
+ * (`2 + 3 * 4`), so the engine evaluates it with its usual precedence and `=` puts it in the session as typed.
  * Pure: the controller evaluates the texts this module gives it.
  */
 import type { KeyDef } from './keyDefs.ts';

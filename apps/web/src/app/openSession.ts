@@ -1,20 +1,20 @@
 /**
- * The open tape and its file (PRD §8.2, §8.3): every change is saved at once, one save at a time; a failed
+ * The open session and its file (PRD §8.2, §8.3): every change is saved at once, one save at a time; a failed
  * save is retried, then reported; a save against a file changed elsewhere stops and asks; changes made
  * elsewhere are picked up when nothing is unsaved; unsaved text is kept in snapshots for recovery.
  */
 import { effect, signal } from '@preact/signals';
-import { defaultRandom, readTape, writeTapeText, type Decimal } from '@abacite/core';
+import { defaultRandom, readSession, writeSessionText, type Decimal } from '@abacite/core';
 import {
   StoreError,
-  TapeLibrary,
-  checkTapeName,
+  SessionLibrary,
+  checkSessionName,
   copyName,
   freeName,
   wait,
   type Folder,
   type Snapshot,
-  type TapeKeep,
+  type SessionKeep,
 } from '@abacite/ui';
 import type { AppController } from './controller.ts';
 
@@ -26,18 +26,18 @@ export interface Conflict {
   readonly name: string;
 }
 
-/** A snapshot of unsaved work found on opening a tape. */
+/** A snapshot of unsaved work found on opening a session. */
 export interface Recovery {
   readonly name: string;
   readonly snapshot: Snapshot;
 }
 
-export interface OpenTapeOptions {
+export interface OpenSessionOptions {
   readonly app: AppController;
   readonly folder: Folder;
   /** Names this folder in the keep: its path on desktop, `browser` for the browser's storage. */
   readonly key: string;
-  readonly keep: TapeKeep;
+  readonly keep: SessionKeep;
   readonly random?: () => Decimal;
   readonly now?: () => Date;
   /** The waits before each retry of a failed save (PRD §8.3). */
@@ -46,38 +46,38 @@ export interface OpenTapeOptions {
 
 export const RETRIES = [300, 600] as const;
 
-export class OpenTape {
+export class OpenSession {
   readonly folder: Folder;
-  readonly library: TapeLibrary;
-  /** The open tape's name, or null before one is open. */
+  readonly library: SessionLibrary;
+  /** The open session's name, or null before one is open. */
   readonly name = signal<string | null>(null);
   readonly names = signal<readonly string[]>([]);
   readonly state = signal<SaveState>('saved');
   readonly conflict = signal<Conflict | null>(null);
   readonly recovery = signal<Recovery | null>(null);
-  /** The trash's tapes, as last listed (Open Trash…). */
+  /** The trash's sessions, as last listed (Open Trash…). */
   readonly trashed = signal<readonly string[]>([]);
 
   readonly #app: AppController;
   readonly #key: string;
-  readonly #keep: TapeKeep;
+  readonly #keep: SessionKeep;
   readonly #random: () => Decimal;
   readonly #now: () => Date;
   readonly #retries: readonly number[];
   /** The version of the file as last read or written; null when there was no file. */
   #version: string | null = null;
-  /** The tape's text when it last matched the file: unsaved while the tape's text differs. */
+  /** The session's text when it last matched the file: unsaved while the session's text differs. */
   #clean = '';
   #saving: Promise<void> | null = null;
   #again = false;
-  /** True while this object itself changes the tape, which is then no change to save. */
+  /** True while this object itself changes the session, which is then no change to save. */
   #loading = false;
   #stopWatching: (() => void) | null = null;
 
-  constructor(options: OpenTapeOptions) {
+  constructor(options: OpenSessionOptions) {
     this.#app = options.app;
     this.folder = options.folder;
-    this.library = new TapeLibrary(options.folder);
+    this.library = new SessionLibrary(options.folder);
     this.#key = options.key;
     this.#keep = options.keep;
     this.#random = options.random ?? defaultRandom;
@@ -85,18 +85,18 @@ export class OpenTape {
     this.#retries = options.retries ?? RETRIES;
   }
 
-  /** Opens the tape last open in this folder, or the first, or a new `Tape` in an empty folder. */
+  /** Opens the session last open in this folder, or the first, or a new `Session` in an empty folder. */
   async start(): Promise<void> {
     let names = await this.#refreshNames();
     if (!names.length) {
-      await this.library.create('Tape');
+      await this.library.create('Session');
       names = await this.#refreshNames();
     }
-    const last = this.#keep.lastTape(this.#key);
+    const last = this.#keep.lastSession(this.#key);
     await this.open(last !== null && names.includes(last) ? last : names[0]!);
     this.#stopWatching = effect(() => {
       // Read both, so either one changing is a change to save.
-      void this.#app.tape.value;
+      void this.#app.session.value;
       void this.#app.settings.value.angle;
       if (!this.#loading) void this.save();
     });
@@ -108,17 +108,17 @@ export class OpenTape {
     this.#stopWatching = null;
   }
 
-  /** The text the open tape would be written as. */
+  /** The text the open session would be written as. */
   text(): string {
-    return writeTapeText(this.#app.tape.value, this.#app.settings.value.angle);
+    return writeSessionText(this.#app.session.value, this.#app.settings.value.angle);
   }
 
-  /** True while the tape has changes the file doesn't. */
+  /** True while the session has changes the file doesn't. */
   unsaved(): boolean {
     return this.name.value !== null && this.text() !== this.#clean;
   }
 
-  /** Opens a tape by name, after the open one's last save. */
+  /** Opens a session by name, after the open one's last save. */
   async open(name: string): Promise<boolean> {
     await this.flush();
     const read = await this.library.read(name);
@@ -128,7 +128,7 @@ export class OpenTape {
       return false;
     }
     this.#show(name, read.text, read.version, false);
-    this.#keep.setLastTape(this.#key, name);
+    this.#keep.setLastSession(this.#key, name);
     this.conflict.value = null;
     const snapshot = this.#keep.snapshot(this.#key, name);
     if (snapshot && snapshot.text !== this.#clean && snapshot.text !== read.text) {
@@ -143,7 +143,7 @@ export class OpenTape {
     while (this.#saving) await this.#saving;
   }
 
-  /** Saves the tape if it has changes; a change during a save is saved right after it. */
+  /** Saves the session if it has changes; a change during a save is saved right after it. */
   save(): Promise<void> {
     if (this.#saving) {
       this.#again = true;
@@ -216,14 +216,14 @@ export class OpenTape {
     try {
       this.#keep.putSnapshot(this.#key, name, snapshot);
     } catch (e) {
-      // A full storage quota: the tape itself is still open, and saving goes on.
-      console.warn('Couldn’t keep a snapshot of the tape:', e);
+      // A full storage quota: the session itself is still open, and saving goes on.
+      console.warn('Couldn’t keep a snapshot of the session:', e);
     }
   }
 
   // Conflicts (PRD §8.3)
 
-  /** Writes the tape as `<name> copy <date>` and opens the file on disk (or the copy, if the file is gone). */
+  /** Writes the session as `<name> copy <date>` and opens the file on disk (or the copy, if the file is gone). */
   async saveMineAsCopy(): Promise<void> {
     const conflict = this.conflict.value;
     if (!conflict) return;
@@ -234,10 +234,10 @@ export class OpenTape {
     this.#keep.dropSnapshot(this.#key, conflict.name);
     await this.open(conflict.kind === 'changed' ? conflict.name : copy);
     await this.#refreshNames();
-    this.#app.say(`Saved your tape as ${copy}.`);
+    this.#app.say(`Saved your session as ${copy}.`);
   }
 
-  /** Writes the tape over the file as it is now. */
+  /** Writes the session over the file as it is now. */
   async keepMine(): Promise<void> {
     const conflict = this.conflict.value;
     if (!conflict) return;
@@ -247,7 +247,7 @@ export class OpenTape {
     await this.#refreshNames();
   }
 
-  /** Takes the file as it is now; a deleted file closes the tape. ⌘Z brings the tape back. */
+  /** Takes the file as it is now; a deleted file closes the session. ⌘Z brings the session back. */
   async useTheirs(): Promise<void> {
     const conflict = this.conflict.value;
     if (!conflict) return;
@@ -260,7 +260,7 @@ export class OpenTape {
 
   // Changes made elsewhere (PRD §8.3)
 
-  /** Picks up the file's changes when the tape has nothing unsaved; one undo step. */
+  /** Picks up the file's changes when the session has nothing unsaved; one undo step. */
   async check(): Promise<void> {
     const name = this.name.value;
     if (name === null || this.#saving || this.conflict.value || this.recovery.value || this.unsaved()) return;
@@ -278,19 +278,19 @@ export class OpenTape {
     this.#show(name, read.text, read.version, true);
     if (this.text() === before) return;
     this.#app.say(`Updated ${name} with changes made elsewhere.`, {
-      action: { label: 'Undo', run: () => this.#app.stepTape('undo') },
+      action: { label: 'Undo', run: () => this.#app.stepSession('undo') },
     });
   }
 
   // Recovery (PRD §8.3)
 
-  /** Puts the snapshot's text back on the tape, as one undo step, and saves it. */
+  /** Puts the snapshot's text back in the session, as one undo step, and saves it. */
   restore(): void {
     const recovery = this.recovery.value;
     if (!recovery) return;
     this.recovery.value = null;
-    const { tape } = readTape(recovery.snapshot.text, this.#env());
-    this.#app.editTape(tape);
+    const { session } = readSession(recovery.snapshot.text, this.#env());
+    this.#app.editSession(session);
   }
 
   discard(): void {
@@ -300,20 +300,20 @@ export class OpenTape {
     this.#keep.dropSnapshot(this.#key, recovery.name);
   }
 
-  // The folder's tapes (PRD §8.2)
+  // The folder's sessions (PRD §8.2)
 
-  /** ⌘N: a new tape, `Tape 2`, `Tape 3`…, opened. */
-  async newTape(): Promise<void> {
+  /** ⌘N: a new session, `Session 2`, `Session 3`…, opened. */
+  async newSession(): Promise<void> {
     await this.flush();
-    const { name } = await this.library.create('Tape');
+    const { name } = await this.library.create('Session');
     await this.#refreshNames();
     await this.open(name);
   }
 
-  /** Renames the open tape; returns an error to show, or null when done. */
+  /** Renames the open session; returns an error to show, or null when done. */
   async rename(to: string): Promise<string | null> {
     const from = this.name.value;
-    const checked = checkTapeName(to);
+    const checked = checkSessionName(to);
     if ('error' in checked) return checked.error;
     if (from === null || checked.name === from) return null;
     await this.flush();
@@ -321,19 +321,19 @@ export class OpenTape {
       await this.library.rename(from, checked.name);
     } catch (e) {
       if (e instanceof StoreError && e.kind === 'exists')
-        return `There’s already a tape called ${checked.name}.`;
+        return `There’s already a session called ${checked.name}.`;
       if (e instanceof StoreError) return e.message;
       throw e;
     }
     this.#keep.dropSnapshot(this.#key, from);
     this.name.value = checked.name;
-    this.#keep.setLastTape(this.#key, checked.name);
+    this.#keep.setLastSession(this.#key, checked.name);
     await this.#refreshNames();
     this.#app.say(`Renamed ${from} to ${checked.name}.`);
     return null;
   }
 
-  /** Moves the open tape to the trash and opens another; the notice's Undo brings it back. */
+  /** Moves the open session to the trash and opens another; the notice's Undo brings it back. */
   async trash(): Promise<void> {
     const name = this.name.value;
     if (name === null) return;
@@ -353,7 +353,7 @@ export class OpenTape {
     return names;
   }
 
-  /** Brings a tape back from the trash and opens it; a taken name gets ` 2`. */
+  /** Brings a session back from the trash and opens it; a taken name gets ` 2`. */
   async restoreTrashed(trashed: string): Promise<void> {
     const name = await this.library.restore(trashed);
     this.trashed.value = this.trashed.value.filter((n) => n !== trashed);
@@ -365,7 +365,7 @@ export class OpenTape {
   async #openAnother(): Promise<void> {
     const names = await this.#refreshNames();
     if (names.length) await this.open(names[0]!);
-    else await this.newTape();
+    else await this.newSession();
   }
 
   async #refreshNames(): Promise<string[]> {
@@ -374,15 +374,15 @@ export class OpenTape {
     return names;
   }
 
-  /** Shows a file's tape: as a new tape (undo forgotten), or as one undo step. */
+  /** Shows a file's session: as a new session (undo forgotten), or as one undo step. */
   #show(name: string, text: string, version: string, asEdit: boolean): void {
-    const { tape, angle } = readTape(text, this.#env());
+    const { session, angle } = readSession(text, this.#env());
     this.#loading = true;
     try {
       if (asEdit) {
         if (angle !== this.#app.settings.value.angle) this.#app.update({ angle });
-        this.#app.editTape(tape);
-      } else this.#app.loadTape(tape, angle);
+        this.#app.editSession(session);
+      } else this.#app.loadSession(session, angle);
       this.name.value = name;
       this.#version = version;
       this.#clean = this.text();

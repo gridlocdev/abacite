@@ -1,8 +1,8 @@
 /** Every command, for the keyboard, ⌘K, the menu bar and the Keyboard Shortcuts window (PRD §10). */
 import { CommandCatalog, type CommandSpec, type Theme } from '@abacite/ui';
 import type { AppController, DialogKind } from './controller.ts';
-import { inBrowserStorage, type TapeFolders } from './tapeFolders.ts';
-import type { OpenTape } from './openTape.ts';
+import { inBrowserStorage, type SessionFolders } from './sessionFolders.ts';
+import type { OpenSession } from './openSession.ts';
 
 const THEME_TITLES: Readonly<Record<Theme, string>> = {
   system: 'System Appearance',
@@ -21,13 +21,13 @@ const DIALOG_TOGGLES = new Set([
 ]);
 
 /**
- * The File menu's tape commands (PRD §8.2). They run on the open folder's open tape; while no folder is open
+ * The File menu's session commands (PRD §8.2). They run on the open folder's open session; while no folder is open
  * (at start, or while another is picked) no command runs at all.
  */
-function tapeCommands(app: AppController, folders: TapeFolders): CommandSpec[] {
+function sessionCommands(app: AppController, folders: SessionFolders): CommandSpec[] {
   const current = () => folders.current.value;
   const act =
-    (what: string, task: (s: OpenTape) => Promise<unknown>): (() => void) =>
+    (what: string, task: (s: OpenSession) => Promise<unknown>): (() => void) =>
     () => {
       const s = current();
       if (!s) return;
@@ -40,26 +40,26 @@ function tapeCommands(app: AppController, folders: TapeFolders): CommandSpec[] {
   const specs: CommandSpec[] = [
     {
       id: 'file.new',
-      title: 'New Tape',
-      description: 'Start a new tape in the tape folder.',
+      title: 'New Session',
+      description: 'Start a new session in the session folder.',
       group: 'File',
       shortcuts: ['mod+n'],
-      run: act('make a new tape', (s) => s.newTape()),
+      run: act('make a new session', (s) => s.newSession()),
     },
     {
       id: 'file.open',
-      title: 'Open Tape…',
-      description: 'Pick one of the tapes in the tape folder.',
+      title: 'Open Session…',
+      description: 'Pick one of the sessions in the session folder.',
       group: 'File',
-      keywords: 'switch list tapes files',
-      run: () => app.toggle('tapes'),
+      keywords: 'switch list sessions files',
+      run: () => app.toggle('sessions'),
     },
   ];
   if (platform.canChoose)
     specs.push({
       id: 'file.folder',
-      title: 'Open Tape Folder…',
-      description: 'Keep tapes in another folder.',
+      title: 'Open Session Folder…',
+      description: 'Keep sessions in another folder.',
       group: 'File',
       shortcuts: ['mod+o'],
       keywords: 'choose directory location',
@@ -69,7 +69,7 @@ function tapeCommands(app: AppController, folders: TapeFolders): CommandSpec[] {
     specs.push({
       id: 'file.browserStorage',
       title: platform.defaultTitle,
-      description: 'Keep tapes in the browser’s own storage instead of a folder.',
+      description: 'Keep sessions in the browser’s own storage instead of a folder.',
       group: 'File',
       enabled: () => !inBrowserStorage(current()),
       run: () => void folders.useDefault(),
@@ -77,29 +77,29 @@ function tapeCommands(app: AppController, folders: TapeFolders): CommandSpec[] {
   specs.push(
     {
       id: 'file.rename',
-      title: 'Rename Tape…',
-      description: 'Give the open tape another name.',
+      title: 'Rename Session…',
+      description: 'Give the open session another name.',
       group: 'File',
       run: () => app.toggle('rename'),
     },
     {
       id: 'file.delete',
-      title: 'Delete Tape',
-      description: 'Move the open tape to the trash.',
+      title: 'Delete Session',
+      description: 'Move the open session to the trash.',
       group: 'File',
       keywords: 'remove trash',
       danger: true,
-      run: act('delete the tape', (s) => s.trash()),
+      run: act('delete the session', (s) => s.trash()),
     },
     {
       id: 'file.export',
-      title: 'Export Tape…',
-      description: 'Save a copy of the open tape as a text file.',
+      title: 'Export Session…',
+      description: 'Save a copy of the open session as a text file.',
       group: 'File',
       keywords: 'download save copy',
       run: () =>
-        void folders.exportTape().catch((e: unknown) => {
-          app.say(`Couldn’t export the tape: ${e instanceof Error ? e.message : String(e)}`, {
+        void folders.exportSession().catch((e: unknown) => {
+          app.say(`Couldn’t export the session: ${e instanceof Error ? e.message : String(e)}`, {
             tone: 'error',
           });
         }),
@@ -107,7 +107,7 @@ function tapeCommands(app: AppController, folders: TapeFolders): CommandSpec[] {
     {
       id: 'file.trash',
       title: 'Open Trash…',
-      description: 'See deleted tapes and restore them.',
+      description: 'See deleted sessions and restore them.',
       group: 'File',
       keywords: 'restore deleted',
       run: () => {
@@ -126,10 +126,10 @@ function tapeCommands(app: AppController, folders: TapeFolders): CommandSpec[] {
 /** Dialogs that wait for an answer: no other window replaces them. */
 const QUESTIONS: ReadonlySet<DialogKind> = new Set(['conflict', 'recovery', 'folder']);
 
-export function buildCommands(app: AppController, folders?: TapeFolders): CommandCatalog {
+export function buildCommands(app: AppController, folders?: SessionFolders): CommandCatalog {
   const s = () => app.settings.value;
   const specs: CommandSpec[] = [
-    ...(folders ? tapeCommands(app, folders) : []),
+    ...(folders ? sessionCommands(app, folders) : []),
     {
       id: 'app.settings',
       title: 'Settings…',
@@ -143,7 +143,7 @@ export function buildCommands(app: AppController, folders?: TapeFolders): Comman
     {
       id: 'line.commit',
       title: 'Calculate',
-      description: 'Put the expression line on the tape; on an empty line, repeat the last operation.',
+      description: 'Put the expression line in the session; on an empty line, repeat the last operation.',
       group: 'Edit',
       shortcuts: ['enter'],
       keywords: 'equals enter commit',
@@ -162,8 +162,8 @@ export function buildCommands(app: AppController, folders?: TapeFolders): Comman
     },
     {
       id: 'line.historyBack',
-      title: 'Previous Tape Line',
-      description: 'Put the previous tape line in the expression line.',
+      title: 'Previous Session Line',
+      description: 'Put the previous session line in the expression line.',
       group: 'Edit',
       shortcuts: ['up'],
       keysOnly: true,
@@ -172,8 +172,8 @@ export function buildCommands(app: AppController, folders?: TapeFolders): Comman
     },
     {
       id: 'line.historyForward',
-      title: 'Next Tape Line',
-      description: 'Put the next tape line in the expression line, then what you were typing.',
+      title: 'Next Session Line',
+      description: 'Put the next session line in the expression line, then what you were typing.',
       group: 'Edit',
       shortcuts: ['down'],
       keysOnly: true,
@@ -190,34 +190,34 @@ export function buildCommands(app: AppController, folders?: TapeFolders): Comman
       run: () => app.copyResult(),
     },
     {
-      id: 'tape.undo',
-      title: 'Undo Tape Change',
-      description: 'Undo the last change to the tape: a new line, a deleted line or Clear Tape.',
+      id: 'session.undo',
+      title: 'Undo Session Change',
+      description: 'Undo the last change to the session: a new line, a deleted line or Clear Session.',
       group: 'Edit',
       shortcuts: ['mod+z'],
       keysOnly: true,
-      enabled: () => app.canStepTape('undo'),
-      run: () => app.stepTape('undo'),
+      enabled: () => app.canStepSession('undo'),
+      run: () => app.stepSession('undo'),
     },
     {
-      id: 'tape.redo',
-      title: 'Redo Tape Change',
-      description: 'Redo the tape change you undid last.',
+      id: 'session.redo',
+      title: 'Redo Session Change',
+      description: 'Redo the session change you undid last.',
       group: 'Edit',
       shortcuts: ['shift+mod+z'],
       keysOnly: true,
-      enabled: () => app.canStepTape('redo'),
-      run: () => app.stepTape('redo'),
+      enabled: () => app.canStepSession('redo'),
+      run: () => app.stepSession('redo'),
     },
     {
-      id: 'tape.clear',
-      title: 'Clear Tape',
-      description: 'Remove every line from the tape.',
+      id: 'session.clear',
+      title: 'Clear Session',
+      description: 'Remove every line from the session.',
       group: 'Edit',
       shortcuts: ['shift+mod+backspace'],
       danger: true,
-      enabled: () => app.tape.value.lines.length > 0,
-      run: () => app.clearTape(),
+      enabled: () => app.session.value.lines.length > 0,
+      run: () => app.clearSession(),
     },
     {
       id: 'view.basic',
@@ -250,14 +250,14 @@ export function buildCommands(app: AppController, folders?: TapeFolders): Comman
       run: () => app.toggleEntry(),
     },
     {
-      id: 'view.tape',
-      title: 'Show Tape',
-      description: 'Show or hide the tape of past calculations.',
+      id: 'view.session',
+      title: 'Show Session',
+      description: 'Show or hide the session’s past calculations.',
       group: 'View',
       shortcuts: ['mod+t'],
-      keywords: 'history paper',
-      checked: () => s().showTape,
-      run: () => app.toggleTape(),
+      keywords: 'history paper tape',
+      checked: () => s().showSession,
+      run: () => app.toggleSession(),
     },
     {
       id: 'view.angle',

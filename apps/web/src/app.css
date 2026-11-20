@@ -183,8 +183,8 @@
   background: var(--ab-accent);
 }
 
-/* Tape: beside the keypad when the window is wide enough, over it when not (PRD §9.1). */
-.ab-tape {
+/* Session: beside the keypad when the window is wide enough, over it when not (PRD §9.1). */
+.ab-session {
   display: flex;
   flex-direction: column;
   width: 260px;
@@ -193,30 +193,30 @@
   background: var(--ab-raised);
 }
 @media (max-width: 639px) {
-  .ab-tape {
+  .ab-session {
     position: absolute;
     inset: 0 0 0 auto;
     width: min(260px, 85vw);
     box-shadow: var(--ab-shadow);
   }
 }
-.ab-tape-head {
+.ab-session-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 8px 12px;
   border-bottom: 1px solid var(--ab-line);
 }
-.ab-tape-head h2 {
+.ab-session-head h2 {
   margin: 0;
   font-size: 12px;
   font-weight: 600;
   color: var(--ab-text-2);
 }
-.ab-tape-head h2 {
+.ab-session-head h2 {
   min-width: 0;
 }
-.ab-tape-name {
+.ab-session-name {
   display: inline-flex;
   align-items: center;
   gap: 2px;
@@ -233,27 +233,27 @@
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.ab-tape-name:hover {
+.ab-session-name:hover {
   background: var(--ab-pressed);
 }
-.ab-tape-name .ab-icon {
+.ab-session-name .ab-icon {
   flex: none;
   width: 14px;
   height: 14px;
   color: var(--ab-text-2);
 }
-.ab-tape-empty {
+.ab-session-empty {
   margin: 16px 12px;
   color: var(--ab-text-3);
 }
-.ab-tape-lines {
+.ab-session-lines {
   flex: 1;
   overflow-y: auto;
   margin: 0;
   padding: 4px 0;
   list-style: none;
 }
-.ab-tape-line {
+.ab-session-line {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -263,30 +263,30 @@
   text-align: right;
   background: none;
 }
-.ab-tape-line:hover {
+.ab-session-line:hover {
   background: var(--ab-hover);
 }
-.ab-tape-input {
+.ab-session-input {
   max-width: 100%;
   overflow-wrap: anywhere;
   font: 12px/1.4 var(--ab-mono);
   color: var(--ab-text-2);
 }
-.ab-tape-result {
+.ab-session-result {
   max-width: 100%;
   overflow-wrap: anywhere;
   font-size: 15px;
   font-variant-numeric: tabular-nums;
 }
-.ab-tape-var {
+.ab-session-var {
   color: var(--ab-text-3);
 }
-.ab-tape-error .ab-tape-result {
+.ab-session-error .ab-session-result {
   font-size: 12px;
   color: var(--ab-danger);
 }
 
-/* A tape line's right-click menu */
+/* A session line's right-click menu */
 .ab-menu {
   position: fixed;
   z-index: 20;
@@ -348,7 +348,7 @@
   color: var(--ab-danger);
 }
 
-/* Tape folder dialogs */
+/* Session folder dialogs */
 .ab-field-wide {
   grid-template-columns: auto 1fr;
 }

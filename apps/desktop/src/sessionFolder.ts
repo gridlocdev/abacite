@@ -1,6 +1,6 @@
 /**
- * The tape folder on disk (PRD §8.2, §8.3), behind the page's `Folder` interface: atomic writes (a temporary
- * file beside the tape, then a rename), a `.<name>.lock` file held while checking the version and writing,
+ * The session folder on disk (PRD §8.2, §8.3), behind the page's `Folder` interface: atomic writes (a temporary
+ * file beside the session, then a rename), a `.<name>.lock` file held while checking the version and writing,
  * and versions that are the SHA-256 of the bytes, as in the browser. No Electron imports, so tests run it.
  */
 import { createHash, randomBytes } from 'node:crypto';
@@ -63,7 +63,7 @@ export class NodeFolder {
     this.root = path.resolve(root);
   }
 
-  /** The absolute path for a folder path (`Tape.txt`, `.abacite/trash/Tape.txt`), refusing any that leave it. */
+  /** The absolute path for a folder path (`Session.txt`, `.abacite/trash/Session.txt`), refusing any that leave it. */
   resolve(relative: string): string {
     const parts = typeof relative === 'string' ? relative.split('/') : [''];
     if (parts.some((p) => !p || p === '.' || p === '..' || p.includes('\\') || p.includes('\0')))

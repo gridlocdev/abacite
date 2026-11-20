@@ -1,7 +1,7 @@
 /**
- * The one way the app reaches tape files (PRD §8.2, §8.3). A `Folder` is a folder of files on disk, in the
+ * The one way the app reaches session files (PRD §8.2, §8.3). A `Folder` is a folder of files on disk, in the
  * browser's storage or in memory; the app never knows which. Paths are names inside it, with `/` between
- * folders: `Tape.txt`, `.abacite/trash/Tape.txt`.
+ * folders: `Session.txt`, `.abacite/trash/Session.txt`.
  */
 
 /** A file's text and its version, the SHA-256 of its bytes (PRD §8.3). */

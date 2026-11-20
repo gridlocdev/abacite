@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   DEFAULT_ENV,
-  EMPTY_TAPE,
+  EMPTY_SESSION,
   commit,
   evaluate,
   findUnit,
@@ -63,20 +63,20 @@ describe('unit conversion (PRD §6)', () => {
   });
 
   it('reads unit names as units only after a number or ) and after to', () => {
-    const tape = ['m = 4', 'm * 2', '2 m to cm', 'm km to mi'].reduce(
+    const session = ['m = 4', 'm * 2', '2 m to cm', 'm km to mi'].reduce(
       (t, line) => commit(t, line, DEFAULT_ENV),
-      EMPTY_TAPE,
+      EMPTY_SESSION,
     );
-    const results = tape.lines.map((l) =>
+    const results = session.lines.map((l) =>
       l.result.kind === 'value' ? formatDecimal(l.result.value) : l.result.kind,
     );
     expect(results).toEqual(['4', '8', '200', 'error']);
   });
 
   it('keeps ans as the number, without its unit', () => {
-    const tape = ['5 km to m', '* 2'].reduce((t, line) => commit(t, line, DEFAULT_ENV), EMPTY_TAPE);
-    expect(tape.lines[1]!.result).toMatchObject({ kind: 'value', unit: null });
-    expect(formatDecimal(tape.scope.ans)).toBe('10000');
+    const session = ['5 km to m', '* 2'].reduce((t, line) => commit(t, line, DEFAULT_ENV), EMPTY_SESSION);
+    expect(session.lines[1]!.result).toMatchObject({ kind: 'value', unit: null });
+    expect(formatDecimal(session.scope.ans)).toBe('10000');
   });
 
   it('assigns a converted value, and keeps a comment out', () => {

@@ -1,16 +1,16 @@
 import { describe, expect, it } from 'vitest';
-import { MemoryFolder, TapeLibrary, checkTapeName, copyName, freeName } from '../src/index.ts';
+import { MemoryFolder, SessionLibrary, checkSessionName, copyName, freeName } from '../src/index.ts';
 
-describe('tape names (PRD §8.2)', () => {
+describe('session names (PRD §8.2)', () => {
   it('takes a name with or without .txt, and refuses ones a file system can’t hold', () => {
-    expect(checkTapeName('  Groceries.txt ')).toEqual({ name: 'Groceries' });
+    expect(checkSessionName('  Groceries.txt ')).toEqual({ name: 'Groceries' });
     for (const bad of ['', '.hidden', 'a/b', 'a:b', 'tab\there', 'x'.repeat(201)])
-      expect(checkTapeName(bad)).toHaveProperty('error');
+      expect(checkSessionName(bad)).toHaveProperty('error');
   });
 
   it('finds a free name, ignoring case', () => {
-    expect(freeName('Tape', [])).toBe('Tape');
-    expect(freeName('Tape', ['tape', 'Tape 2'])).toBe('Tape 3');
+    expect(freeName('Session', [])).toBe('Session');
+    expect(freeName('Session', ['session', 'Session 2'])).toBe('Session 3');
   });
 
   it('names a copy after the time it was made', () => {
@@ -18,10 +18,10 @@ describe('tape names (PRD §8.2)', () => {
   });
 
   it('lists only .txt files, not the trash', async () => {
-    const tapes = new TapeLibrary(
+    const sessions = new SessionLibrary(
       new MemoryFolder('m', { 'b.txt': '', 'A.txt': '', 'notes.md': '', '.abacite/trash/c.txt': '' }),
     );
-    expect(await tapes.names()).toEqual(['A', 'b']);
-    expect(await tapes.trashed()).toEqual(['c']);
+    expect(await sessions.names()).toEqual(['A', 'b']);
+    expect(await sessions.trashed()).toEqual(['c']);
   });
 });

@@ -127,7 +127,7 @@ function depthAt(text: string, at: number): number {
   return depth;
 }
 
-/** Where ↑/↓ is in the tape's inputs, and what was being typed before the first ↑ (PRD §7.1). */
+/** Where ↑/↓ is in the session's inputs, and what was being typed before the first ↑ (PRD §7.1). */
 export interface HistoryPlace {
   readonly index: number;
   readonly draft: string;
@@ -155,7 +155,7 @@ export function stepHistory(
 
 /**
  * The line after an expression-entry key that edits it (PRD §9.2), or null for a key that doesn't.
- * `afterResult`: the tape has a line, so 1/x on an empty line works on `ans`.
+ * `afterResult`: the session has a line, so 1/x on an empty line works on `ans`.
  */
 export function editByKey(s: LineState, action: KeyAction, afterResult: boolean): LineState | null {
   switch (action.type) {

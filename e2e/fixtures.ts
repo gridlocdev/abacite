@@ -1,4 +1,4 @@
-// Shared scenario setup. Every page starts with empty local storage, so settings and the tape start fresh.
+// Shared scenario setup. Every page starts with empty local storage, so settings and the session start fresh.
 import { expect, test as base, type Page } from '@playwright/test';
 
 export { expect };
@@ -29,7 +29,7 @@ export async function waitForApp(page: Page): Promise<void> {
 
 export const expression = (page: Page) => page.getByRole('textbox', { name: 'Expression' });
 export const display = (page: Page) => page.getByTestId('display');
-export const tape = (page: Page) => page.getByRole('complementary', { name: 'Tape' });
+export const session = (page: Page) => page.getByRole('complementary', { name: 'Session' });
 export const key = (page: Page, name: string) => page.getByRole('button', { name, exact: true });
 
 /** Collect uncaught errors and console errors on the page. */
@@ -55,13 +55,13 @@ export async function runCommand(page: Page, name: string): Promise<void> {
   await expect(menu).toBeHidden();
 }
 
-/** A tape file's text in the browser's own storage, or null when there is none. */
-export function storedTape(page: Page, name: string): Promise<string | null> {
+/** A session file's text in the browser's own storage, or null when there is none. */
+export function storedSession(page: Page, name: string): Promise<string | null> {
   return page.evaluate(async (file) => {
     const root = await navigator.storage.getDirectory();
     try {
-      const tapes = await root.getDirectoryHandle('tapes');
-      return await (await (await tapes.getFileHandle(file)).getFile()).text();
+      const sessions = await root.getDirectoryHandle('tapes');
+      return await (await (await sessions.getFileHandle(file)).getFile()).text();
     } catch (e) {
       if (e instanceof DOMException && e.name === 'NotFoundError') return null;
       throw e;

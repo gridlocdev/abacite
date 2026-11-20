@@ -1,16 +1,16 @@
-/** The tape folder's dialogs (PRD §8.2, §8.3): the tape list, Rename, the trash, conflicts, recovery, setup. */
+/** The session folder's dialogs (PRD §8.2, §8.3): the session list, Rename, the trash, conflicts, recovery, setup. */
 import { useState } from 'preact/hooks';
 import { Dialog, ListPopup, filterEntries } from '@abacite/ui';
 import type { AppController } from './controller.ts';
-import type { FolderSetup, TapeFolders } from './tapeFolders.ts';
-import type { OpenTape } from './openTape.ts';
+import type { FolderSetup, SessionFolders } from './sessionFolders.ts';
+import type { OpenSession } from './openSession.ts';
 
 interface Props {
   readonly app: AppController;
-  readonly folders: TapeFolders;
+  readonly folders: SessionFolders;
 }
 
-/** Runs an open tape task from a click, reporting a failure in the status bar. */
+/** Runs an open session task from a click, reporting a failure in the status bar. */
 function run(app: AppController, what: string, task: () => Promise<unknown>): void {
   task().catch((e: unknown) => {
     console.warn(e);
@@ -18,14 +18,14 @@ function run(app: AppController, what: string, task: () => Promise<unknown>): vo
   });
 }
 
-export function TapeDialogs({ app, folders }: Props) {
+export function SessionDialogs({ app, folders }: Props) {
   const current = folders.current.value;
   const kind = app.dialog.value;
   if (kind === 'folder') return <FolderDialog folders={folders} />;
   if (!current) return null;
   switch (kind) {
-    case 'tapes':
-      return <TapesDialog app={app} current={current} />;
+    case 'sessions':
+      return <SessionsDialog app={app} current={current} />;
     case 'rename':
       return <RenameDialog app={app} current={current} />;
     case 'trash':
@@ -42,13 +42,13 @@ export function TapeDialogs({ app, folders }: Props) {
   }
 }
 
-interface OpenTapeProps {
+interface OpenSessionProps {
   readonly app: AppController;
-  readonly current: OpenTape;
+  readonly current: OpenSession;
 }
 
-/** Open Tape…: the folder's tapes, filtered as you type. */
-function TapesDialog({ app, current }: OpenTapeProps) {
+/** Open Session…: the folder's sessions, filtered as you type. */
+function SessionsDialog({ app, current }: OpenSessionProps) {
   const [query, setQuery] = useState('');
   const [index, setIndex] = useState(0);
   const open = current.name.value;
@@ -62,8 +62,8 @@ function TapesDialog({ app, current }: OpenTapeProps) {
   };
   return (
     <ListPopup
-      label="Open Tape"
-      placeholder="Type a tape’s name…"
+      label="Open Session"
+      placeholder="Type a session’s name…"
       query={query}
       onQuery={(q) => {
         setQuery(q);
@@ -93,19 +93,19 @@ function TapesDialog({ app, current }: OpenTapeProps) {
   );
 }
 
-/** Rename Tape…: the file's new name, with what's wrong with it. */
-function RenameDialog({ app, current }: OpenTapeProps) {
+/** Rename Session…: the file's new name, with what's wrong with it. */
+function RenameDialog({ app, current }: OpenSessionProps) {
   const [name, setName] = useState(current.name.value ?? '');
   const [error, setError] = useState<string | null>(null);
   const submit = () =>
-    run(app, 'rename the tape', async () => {
+    run(app, 'rename the session', async () => {
       const problem = await current.rename(name);
       if (problem === null) app.close();
       else setError(problem);
     });
   return (
     <Dialog
-      title="Rename Tape"
+      title="Rename Session"
       onClose={() => app.close()}
       onSubmit={submit}
       actions={
@@ -143,8 +143,8 @@ function RenameDialog({ app, current }: OpenTapeProps) {
   );
 }
 
-/** Open Trash…: deleted tapes, each with Restore. */
-function TrashDialog({ app, current }: OpenTapeProps) {
+/** Open Trash…: deleted sessions, each with Restore. */
+function TrashDialog({ app, current }: OpenSessionProps) {
   const names = current.trashed.value;
   const close = () => app.close();
   return (
@@ -184,17 +184,17 @@ function TrashDialog({ app, current }: OpenTapeProps) {
 }
 
 /** A save found the file changed or deleted elsewhere: nothing is saved until the user picks one (PRD §8.3). */
-function ConflictDialog({ app, current }: OpenTapeProps) {
+function ConflictDialog({ app, current }: OpenSessionProps) {
   const conflict = current.conflict.value;
   if (!conflict) return null;
   const choose = (task: () => Promise<void>) => {
     app.close();
-    run(app, 'save the tape', task);
+    run(app, 'save the session', task);
   };
   return (
     <Dialog
       title={`${conflict.name} ${conflict.kind === 'changed' ? 'changed' : 'was deleted'} somewhere else`}
-      // The question waits for an answer: closing it would leave the tape unsaved with no way back.
+      // The question waits for an answer: closing it would leave the session unsaved with no way back.
       onClose={() => undefined}
       actions={
         <>
@@ -222,20 +222,20 @@ function ConflictDialog({ app, current }: OpenTapeProps) {
       </p>
       <ul class="ab-choices">
         <li>
-          <strong>Save Mine as a Copy</strong> keeps your tape in a new file
+          <strong>Save Mine as a Copy</strong> keeps your session in a new file
           {conflict.kind === 'changed' ? ` and opens ${conflict.name} as it is now.` : '.'}
         </li>
         <li>
           <strong>Keep Mine</strong>{' '}
           {conflict.kind === 'changed'
-            ? 'writes your tape over the other changes.'
-            : 'saves your tape again.'}
+            ? 'writes your session over the other changes.'
+            : 'saves your session again.'}
         </li>
         <li>
           <strong>Use Theirs</strong>{' '}
           {conflict.kind === 'changed'
             ? 'drops your changes and opens the file as it is now.'
-            : 'drops your tape and opens another.'}
+            : 'drops your session and opens another.'}
         </li>
       </ul>
     </Dialog>
@@ -246,7 +246,7 @@ const timeOf = (at: number) =>
   new Date(at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
 /** Unsaved changes kept from an earlier visit (PRD §8.3). */
-function RecoveryDialog({ app, current }: OpenTapeProps) {
+function RecoveryDialog({ app, current }: OpenSessionProps) {
   const recovery = current.recovery.value;
   if (!recovery) return null;
   return (
@@ -281,7 +281,7 @@ function RecoveryDialog({ app, current }: OpenTapeProps) {
     >
       <p>
         Abacite kept changes to {recovery.name} from {timeOf(recovery.snapshot.at)} that never reached its
-        file. Restore puts them back on the tape, and Undo takes them off again.
+        file. Restore puts them back in the session, and Undo takes them off again.
       </p>
     </Dialog>
   );
@@ -291,26 +291,26 @@ function folderText(setup: FolderSetup): { title: string; body: string } {
   switch (setup.kind) {
     case 'first':
       return {
-        title: 'Where should Abacite keep tapes?',
-        body: 'Each tape is a plain text file in this folder, which other apps can open too.',
+        title: 'Where should Abacite keep sessions?',
+        body: 'Each session is a plain text file in this folder, which other apps can open too.',
       };
     case 'missing':
       return {
-        title: 'The tape folder isn’t there',
-        body: `Abacite keeps tapes in ${setup.folder}, which can’t be found. It may be on a drive that isn’t connected.`,
+        title: 'The session folder isn’t there',
+        body: `Abacite keeps sessions in ${setup.folder}, which can’t be found. It may be on a drive that isn’t connected.`,
       };
     case 'allow':
       return {
         title: `Open ${setup.name} again?`,
-        body: `The browser needs your permission to use the tape folder ${setup.name} again.`,
+        body: `The browser needs your permission to use the session folder ${setup.name} again.`,
       };
     case 'failed':
-      return { title: 'Couldn’t open the tape folder', body: setup.message };
+      return { title: 'Couldn’t open the session folder', body: setup.message };
   }
 }
 
 /** The folder question at start (PRD §8.2). */
-function FolderDialog({ folders }: { readonly folders: TapeFolders }) {
+function FolderDialog({ folders }: { readonly folders: SessionFolders }) {
   const setup = folders.setup.value;
   if (!setup) return null;
   const text = folderText(setup);

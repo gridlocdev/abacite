@@ -1,10 +1,10 @@
 /**
- * What the browser keeps for the tape folder, outside it (PRD §8.2, §8.3): the folder the user picked (in
- * IndexedDB, the one place a folder handle can be kept), the open tape per folder, and crash snapshots of
- * unsaved tapes (in local storage).
+ * What the browser keeps for the session folder, outside it (PRD §8.2, §8.3): the folder the user picked (in
+ * IndexedDB, the one place a folder handle can be kept), the open session per folder, and crash snapshots of
+ * unsaved sessions (in local storage).
  */
 
-/** An unsaved tape's text, written while a save is pending and on closing (PRD §8.3). */
+/** An unsaved session's text, written while a save is pending and on closing (PRD §8.3). */
 export interface Snapshot {
   readonly text: string;
   /** The version of the file the text was based on; null for a file that wasn't there. */
@@ -14,9 +14,9 @@ export interface Snapshot {
 }
 
 /** Small per-folder records the app keeps between visits. */
-export interface TapeKeep {
-  lastTape(folder: string): string | null;
-  setLastTape(folder: string, name: string): void;
+export interface SessionKeep {
+  lastSession(folder: string): string | null;
+  setLastSession(folder: string, name: string): void;
   snapshot(folder: string, name: string): Snapshot | null;
   putSnapshot(folder: string, name: string, snapshot: Snapshot): void;
   dropSnapshot(folder: string, name: string): void;
@@ -37,12 +37,13 @@ function parseSnapshot(raw: string | null): Snapshot | null {
 }
 
 /** A keep over a Storage (local storage in the app, a map in tests). Failed writes (a full quota) are thrown. */
-export function storageKeep(storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>): TapeKeep {
+export function storageKeep(storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>): SessionKeep {
+  // Sessions were once called tapes; the stored key keeps the old word.
   const last = (folder: string) => `abacite.lastTape.${folder}`;
   const snap = (folder: string, name: string) => `abacite.snapshot.${folder}/${name}`;
   return {
-    lastTape: (folder) => storage.getItem(last(folder)),
-    setLastTape: (folder, name) => storage.setItem(last(folder), name),
+    lastSession: (folder) => storage.getItem(last(folder)),
+    setLastSession: (folder, name) => storage.setItem(last(folder), name),
     snapshot: (folder, name) => parseSnapshot(storage.getItem(snap(folder, name))),
     putSnapshot: (folder, name, s) => storage.setItem(snap(folder, name), JSON.stringify(s)),
     dropSnapshot: (folder, name) => storage.removeItem(snap(folder, name)),
@@ -50,7 +51,7 @@ export function storageKeep(storage: Pick<Storage, 'getItem' | 'setItem' | 'remo
 }
 
 /** The keep in this browser profile's local storage, or one in memory where there is none. */
-export function localKeep(): TapeKeep {
+export function localKeep(): SessionKeep {
   try {
     const storage = globalThis.localStorage;
     if (storage) return storageKeep(storage);

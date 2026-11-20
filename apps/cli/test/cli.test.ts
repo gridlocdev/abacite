@@ -97,7 +97,7 @@ describe('abacite <expression>', () => {
 });
 
 describe('abacite with stdin', () => {
-  it('evaluates each line as a tape line, with ans and variables', async () => {
+  it('evaluates each line as a session line, with ans and variables', async () => {
     const r = await run([], ['x = 5', 'x * 2', '+ 1', '', '# a comment', 'ans + x']);
     expect(r).toMatchObject({ code: EXIT_OK, out: '5\n10\n11\n16\n', err: '' });
   });
@@ -196,34 +196,37 @@ function memoryFiles(initial: Record<string, string>) {
   return { files, writes, io };
 }
 
-describe('abacite tape (PRD §13)', () => {
-  it('prints the tape with fresh results', async () => {
+describe('abacite session (PRD §13)', () => {
+  it('prints the session with fresh results', async () => {
     const { io, writes } = memoryFiles({ 'a.txt': 'x = 2  # = 9\nx * 21\n# done\n' });
-    const r = await run(['tape', 'a.txt'], [], false, io);
+    const r = await run(['session', 'a.txt'], [], false, io);
     expect(r).toMatchObject({ code: EXIT_OK, out: 'x = 2  # = 2\nx * 21  # = 42\n# done\n', read: false });
     expect(writes).toEqual([]);
   });
 
   it('writes the results back with --write, only when they changed', async () => {
     const { io, files, writes } = memoryFiles({ 'a.txt': '1 + 1\n' });
-    expect(await run(['--write', 'tape', 'a.txt'], [], false, io)).toMatchObject({ code: EXIT_OK, out: '' });
+    expect(await run(['--write', 'session', 'a.txt'], [], false, io)).toMatchObject({
+      code: EXIT_OK,
+      out: '',
+    });
     expect(files.get('a.txt')).toBe('1 + 1  # = 2\n');
-    await run(['--write', 'tape', 'a.txt'], [], false, io);
+    await run(['--write', 'session', 'a.txt'], [], false, io);
     expect(writes).toEqual(['a.txt']);
   });
 
   it('exits with 1 for an error line or a file it can’t read, and 2 for --write alone', async () => {
     const { io } = memoryFiles({ 'bad.txt': '1/0\n' });
-    expect((await run(['tape', 'bad.txt'], [], false, io)).code).toBe(EXIT_ERROR);
-    expect(await run(['tape', 'gone.txt'], [], false, io)).toMatchObject({
+    expect((await run(['session', 'bad.txt'], [], false, io)).code).toBe(EXIT_ERROR);
+    expect(await run(['session', 'gone.txt'], [], false, io)).toMatchObject({
       code: EXIT_ERROR,
       err: 'abacite: couldn’t read gone.txt: no such file\n',
     });
     expect((await run(['--write', '2+2'], [], false, io)).code).toBe(EXIT_USAGE);
   });
 
-  it('still evaluates `tape` as a name when it isn’t followed by one file', async () => {
-    expect((await run(['tape'])).err).toBe('error: `tape` isn’t defined.\n');
+  it('still evaluates `session` as a name when it isn’t followed by one file', async () => {
+    expect((await run(['session'])).err).toBe('error: `session` isn’t defined.\n');
   });
 });
 
@@ -235,14 +238,14 @@ describe('the abacite bin', () => {
     expect(execFileSync(process.execPath, [BIN], { input: 'a = 3\na^2\n', encoding: 'utf8' })).toBe('3\n9\n');
   });
 
-  it('writes a tape file in place, leaving no temporary file', () => {
+  it('writes a session file in place, leaving no temporary file', () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'abacite-cli-'));
     try {
-      const file = path.join(dir, 'Tape.txt');
+      const file = path.join(dir, 'Session.txt');
       writeFileSync(file, '6 * 7\r\n');
-      execFileSync(process.execPath, [BIN, 'tape', '--write', file]);
+      execFileSync(process.execPath, [BIN, 'session', '--write', file]);
       expect(readFileSync(file, 'utf8')).toBe('6 * 7  # = 42\n');
-      expect(readdirSync(dir)).toEqual(['Tape.txt']);
+      expect(readdirSync(dir)).toEqual(['Session.txt']);
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

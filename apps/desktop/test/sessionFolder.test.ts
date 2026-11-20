@@ -14,51 +14,51 @@ afterEach(() => rmSync(root, { recursive: true, force: true }));
 const kind = (e: unknown) => (e instanceof FolderError ? e.kind : String(e));
 const sha = (text: string) => createHash('sha256').update(text).digest('hex');
 
-describe('the tape folder on disk (PRD §8.3)', () => {
+describe('the session folder on disk (PRD §8.3)', () => {
   it('writes, reads and lists files, with SHA-256 versions as in the browser', async () => {
     const folder = new NodeFolder(root);
-    expect(await folder.read('Tape.txt')).toBeNull();
-    const v = await folder.write('Tape.txt', '1 + 1  # = 2\n', null);
+    expect(await folder.read('Session.txt')).toBeNull();
+    const v = await folder.write('Session.txt', '1 + 1  # = 2\n', null);
     expect(v).toBe(sha('1 + 1  # = 2\n'));
-    expect(await folder.read('Tape.txt')).toEqual({ text: '1 + 1  # = 2\n', version: v });
-    expect(await folder.list('')).toEqual(['Tape.txt']);
+    expect(await folder.read('Session.txt')).toEqual({ text: '1 + 1  # = 2\n', version: v });
+    expect(await folder.list('')).toEqual(['Session.txt']);
     expect(await folder.list('.abacite/trash')).toEqual([]);
   });
 
   it('leaves no temporary or lock files behind', async () => {
     const folder = new NodeFolder(root);
-    const v = await folder.write('Tape.txt', 'a\n', null);
-    await folder.write('Tape.txt', 'b\n', v);
-    expect(readdirSync(root)).toEqual(['Tape.txt']);
+    const v = await folder.write('Session.txt', 'a\n', null);
+    await folder.write('Session.txt', 'b\n', v);
+    expect(readdirSync(root)).toEqual(['Session.txt']);
   });
 
   it('refuses a stale version, and a new file over one that appeared', async () => {
     const folder = new NodeFolder(root);
-    const v = await folder.write('Tape.txt', 'a\n', null);
-    writeFileSync(path.join(root, 'Tape.txt'), 'edited elsewhere\n');
-    await expect(folder.write('Tape.txt', 'b\n', v).catch(kind)).resolves.toBe('conflict');
-    await expect(folder.write('Tape.txt', 'b\n', null).catch(kind)).resolves.toBe('conflict');
-    expect(readFileSync(path.join(root, 'Tape.txt'), 'utf8')).toBe('edited elsewhere\n');
+    const v = await folder.write('Session.txt', 'a\n', null);
+    writeFileSync(path.join(root, 'Session.txt'), 'edited elsewhere\n');
+    await expect(folder.write('Session.txt', 'b\n', v).catch(kind)).resolves.toBe('conflict');
+    await expect(folder.write('Session.txt', 'b\n', null).catch(kind)).resolves.toBe('conflict');
+    expect(readFileSync(path.join(root, 'Session.txt'), 'utf8')).toBe('edited elsewhere\n');
   });
 
   it('lets one of two writes from the same version through', async () => {
     const folder = new NodeFolder(root);
-    const v = await folder.write('Tape.txt', 'a\n', null);
+    const v = await folder.write('Session.txt', 'a\n', null);
     const results = await Promise.allSettled([
-      folder.write('Tape.txt', 'b\n', v),
-      folder.write('Tape.txt', 'c\n', v),
+      folder.write('Session.txt', 'b\n', v),
+      folder.write('Session.txt', 'c\n', v),
     ]);
     expect(results.filter((r) => r.status === 'fulfilled')).toHaveLength(1);
   });
 
   it('waits for a lock another writer holds, and takes over a stale one', async () => {
     const folder = new NodeFolder(root);
-    const lock = path.join(root, '.Tape.txt.lock');
+    const lock = path.join(root, '.Session.txt.lock');
     writeFileSync(lock, '1');
     const old = new Date(Date.now() - 60_000);
     utimesSync(lock, old, old);
-    await folder.write('Tape.txt', 'a\n', null);
-    expect(readdirSync(root)).toEqual(['Tape.txt']);
+    await folder.write('Session.txt', 'a\n', null);
+    expect(readdirSync(root)).toEqual(['Session.txt']);
   });
 
   it('moves into new folders and never replaces a file', async () => {
@@ -83,13 +83,13 @@ describe('the tape folder on disk (PRD §8.3)', () => {
 describe('folder calls from the page', () => {
   it('answers with values, and errors with their kind', async () => {
     const folder = new NodeFolder(root);
-    const written = await folderCall(folder, 'write', ['Tape.txt', 'a\n', null]);
+    const written = await folderCall(folder, 'write', ['Session.txt', 'a\n', null]);
     expect(written).toEqual({ ok: true, value: sha('a\n') });
-    expect(await folderCall(folder, 'write', ['Tape.txt', 'b\n', null])).toMatchObject({
+    expect(await folderCall(folder, 'write', ['Session.txt', 'b\n', null])).toMatchObject({
       ok: false,
       kind: 'conflict',
     });
-    expect(await folderCall(folder, 'move', ['Tape.txt', 'T.txt'])).toEqual({ ok: true, value: null });
+    expect(await folderCall(folder, 'move', ['Session.txt', 'T.txt'])).toEqual({ ok: true, value: null });
     expect(await folderCall(folder, 'read', [42])).toMatchObject({ ok: false, kind: 'name' });
     expect(await folderCall(folder, 'remove', [])).toMatchObject({ ok: false, kind: null });
     expect(await folderCall(null, 'list', [''])).toMatchObject({ ok: false, kind: null });

@@ -5,7 +5,7 @@ import { PRECISION, adjusted, roundUnchecked, type Decimal } from './decimal.ts'
 export const SHOWN_DIGITS = 32;
 
 export interface FormatOptions {
-  /** Significant digits to round to; 32 by default, 34 for the tape file and `--full`. */
+  /** Significant digits to round to; 32 by default, 34 for the session file and `--full`. */
   readonly digits?: number;
   /** Groups the integer part with commas: `1,234,567.89`. */
   readonly group?: boolean;

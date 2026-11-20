@@ -1,4 +1,4 @@
-/** Undo and redo of tape changes (PRD §7.3): whole tapes are kept, since a tape never changes in place. */
+/** Undo and redo of session changes (PRD §7.3): whole sessions are kept, since a session never changes in place. */
 
 /** The most steps kept; the oldest goes first. */
 export const MAX_UNDO = 100;
@@ -30,7 +30,7 @@ export class UndoStack<T> {
     return after;
   }
 
-  /** Forgets every step: another tape was opened. */
+  /** Forgets every step: another session was opened. */
   clear(): void {
     this.#undo = [];
     this.#redo = [];

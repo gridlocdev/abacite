@@ -1,12 +1,12 @@
 /**
- * Which tape folder the desktop app uses (PRD §8.2), remembered in its data folder, and the one IPC call the
+ * Which session folder the desktop app uses (PRD §8.2), remembered in its data folder, and the one IPC call the
  * page makes on it. The page names no paths of its own: it may only take the default folder or one the user
  * picked in the open dialog. No Electron imports, so tests run it.
  */
 import { randomUUID } from 'node:crypto';
 import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { FolderError, type NodeFolder } from './tapeFolder.ts';
+import { FolderError, type NodeFolder } from './sessionFolder.ts';
 
 /** The folder the app last used, or null. */
 export async function loadFolderChoice(file: string): Promise<string | null> {
@@ -67,7 +67,7 @@ export async function folderCall(
   args: unknown,
 ): Promise<FolderReply> {
   try {
-    if (!folder) throw new Error('No tape folder is open.');
+    if (!folder) throw new Error('No session folder is open.');
     const a = Array.isArray(args) ? (args as unknown[]) : [];
     let value: unknown;
     if (op === 'list') value = await folder.list(str(a[0] ?? ''));

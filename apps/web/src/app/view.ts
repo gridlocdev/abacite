@@ -22,10 +22,10 @@ export interface Ghost {
 }
 
 /** Window widths the desktop app grows to (PRD §9.1). */
-export const WIDTHS = { basic: 400, scientific: 720, tape: 260 } as const;
+export const WIDTHS = { basic: 400, scientific: 720, session: 260 } as const;
 
-export function windowWidth(mode: Mode, tape: boolean): number {
-  return WIDTHS[mode] + (tape ? WIDTHS.tape : 0);
+export function windowWidth(mode: Mode, session: boolean): number {
+  return WIDTHS[mode] + (session ? WIDTHS.session : 0);
 }
 
 /** The number a display shows, alone: no grouping commas or unit. Null for an error or an unfinished line. */

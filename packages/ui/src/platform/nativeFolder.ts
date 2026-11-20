@@ -1,4 +1,4 @@
-/** The desktop app's tape folder, reached through the preload (PRD §8.2). The main process does the work. */
+/** The desktop app's session folder, reached through the preload (PRD §8.2). The main process does the work. */
 import { StoreError, type FileRead, type Folder, type StoreErrorKind } from './folder.ts';
 
 /** One folder call's answer from the main process. */

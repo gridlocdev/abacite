@@ -7,9 +7,9 @@ import { ExpressionLine } from './ExpressionLine.tsx';
 import { classicPending } from './classic.ts';
 import { Keypad } from './Keypad.tsx';
 import type { Release } from './native.ts';
-import { TapeDialogs } from './TapeDialogs.tsx';
-import { inBrowserStorage, type TapeFolders } from './tapeFolders.ts';
-import { TapePanel } from './TapePanel.tsx';
+import { SessionDialogs } from './SessionDialogs.tsx';
+import { inBrowserStorage, type SessionFolders } from './sessionFolders.ts';
+import { SessionPanel } from './SessionPanel.tsx';
 
 /** The display (PRD §9.1): the angle unit, then the result, right-aligned, shrinking to fit. */
 function Display({ app }: { readonly app: AppController }) {
@@ -53,7 +53,7 @@ function StatusBar({
   release,
 }: {
   readonly app: AppController;
-  readonly folders?: TapeFolders;
+  readonly folders?: SessionFolders;
   readonly release?: Release | null;
 }) {
   const notice = app.notice.value;
@@ -125,18 +125,18 @@ function StatusBar({
 export function App(props: {
   readonly app: AppController;
   readonly catalog: CommandCatalog;
-  /** The tape folders; without them (tests) the tape lives in memory only. */
-  readonly folders?: TapeFolders;
+  /** The session folders; without them (tests) the session lives in memory only. */
+  readonly folders?: SessionFolders;
   /** A newer release, from the desktop app's update check (PRD §12). */
   readonly release?: ReadonlySignal<Release | null>;
 }) {
   const { app, catalog, folders, release } = props;
-  const { mode, showTape } = app.settings.value;
+  const { mode, showSession } = app.settings.value;
   const current = folders?.current.value ?? null;
-  // Nothing to type into until a tape is open: keys would change a tape about to be replaced.
+  // Nothing to type into until a session is open: keys would change a session about to be replaced.
   const ready = !folders || current !== null;
   return (
-    <div class={`ab-app ab-mode-${mode}${showTape ? ' ab-with-tape' : ''}`}>
+    <div class={`ab-app ab-mode-${mode}${showSession ? ' ab-with-session' : ''}`}>
       <div class="ab-body">
         {ready && (
           <>
@@ -145,13 +145,13 @@ export function App(props: {
               {!app.classicEntry() && <ExpressionLine app={app} />}
               <Keypad app={app} />
             </main>
-            {showTape && <TapePanel app={app} name={current?.name.value ?? null} />}
+            {showSession && <SessionPanel app={app} name={current?.name.value ?? null} />}
           </>
         )}
       </div>
       <StatusBar app={app} release={release?.value ?? null} {...(folders ? { folders } : {})} />
       <Dialogs app={app} catalog={catalog} />
-      {folders && <TapeDialogs app={app} folders={folders} />}
+      {folders && <SessionDialogs app={app} folders={folders} />}
     </div>
   );
 }

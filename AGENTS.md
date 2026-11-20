@@ -1,6 +1,6 @@
 # Abacite — agent guide
 
-Abacite is a calculator with exact decimal arithmetic and a tape. One UI runs in the browser and in the Electron app; the `abacite` CLI uses the same engine. There is no NAS server (PRD §2). The spec is [docs/plans/prd.md](docs/plans/prd.md), the slices are in [docs/plans/1-abacite-1.0.md](docs/plans/1-abacite-1.0.md), the code layout is [docs/architecture.md](docs/architecture.md), and the commands are in [docs/development.md](docs/development.md).
+Abacite is a calculator with exact decimal arithmetic and a session. One UI runs in the browser and in the Electron app; the `abacite` CLI uses the same engine. There is no NAS server (PRD §2). The spec is [docs/plans/prd.md](docs/plans/prd.md), the slices are in [docs/plans/1-abacite-1.0.md](docs/plans/1-abacite-1.0.md), the code layout is [docs/architecture.md](docs/architecture.md), and the commands are in [docs/development.md](docs/development.md).
 
 ## Gates
 
@@ -17,9 +17,9 @@ Abacite is a calculator with exact decimal arithmetic and a tape. One UI runs in
 
 | Path | What it is |
 | --- | --- |
-| `packages/core` | The pure engine: the decimal type, functions, formatting, the parser, the evaluator and the tape. No DOM or Node (ESLint enforces it). |
+| `packages/core` | The pure engine: the decimal type, functions, formatting, the parser, the evaluator and the session. No DOM or Node (ESLint enforces it). |
 | `packages/ui` | Preact and signals: the command catalog, dialogs, ⌘K, settings, the scheduler and the DOM hooks. |
-| `apps/web` | The app shell: `AppController`, the keypads, the expression line, the tape panel, the list of commands and the Vite entry point. One static build serves the browser and the desktop app. |
+| `apps/web` | The app shell: `AppController`, the keypads, the expression line, the session panel, the list of commands and the Vite entry point. One static build serves the browser and the desktop app. |
 | `apps/desktop` | The Electron shell: main process, sandboxed preload bridge, native menu, window state. |
 | `apps/cli` | The `abacite` CLI, run from source. It depends on `packages/core` only. |
 

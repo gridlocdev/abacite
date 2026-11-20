@@ -60,17 +60,18 @@ export { Icon } from './components/Icon.tsx';
 export { ListPopup, listStep } from './components/ListPopup.tsx';
 export {
   BROWSER_LABEL,
+  STORAGE_FOLDER,
   HandleFolder,
   MemoryFolder,
   NativeFolder,
   Serial,
   StoreError,
   TRASH,
-  TapeLibrary,
+  SessionLibrary,
   allowFolder,
   browserFolder,
   canPickFolder,
-  checkTapeName,
+  checkSessionName,
   copyName,
   forgetPickedFolder,
   freeName,
@@ -87,5 +88,5 @@ export {
   type NativeReply,
   type Snapshot,
   type StoreErrorKind,
-  type TapeKeep,
+  type SessionKeep,
 } from './platform/index.ts';

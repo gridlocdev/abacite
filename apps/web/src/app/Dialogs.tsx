@@ -27,8 +27,8 @@ export function Dialogs({ app, catalog }: { readonly app: AppController; readonl
       return <ShortcutsDialog app={app} catalog={catalog} />;
     case 'settings':
       return <SettingsDialog app={app} />;
-    // The tape folder's dialogs are drawn by TapeDialogs.
-    case 'tapes':
+    // The session folder's dialogs are drawn by SessionDialogs.
+    case 'sessions':
     case 'rename':
     case 'trash':
     case 'conflict':
@@ -240,8 +240,8 @@ function SettingsDialog({ app }: { readonly app: AppController }) {
         <span>Group digits with commas (1,234,567)</span>
       </label>
       <label class="ab-check">
-        <input type="checkbox" checked={s.showTape} onChange={() => app.toggleTape()} />
-        <span>Show the tape</span>
+        <input type="checkbox" checked={s.showSession} onChange={() => app.toggleSession()} />
+        <span>Show the session</span>
       </label>
     </Dialog>
   );

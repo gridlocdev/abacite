@@ -46,7 +46,7 @@ export function ExpressionLine({ app }: { readonly app: AppController }) {
         data-ab-line
         class={ghost.ans ? 'ab-line-input ab-after-ans' : 'ab-line-input'}
         aria-label="Expression"
-        placeholder={app.tape.value.lines.length ? '' : 'Type a calculation'}
+        placeholder={app.session.value.lines.length ? '' : 'Type a calculation'}
         autocomplete="off"
         autocapitalize="off"
         spellcheck={false}

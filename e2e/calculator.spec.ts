@@ -12,8 +12,8 @@ import {
   notice,
   openApp,
   runCommand,
-  storedTape,
-  tape,
+  storedSession,
+  session,
   test,
   waitForApp,
 } from './fixtures.ts';
@@ -141,7 +141,7 @@ test.describe('Memory', () => {
     await page.keyboard.type('5*3');
     await key(page, 'Memory add').click();
     await expect(flags).toContainText('M');
-    await expect(tape(page)).toBeHidden();
+    await expect(session(page)).toBeHidden();
     await page.keyboard.type('2*');
     await key(page, 'Memory recall').click();
     await expect(expression(page)).toHaveValue('2*mem');
@@ -150,7 +150,7 @@ test.describe('Memory', () => {
     await key(page, 'Memory clear').click();
     await expect(flags).not.toContainText('M');
     await page.keyboard.press('ControlOrMeta+T');
-    await expect(tape(page).getByRole('button')).toContainText(['5*3', 'mem = mem + 15', 'mem = 0']);
+    await expect(session(page).getByRole('button')).toContainText(['5*3', 'mem = mem + 15', 'mem = 0']);
   });
 });
 
@@ -163,7 +163,7 @@ test.describe('Unit conversion', () => {
     await page.keyboard.press('Enter');
     await expect(display(page)).toHaveText('Can’t convert km to kg.');
     await page.keyboard.press('ControlOrMeta+T');
-    await expect(tape(page).getByRole('listitem')).toHaveText([
+    await expect(session(page).getByRole('listitem')).toHaveText([
       /5 in to cm\s*12\.7 cm/,
       /5 km to kg\s*Can’t convert km to kg\./,
     ]);
@@ -171,7 +171,7 @@ test.describe('Unit conversion', () => {
 });
 
 test.describe('Classic entry', () => {
-  test('⌘E works the keypad like a pocket calculator and puts the calculation on the tape', async ({
+  test('⌘E works the keypad like a pocket calculator and puts the calculation in the session', async ({
     page,
   }) => {
     await page.keyboard.press('ControlOrMeta+E');
@@ -192,21 +192,21 @@ test.describe('Classic entry', () => {
     await expect(display(page)).toHaveText('0');
     await page.keyboard.press('Escape');
     await page.keyboard.press('ControlOrMeta+T');
-    await expect(tape(page).getByRole('listitem')).toHaveText([/2 \+ 3 \* 4 - 1\s*13/]);
+    await expect(session(page).getByRole('listitem')).toHaveText([/2 \+ 3 \* 4 - 1\s*13/]);
     await page.keyboard.press('ControlOrMeta+E');
     await expect(expression(page)).toBeVisible();
   });
 });
 
-test.describe('Tape', () => {
+test.describe('Session', () => {
   test('keeps every committed line, and ↑ brings one back', async ({ page }) => {
     await page.keyboard.press('ControlOrMeta+KeyT');
-    await expect(tape(page)).toBeVisible();
+    await expect(session(page)).toBeVisible();
     for (const line of ['5+3', 'x = 7', '1/0']) {
       await page.keyboard.type(line);
       await page.keyboard.press('Enter');
     }
-    const lines = tape(page).getByRole('listitem');
+    const lines = session(page).getByRole('listitem');
     await expect(lines).toHaveText([/5\+3\s*8/, /x = 7\s*x = 7/, /1\/0\s*Can’t divide by zero\./]);
     await page.keyboard.press('ArrowUp');
     await page.keyboard.press('ArrowUp');
@@ -217,14 +217,14 @@ test.describe('Tape', () => {
     await expect(expression(page)).toHaveValue('8');
   });
 
-  test('Clear Tape can be undone', async ({ page }) => {
+  test('Clear Session can be undone', async ({ page }) => {
     await page.keyboard.press('ControlOrMeta+KeyT');
     await page.keyboard.type('2+2');
     await page.keyboard.press('Enter');
     await page.keyboard.press('ControlOrMeta+Shift+Backspace');
-    await expect(tape(page).getByRole('listitem')).toHaveCount(0);
+    await expect(session(page).getByRole('listitem')).toHaveCount(0);
     await page.getByRole('button', { name: 'Undo' }).click();
-    await expect(tape(page).getByRole('listitem')).toHaveCount(1);
+    await expect(session(page).getByRole('listitem')).toHaveCount(1);
   });
 
   test('a line’s menu deletes it, and ⌘Z puts it back', async ({ page }) => {
@@ -233,9 +233,9 @@ test.describe('Tape', () => {
       await page.keyboard.type(line);
       await page.keyboard.press('Enter');
     }
-    const lines = tape(page).getByRole('listitem');
+    const lines = session(page).getByRole('listitem');
     await lines.first().getByRole('button').click({ button: 'right' });
-    const menu = page.getByRole('menu', { name: 'Tape line' });
+    const menu = page.getByRole('menu', { name: 'Session line' });
     await expect(menu.getByRole('menuitem')).toHaveText([
       'Copy Result',
       'Copy Expression',
@@ -255,29 +255,29 @@ test.describe('Tape', () => {
   });
 });
 
-test.describe('Tape files', () => {
-  const tapeName = (page: Page) => tape(page).getByRole('heading').getByRole('button');
+test.describe('Session files', () => {
+  const sessionName = (page: Page) => session(page).getByRole('heading').getByRole('button');
 
   test('each change is saved in the browser and is there after a reload', async ({ page }) => {
     await page.keyboard.press('ControlOrMeta+KeyT');
-    await expect(tapeName(page)).toHaveText('Tape');
+    await expect(sessionName(page)).toHaveText('Session');
     await expect(page.getByText('Stored in this browser')).toBeVisible();
     await page.keyboard.type('1+2');
     await page.keyboard.press('Enter');
-    await expect(tape(page).getByRole('listitem')).toHaveText([/1\+2\s*3/]);
-    await expect.poll(() => storedTape(page, 'Tape')).toBe('1+2  # = 3\n');
+    await expect(session(page).getByRole('listitem')).toHaveText([/1\+2\s*3/]);
+    await expect.poll(() => storedSession(page, 'Session')).toBe('1+2  # = 3\n');
     await page.reload();
     await waitForApp(page);
-    await expect(tape(page).getByRole('listitem')).toHaveText([/1\+2\s*3/]);
+    await expect(session(page).getByRole('listitem')).toHaveText([/1\+2\s*3/]);
   });
 
-  test('committing a line stays quick with a full tape of 10,000 lines', async ({ page }) => {
+  test('committing a line stays quick with a full session of 10,000 lines', async ({ page }) => {
     await page.evaluate(
       async (text) => {
-        const tapes = await (
+        const sessions = await (
           await navigator.storage.getDirectory()
         ).getDirectoryHandle('tapes', { create: true });
-        const file = await (await tapes.getFileHandle('Tape.txt', { create: true })).createWritable();
+        const file = await (await sessions.getFileHandle('Session.txt', { create: true })).createWritable();
         await file.write(text);
         await file.close();
       },
@@ -286,7 +286,7 @@ test.describe('Tape files', () => {
     await page.reload();
     await waitForApp(page);
     await page.keyboard.press('ControlOrMeta+KeyT');
-    await expect(tape(page).getByRole('listitem')).toHaveCount(10_000);
+    await expect(session(page).getByRole('listitem')).toHaveCount(10_000);
     // The time from Enter to the next painted frame, the median of 9.
     const times = await page.evaluate(async () => {
       const line = document.querySelector<HTMLInputElement>('[data-ab-line]')!;
@@ -303,61 +303,61 @@ test.describe('Tape files', () => {
       }
       return out.sort((a, b) => a - b);
     });
-    await expect(tape(page).getByRole('listitem').last()).toHaveText(/^8\s*8$/);
+    await expect(session(page).getByRole('listitem').last()).toHaveText(/^8\s*8$/);
     // About 35 ms here; redrawing every row took 70 ms or more.
     expect(times[4]).toBeLessThan(55);
   });
 
-  test('new, rename, delete with Undo, restore from the trash, and switch tapes', async ({ page }) => {
+  test('new, rename, delete with Undo, restore from the trash, and switch sessions', async ({ page }) => {
     await page.keyboard.press('ControlOrMeta+KeyT');
-    await runCommand(page, 'New Tape');
-    await expect(tapeName(page)).toHaveText('Tape 2');
+    await runCommand(page, 'New Session');
+    await expect(sessionName(page)).toHaveText('Session 2');
 
-    await runCommand(page, 'Rename Tape');
-    const rename = page.getByRole('dialog', { name: 'Rename Tape' });
+    await runCommand(page, 'Rename Session');
+    const rename = page.getByRole('dialog', { name: 'Rename Session' });
     await expect(rename.getByRole('textbox')).toBeFocused();
-    await page.keyboard.type('Tape');
+    await page.keyboard.type('Session');
     await page.keyboard.press('Enter');
-    await expect(rename.getByRole('alert')).toHaveText('There’s already a tape called Tape.');
+    await expect(rename.getByRole('alert')).toHaveText('There’s already a session called Session.');
     await page.keyboard.press('ControlOrMeta+KeyA');
     await page.keyboard.type('Groceries');
     await page.keyboard.press('Enter');
     await expect(rename).toBeHidden();
-    await expect(tapeName(page)).toHaveText('Groceries');
+    await expect(sessionName(page)).toHaveText('Groceries');
 
-    await runCommand(page, 'Delete Tape');
+    await runCommand(page, 'Delete Session');
     await expect(notice(page)).toContainText('Moved Groceries to the trash.');
-    await expect(tapeName(page)).toHaveText('Tape');
+    await expect(sessionName(page)).toHaveText('Session');
     await page.getByRole('button', { name: 'Undo' }).click();
-    await expect(tapeName(page)).toHaveText('Groceries');
+    await expect(sessionName(page)).toHaveText('Groceries');
 
-    await runCommand(page, 'Delete Tape');
-    await expect(tapeName(page)).toHaveText('Tape');
+    await runCommand(page, 'Delete Session');
+    await expect(sessionName(page)).toHaveText('Session');
     await runCommand(page, 'Open Trash');
     const trash = page.getByRole('dialog', { name: 'Trash' });
     await trash.getByRole('button', { name: 'Restore Groceries' }).click();
     await expect(trash).toBeHidden();
-    await expect(tapeName(page)).toHaveText('Groceries');
+    await expect(sessionName(page)).toHaveText('Groceries');
 
-    await tapeName(page).click();
-    const list = page.getByRole('dialog', { name: 'Open Tape' });
-    await expect(list.getByRole('option')).toHaveText([/Groceries/, /^Tape$/]);
-    await page.keyboard.type('tape');
+    await sessionName(page).click();
+    const list = page.getByRole('dialog', { name: 'Open Session' });
+    await expect(list.getByRole('option')).toHaveText([/Groceries/, /^Session$/]);
+    await page.keyboard.type('session');
     await page.keyboard.press('Enter');
     await expect(list).toBeHidden();
-    await expect(tapeName(page)).toHaveText('Tape');
+    await expect(sessionName(page)).toHaveText('Session');
     await expect(expression(page)).toBeFocused();
   });
 
-  test('Export Tape downloads the tape as a text file', async ({ page }) => {
+  test('Export Session downloads the session as a text file', async ({ page }) => {
     await page.keyboard.type('6*7');
     await page.keyboard.press('Enter');
     const download = page.waitForEvent('download');
-    await runCommand(page, 'Export Tape');
+    await runCommand(page, 'Export Session');
     const file = await download;
-    expect(file.suggestedFilename()).toBe('Tape.txt');
+    expect(file.suggestedFilename()).toBe('Session.txt');
     expect(readFileSync(await file.path(), 'utf8')).toBe('6*7  # = 42\n');
-    await expect(notice(page)).toContainText('Exported Tape.');
+    await expect(notice(page)).toContainText('Exported Session.');
   });
 });
 
@@ -417,7 +417,7 @@ test.describe('Settings and appearance', () => {
 });
 
 test.describe('Accessibility', () => {
-  test('every button has a name, results are announced, and Tab reaches the keypad and the tape', async ({
+  test('every button has a name, results are announced, and Tab reaches the keypad and the session', async ({
     page,
   }) => {
     await page.keyboard.press('ControlOrMeta+2');
@@ -437,12 +437,12 @@ test.describe('Accessibility', () => {
           const el = document.activeElement;
           if (el?.closest('[aria-label="Scientific keys"]')) return 'scientific';
           if (el?.closest('[aria-label="Keys"]')) return 'basic';
-          if (el?.closest('aside')) return 'tape';
+          if (el?.closest('aside')) return 'session';
           return el?.tagName ?? 'none';
         }),
       );
     }
-    expect([...reached]).toEqual(expect.arrayContaining(['basic', 'scientific', 'tape']));
+    expect([...reached]).toEqual(expect.arrayContaining(['basic', 'scientific', 'session']));
   });
 
   test('reduced motion turns off key animations', async ({ page }) => {
@@ -459,13 +459,13 @@ test.describe('Command line', () => {
     expect(cli([], 'x = 4\nx^2\n+ 1\n')).toBe('4\n16\n17');
   });
 
-  test('abacite tape works out a tape file and writes the results back', () => {
+  test('abacite session works out a session file and writes the results back', () => {
     const dir = mkdtempSync(path.join(tmpdir(), 'abacite-e2e-'));
     try {
-      const file = path.join(dir, 'Tape.txt');
+      const file = path.join(dir, 'Session.txt');
       writeFileSync(file, '# Rent\nrent = 1200\nrent / 3\n');
-      expect(cli(['tape', file])).toBe('# Rent\nrent = 1200  # = 1200\nrent / 3  # = 400');
-      cli(['tape', '--write', file]);
+      expect(cli(['session', file])).toBe('# Rent\nrent = 1200  # = 1200\nrent / 3  # = 400');
+      cli(['session', '--write', file]);
       expect(readFileSync(file, 'utf8')).toBe('# Rent\nrent = 1200  # = 1200\nrent / 3  # = 400\n');
     } finally {
       rmSync(dir, { recursive: true, force: true });

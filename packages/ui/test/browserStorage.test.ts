@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { storageKeep } from '../src/index.ts';
+import { STORAGE_FOLDER, storageKeep } from '../src/index.ts';
 
 const memory = () => {
   const map = new Map<string, string>();
@@ -12,12 +12,19 @@ const memory = () => {
 };
 
 describe('what the browser keeps per folder (PRD §8.2, §8.3)', () => {
-  it('remembers the open tape for each folder', () => {
+  it('remembers the open session for each folder', () => {
     const keep = storageKeep(memory());
-    expect(keep.lastTape('a')).toBeNull();
-    keep.setLastTape('a', 'Rent');
-    keep.setLastTape('b', 'Tape');
-    expect(keep.lastTape('a')).toBe('Rent');
+    expect(keep.lastSession('a')).toBeNull();
+    keep.setLastSession('a', 'Rent');
+    keep.setLastSession('b', 'Session');
+    expect(keep.lastSession('a')).toBe('Rent');
+  });
+
+  it('reads what was kept before sessions were renamed from tapes', () => {
+    const storage = memory();
+    storage.map.set('abacite.lastTape.a', 'Rent');
+    expect(storageKeep(storage).lastSession('a')).toBe('Rent');
+    expect(STORAGE_FOLDER).toBe('tapes');
   });
 
   it('keeps, reads and drops snapshots, and ignores damaged ones', () => {

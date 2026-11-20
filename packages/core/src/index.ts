@@ -1,4 +1,4 @@
-/** The Abacite engine: exact decimal arithmetic, the expression language and the tape. No DOM, Node or UI. */
+/** The Abacite engine: exact decimal arithmetic, the expression language and the session. No DOM, Node or UI. */
 export {
   MAX_EXPONENT,
   ONE,
@@ -66,25 +66,25 @@ export { convert, findConversion, findUnit, type Conversion, type Unit, type Uni
 export { CONSTANT_NAMES, FUNCTION_NAMES, KEYWORDS, isReserved } from './names.ts';
 export { parseStatement, stripComment, tokenize, type Node, type Statement } from './parse.ts';
 export {
-  EMPTY_TAPE,
-  MAX_TAPE_LINES,
+  EMPTY_SESSION,
+  MAX_SESSION_LINES,
   commit,
   deleteLine,
-  evaluateTape,
+  evaluateSession,
   expandInput,
   preview,
   repeatInput,
   startsWithOperator,
-  type Tape,
-  type TapeLine,
-} from './tape.ts';
+  type Session,
+  type SessionLine,
+} from './session.ts';
 export {
   RADIANS_HEADER,
-  parseTapeText,
-  readTape,
+  parseSessionText,
+  readSession,
   writeLine,
-  writeTapeText,
-  type TapeAngle,
-  type TapeFile,
-  type TapeFileLine,
-} from './tapeFile.ts';
+  writeSessionText,
+  type SessionAngle,
+  type SessionFile,
+  type SessionFileLine,
+} from './sessionFile.ts';

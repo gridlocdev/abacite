@@ -1,29 +1,29 @@
 /**
- * The tape file format (PRD §8.1): one calculation per line, the input then two spaces and a result comment
- * (`x = 5 * 3  # = 15`). Results are written for people and ignored on reading, where the tape is evaluated
+ * The session file format (PRD §8.1): one calculation per line, the input then two spaces and a result comment
+ * (`x = 5 * 3  # = 15`). Results are written for people and ignored on reading, where the session is evaluated
  * again; only the values `rand()` gave are kept.
  */
 import { PRECISION, eq, parseDecimal, type Decimal } from './decimal.ts';
 import { CalcError } from './errors.ts';
 import { type Env } from './evaluate.ts';
 import { formatDecimal } from './format.ts';
-import { evaluateTape, type Tape, type TapeLine } from './tape.ts';
+import { evaluateSession, type Session, type SessionLine } from './session.ts';
 
-export type TapeAngle = Env['angle'];
+export type SessionAngle = Env['angle'];
 
 /** A line as read from a file: what was typed, and the values its `rand()` calls gave. */
-export interface TapeFileLine {
+export interface SessionFileLine {
   readonly input: string;
   readonly randoms: readonly Decimal[];
 }
 
-export interface TapeFile {
-  /** The angle unit the tape is evaluated in: degrees unless the file's first line says radians. */
-  readonly angle: TapeAngle;
-  readonly lines: readonly TapeFileLine[];
+export interface SessionFile {
+  /** The angle unit the session is evaluated in: degrees unless the file's first line says radians. */
+  readonly angle: SessionAngle;
+  readonly lines: readonly SessionFileLine[];
 }
 
-/** The first line of a tape in radians. */
+/** The first line of a session in radians. */
 export const RADIANS_HEADER = '# abacite: angle=rad';
 
 const RESULT = '  # = ';
@@ -53,7 +53,7 @@ function readRandoms(comment: string): Decimal[] {
   return values.every((v) => v !== null) ? (values as Decimal[]) : [];
 }
 
-function readLine(row: string): TapeFileLine {
+function readLine(row: string): SessionFileLine {
   // Blank lines and `#` lines are notes, kept as they are.
   if (!row.trim() || row.trimStart().startsWith('#')) return { input: row, randoms: [] };
   const at = Math.max(row.lastIndexOf(RESULT), row.lastIndexOf(ERROR));
@@ -62,8 +62,8 @@ function readLine(row: string): TapeFileLine {
   return { input: row.slice(0, at), randoms: comment.startsWith(RESULT) ? readRandoms(comment) : [] };
 }
 
-/** Reads a tape file's text; LF or CRLF. */
-export function parseTapeText(text: string): TapeFile {
+/** Reads a session file's text; LF or CRLF. */
+export function parseSessionText(text: string): SessionFile {
   const rows = text.split(/\r?\n/);
   if (rows.at(-1) === '') rows.pop();
   const radians = rows[0]?.trim() === RADIANS_HEADER;
@@ -71,14 +71,14 @@ export function parseTapeText(text: string): TapeFile {
   return { angle: radians ? 'rad' : 'deg', lines: rows.map(readLine) };
 }
 
-/** Reads a tape file and evaluates it from the top (PRD §7.2), in the file's angle unit. */
-export function readTape(text: string, env: Env): { tape: Tape; angle: TapeAngle } {
-  const file = parseTapeText(text);
-  return { tape: evaluateTape(file.lines, { ...env, angle: file.angle }), angle: file.angle };
+/** Reads a session file and evaluates it from the top (PRD §7.2), in the file's angle unit. */
+export function readSession(text: string, env: Env): { session: Session; angle: SessionAngle } {
+  const file = parseSessionText(text);
+  return { session: evaluateSession(file.lines, { ...env, angle: file.angle }), angle: file.angle };
 }
 
-/** A tape line as written: the input, then its result with all 34 digits, ungrouped. */
-export function writeLine(line: TapeLine): string {
+/** A session line as written: the input, then its result with all 34 digits, ungrouped. */
+export function writeLine(line: SessionLine): string {
   const r = line.result;
   if (r.kind === 'empty') return line.input;
   if (r.kind === 'error') return `${line.input}${ERROR}${r.message}`;
@@ -89,9 +89,9 @@ export function writeLine(line: TapeLine): string {
   return `${text}  (rand${only ? '' : ` ${values}`})`;
 }
 
-/** The file's text for a tape: LF line endings, each line ending in one. */
-export function writeTapeText(tape: Tape, angle: TapeAngle): string {
+/** The file's text for a session: LF line endings, each line ending in one. */
+export function writeSessionText(session: Session, angle: SessionAngle): string {
   const rows = angle === 'rad' ? [RADIANS_HEADER] : [];
-  for (const line of tape.lines) rows.push(writeLine(line));
+  for (const line of session.lines) rows.push(writeLine(line));
   return rows.map((row) => `${row}\n`).join('');
 }

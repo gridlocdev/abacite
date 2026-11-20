@@ -5,7 +5,7 @@
 import { Serial, StoreError, pathParts, versionOfBytes, type FileRead, type Folder } from './folder.ts';
 
 /** The browser lock every tab's writes take, so one tab's version check can't pass between another's. */
-const LOCK = 'abacite-tapes';
+const LOCK = 'abacite-tapes'; // The name from when sessions were called tapes.
 
 const isNotFound = (e: unknown) =>
   e instanceof DOMException && (e.name === 'NotFoundError' || e.name === 'TypeMismatchError');

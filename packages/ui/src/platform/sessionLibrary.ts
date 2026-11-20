@@ -1,28 +1,28 @@
 /**
- * The tapes in a folder (PRD §8.2): each `*.txt` directly in it is a tape, named without the `.txt`. Deleted
- * tapes go to `.abacite/trash/`, where they can be restored.
+ * The sessions in a folder (PRD §8.2): each `*.txt` directly in it is a session, named without the `.txt`. Deleted
+ * sessions go to `.abacite/trash/`, where they can be restored.
  */
 import { StoreError, type FileRead, type Folder } from './folder.ts';
 
 export const TRASH = '.abacite/trash';
 const EXT = '.txt';
-/** The longest tape name, so the file name fits every file system. */
+/** The longest session name, so the file name fits every file system. */
 const MAX_NAME = 200;
 
 const file = (name: string) => `${name}${EXT}`;
 const order = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' });
 
-/** `name` cleaned up as a tape name, or an error saying what's wrong with it. */
-export function checkTapeName(name: string): { name: string } | { error: string } {
+/** `name` cleaned up as a session name, or an error saying what's wrong with it. */
+export function checkSessionName(name: string): { name: string } | { error: string } {
   const clean = name
     .trim()
     .replace(/\.txt$/i, '')
     .trim();
-  if (!clean) return { error: 'A tape needs a name.' };
+  if (!clean) return { error: 'A session needs a name.' };
   if (/[/\\:*?"<>|]/.test(clean) || [...clean].some((c) => c.charCodeAt(0) < 32))
-    return { error: 'A tape name can’t have / \\ : * ? " < > or |.' };
-  if (clean.startsWith('.')) return { error: 'A tape name can’t start with a dot.' };
-  if (clean.length > MAX_NAME) return { error: `A tape name can have up to ${MAX_NAME} characters.` };
+    return { error: 'A session name can’t have / \\ : * ? " < > or |.' };
+  if (clean.startsWith('.')) return { error: 'A session name can’t start with a dot.' };
+  if (clean.length > MAX_NAME) return { error: `A session name can have up to ${MAX_NAME} characters.` };
   return { name: clean };
 }
 
@@ -33,42 +33,42 @@ export function freeName(base: string, taken: readonly string[]): string {
   for (let n = 2; ; n++) if (!used.has(`${base} ${n}`.toLowerCase())) return `${base} ${n}`;
 }
 
-/** The name of a copy saved from a conflict: `Tape copy 2026-11-19-141503` (PRD §8.3). */
+/** The name of a copy saved from a conflict: `Session copy 2026-11-19-141503` (PRD §8.3). */
 export function copyName(name: string, at: Date): string {
   const p = (n: number) => String(n).padStart(2, '0');
   const stamp = `${at.getFullYear()}-${p(at.getMonth() + 1)}-${p(at.getDate())}-${p(at.getHours())}${p(at.getMinutes())}${p(at.getSeconds())}`;
   return `${name} copy ${stamp}`;
 }
 
-const tapesIn = (names: readonly string[]) =>
+const sessionsIn = (names: readonly string[]) =>
   names
     .filter((n) => n.toLowerCase().endsWith(EXT) && !n.startsWith('.') && n.length > EXT.length)
     .map((n) => n.slice(0, -EXT.length))
     .sort(order);
 
-export class TapeLibrary {
+export class SessionLibrary {
   readonly folder: Folder;
 
   constructor(folder: Folder) {
     this.folder = folder;
   }
 
-  /** The folder's tapes, by name. */
+  /** The folder's sessions, by name. */
   async names(): Promise<string[]> {
-    return tapesIn(await this.folder.list(''));
+    return sessionsIn(await this.folder.list(''));
   }
 
   read(name: string): Promise<FileRead | null> {
     return this.folder.read(file(name));
   }
 
-  /** Saves a tape against the version it was read at (null: a new tape). */
+  /** Saves a session against the version it was read at (null: a new session). */
   write(name: string, text: string, expected: string | null): Promise<string> {
     return this.folder.write(file(name), text, expected);
   }
 
-  /** Makes an empty tape named `base`, or `base 2`…, and returns its name and version. */
-  async create(base = 'Tape', text = ''): Promise<{ name: string; version: string }> {
+  /** Makes an empty session named `base`, or `base 2`…, and returns its name and version. */
+  async create(base = 'Session', text = ''): Promise<{ name: string; version: string }> {
     for (;;) {
       const name = freeName(base, await this.names());
       try {
@@ -80,14 +80,14 @@ export class TapeLibrary {
     }
   }
 
-  /** Renames a tape; `to` must be a good name (`checkTapeName`) that no other tape has. */
+  /** Renames a session; `to` must be a good name (`checkSessionName`) that no other session has. */
   async rename(from: string, to: string): Promise<void> {
-    const checked = checkTapeName(to);
+    const checked = checkSessionName(to);
     if ('error' in checked) throw new StoreError('name', checked.error);
     const taken = (await this.names()).some(
       (n) => n !== from && n.toLowerCase() === checked.name.toLowerCase(),
     );
-    if (taken) throw new StoreError('exists', `There’s already a tape called ${checked.name}.`);
+    if (taken) throw new StoreError('exists', `There’s already a session called ${checked.name}.`);
     if (checked.name === from) return;
     // A change of case only: go through a free name, since the file system may see one file.
     if (checked.name.toLowerCase() === from.toLowerCase()) {
@@ -99,19 +99,19 @@ export class TapeLibrary {
     await this.folder.move(file(from), file(checked.name));
   }
 
-  /** Moves a tape to the trash and returns its name there (PRD §8.2). */
+  /** Moves a session to the trash and returns its name there (PRD §8.2). */
   async trash(name: string): Promise<string> {
-    const there = freeName(name, tapesIn(await this.folder.list(TRASH)));
+    const there = freeName(name, sessionsIn(await this.folder.list(TRASH)));
     await this.folder.move(file(name), `${TRASH}/${file(there)}`);
     return there;
   }
 
-  /** The tapes in the trash, by name. */
+  /** The sessions in the trash, by name. */
   async trashed(): Promise<string[]> {
-    return tapesIn(await this.folder.list(TRASH));
+    return sessionsIn(await this.folder.list(TRASH));
   }
 
-  /** Puts a trashed tape back, adding ` 2` when its name is taken, and returns the name it got. */
+  /** Puts a trashed session back, adding ` 2` when its name is taken, and returns the name it got. */
   async restore(trashed: string): Promise<string> {
     const name = freeName(trashed, await this.names());
     await this.folder.move(`${TRASH}/${file(trashed)}`, file(name));

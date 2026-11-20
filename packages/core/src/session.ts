@@ -1,29 +1,29 @@
-/** The tape: committed lines with their results, evaluated in order (PRD §7). */
+/** The session: committed lines with their results, evaluated in order (PRD §7). */
 import { type Decimal } from './decimal.ts';
 import { CalcError } from './errors.ts';
 import { EMPTY_SCOPE, evaluate, type Env, type Evaluation, type LineResult, type Scope } from './evaluate.ts';
 import { parseStatement } from './parse.ts';
 
-/** The most lines a tape keeps; committing more drops the oldest (PRD §7.1). */
-export const MAX_TAPE_LINES = 10_000;
+/** The most lines a session keeps; committing more drops the oldest (PRD §7.1). */
+export const MAX_SESSION_LINES = 10_000;
 
-export interface TapeLine {
+export interface SessionLine {
   /** What the user typed, as typed (without an `ans` added in front). */
   readonly input: string;
   readonly result: LineResult;
-  /** Values `rand()` gave this line, replayed when the tape is evaluated again (PRD §7.2). */
+  /** Values `rand()` gave this line, replayed when the session is evaluated again (PRD §7.2). */
   readonly randoms: readonly Decimal[];
 }
 
-export interface Tape {
-  readonly lines: readonly TapeLine[];
+export interface Session {
+  readonly lines: readonly SessionLine[];
   /** Variables and `ans` after the last line. */
   readonly scope: Scope;
   /** True once a line has been dropped at the limit, so the notice shows once (PRD §7.1). */
   readonly dropped: boolean;
 }
 
-export const EMPTY_TAPE: Tape = { lines: [], scope: EMPTY_SCOPE, dropped: false };
+export const EMPTY_SESSION: Session = { lines: [], scope: EMPTY_SCOPE, dropped: false };
 
 const ANS_PREFIX = 'ans ';
 const USES_ANS = /(?<![A-Za-z0-9_])ans(?![A-Za-z0-9_])/;
@@ -34,20 +34,22 @@ export function startsWithOperator(input: string): boolean {
   return LEADING_OPERATOR.test(input);
 }
 
-/** The text that is evaluated: `ans` in front of a leading operator once the tape has a result. */
-export function expandInput(input: string, tape: Tape): string {
-  return tape.lines.length > 0 && startsWithOperator(input) ? `${ANS_PREFIX}${input}` : input;
+/** The text that is evaluated: `ans` in front of a leading operator once the session has a result. */
+export function expandInput(input: string, session: Session): string {
+  return session.lines.length > 0 && startsWithOperator(input) ? `${ANS_PREFIX}${input}` : input;
 }
 
 /**
  * The line Enter commits on an empty expression line: the last line's top-level operation applied to `ans`
  * (`5 + 3` → `ans + 3`), or null when it has none or its operand uses `ans` (PRD §7.1).
  */
-export function repeatInput(tape: Tape): string | null {
-  const last = tape.lines.at(-1);
+export function repeatInput(session: Session): string | null {
+  const last = session.lines.at(-1);
   if (!last || last.result.kind !== 'value') return null;
   try {
-    const statement = parseStatement(expandInput(last.input, { ...tape, lines: tape.lines.slice(0, -1) }));
+    const statement = parseStatement(
+      expandInput(last.input, { ...session, lines: session.lines.slice(0, -1) }),
+    );
     if (!statement || statement.grouped || statement.expr.kind !== 'binary' || statement.expr.at === null)
       return null;
     const operation = statement.source.slice(statement.expr.at).trim();
@@ -77,9 +79,9 @@ function evaluateTyped(input: string, lines: number, scope: Scope, env: Env): Ev
   return { ...evaluation, result: { ...result, at, message } };
 }
 
-/** Evaluates `input` as the tape's next line without committing it: the live result (PRD §9.1). */
-export function preview(tape: Tape, input: string, env: Env): Evaluation {
-  return evaluateTyped(input, tape.lines.length, tape.scope, env);
+/** Evaluates `input` as the session's next line without committing it: the live result (PRD §9.1). */
+export function preview(session: Session, input: string, env: Env): Evaluation {
+  return evaluateTyped(input, session.lines.length, session.scope, env);
 }
 
 /** An env whose `rand()` replays `replay` first, then draws new values; `drawn` collects all of them. */
@@ -98,28 +100,28 @@ function recordingEnv(env: Env, replay: readonly Decimal[]): { env: Env; drawn: 
   };
 }
 
-/** Adds a line to the tape. An empty line commits nothing. */
-export function commit(tape: Tape, input: string, env: Env): Tape {
-  if (!input.trim()) return tape;
+/** Adds a line to the session. An empty line commits nothing. */
+export function commit(session: Session, input: string, env: Env): Session {
+  if (!input.trim()) return session;
   const recording = recordingEnv(env, []);
-  const evaluation = evaluateTyped(input, tape.lines.length, tape.scope, recording.env);
-  const line: TapeLine = { input, result: evaluation.result, randoms: recording.drawn };
-  const lines = [...tape.lines, line];
-  const over = lines.length > MAX_TAPE_LINES;
+  const evaluation = evaluateTyped(input, session.lines.length, session.scope, recording.env);
+  const line: SessionLine = { input, result: evaluation.result, randoms: recording.drawn };
+  const lines = [...session.lines, line];
+  const over = lines.length > MAX_SESSION_LINES;
   return {
-    lines: over ? lines.slice(lines.length - MAX_TAPE_LINES) : lines,
+    lines: over ? lines.slice(lines.length - MAX_SESSION_LINES) : lines,
     scope: evaluation.scope,
-    dropped: tape.dropped || over,
+    dropped: session.dropped || over,
   };
 }
 
 /** Evaluates lines from the top, replaying their `rand()` values (PRD §7.2). */
-export function evaluateTape(
+export function evaluateSession(
   inputs: readonly { input: string; randoms?: readonly Decimal[] }[],
   env: Env,
-): Tape {
+): Session {
   let scope = EMPTY_SCOPE;
-  const lines: TapeLine[] = [];
+  const lines: SessionLine[] = [];
   for (const { input, randoms = [] } of inputs) {
     const recording = recordingEnv(env, randoms);
     const evaluation = evaluateTyped(input, lines.length, scope, recording.env);
@@ -129,9 +131,9 @@ export function evaluateTape(
   return { lines, scope, dropped: false };
 }
 
-/** The tape without line `index`; the lines after it are evaluated again (PRD §7.2). */
-export function deleteLine(tape: Tape, index: number, env: Env): Tape {
-  if (index < 0 || index >= tape.lines.length) return tape;
-  const rest = evaluateTape(tape.lines.toSpliced(index, 1), env);
-  return { ...rest, dropped: tape.dropped };
+/** The session without line `index`; the lines after it are evaluated again (PRD §7.2). */
+export function deleteLine(session: Session, index: number, env: Env): Session {
+  if (index < 0 || index >= session.lines.length) return session;
+  const rest = evaluateSession(session.lines.toSpliced(index, 1), env);
+  return { ...rest, dropped: session.dropped };
 }
