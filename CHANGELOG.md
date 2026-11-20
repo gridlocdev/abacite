@@ -15,3 +15,4 @@
 - `abacite session <file>` works out a session file and can write the results back.
 - The desktop app checks for a newer release once a day and says so in the status bar.
 - An app icon.
+- A native look: the display and the expression line share one screen, softer keys, and on macOS a window with no title bar and a translucent background.

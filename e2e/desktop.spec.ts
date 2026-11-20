@@ -56,6 +56,20 @@ test.describe('Desktop and browser', () => {
         const window = await app.firstWindow();
         const errors = watchErrors(window);
         await firstStart(window);
+        if (process.platform === 'darwin') {
+          // No title bar: the page's top row drags the window, and the buttons in it still click.
+          const chrome = await window.evaluate(() => ({
+            unified: document.documentElement.classList.contains('ab-unified'),
+            strip: getComputedStyle(document.querySelector('.ab-calc')!, '::before').getPropertyValue(
+              '-webkit-app-region',
+            ),
+            head: getComputedStyle(
+              document.querySelector('.ab-session-head') ?? document.body,
+            ).getPropertyValue('-webkit-app-region'),
+            key: getComputedStyle(document.querySelector('.ab-key')!).getPropertyValue('-webkit-app-region'),
+          }));
+          expect(chrome).toMatchObject({ unified: true, strip: 'drag', key: 'no-drag' });
+        }
         await window.keyboard.type('2*(3+4)');
         await expect(display(window)).toHaveText('14');
         await window.keyboard.press('Enter');

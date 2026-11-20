@@ -118,6 +118,12 @@ function rememberWindow(w: BrowserWindow, closing = false): void {
   }
 }
 
+/**
+ * On macOS the window has no title bar: the page's top row holds the traffic lights, and the window is
+ * translucent behind the page (the page's `ab-unified` rules). Other systems keep their own frame.
+ */
+const unified = process.platform === 'darwin';
+
 function createWindow(): BrowserWindow {
   const area = screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
   const fallback = {
@@ -143,15 +149,27 @@ function createWindow(): BrowserWindow {
     // macOS ignores this and shows the bundle's icon.icns.
     ...(process.platform === 'darwin' ? {} : { icon: path.join(here, '..', 'build', 'icon.png') }),
     show: false,
-    // The page's window grey (--ab-window), so a slow first paint doesn't flash.
-    backgroundColor: nativeTheme.shouldUseDarkColors ? '#1c1c1e' : '#ececee',
+    ...(unified
+      ? {
+          titleBarStyle: 'hidden' as const,
+          // The lights' centre on the middle of the page's 44 px top row.
+          trafficLightPosition: { x: 16, y: 16 },
+          vibrancy: 'under-window' as const,
+          visualEffectState: 'followWindow' as const,
+          backgroundColor: '#00000000',
+        }
+      : // The page's window grey (--ab-window), so a slow first paint doesn't flash.
+        { backgroundColor: nativeTheme.shouldUseDarkColors ? '#1c1c1e' : '#ececee' }),
     webPreferences: {
       preload: path.join(here, 'preload.cjs'),
       contextIsolation: true,
       sandbox: true,
       nodeIntegration: false,
       offscreen: headless,
-      additionalArguments: [`--abacite-version=${app.getVersion()}`],
+      additionalArguments: [
+        `--abacite-version=${app.getVersion()}`,
+        `--abacite-chrome=${unified ? 'unified' : 'native'}`,
+      ],
     },
   });
   if (headless) w.webContents.setAudioMuted(true);
@@ -160,6 +178,9 @@ function createWindow(): BrowserWindow {
       if (placed.maximized) w.maximize();
       w.show();
     });
+  // Full screen hides the traffic lights, so the page drops the room it keeps for them.
+  w.on('enter-full-screen', () => w.webContents.send(Channels.fullScreen, true));
+  w.on('leave-full-screen', () => w.webContents.send(Channels.fullScreen, false));
   let placeTimer: NodeJS.Timeout | null = null;
   const placeChanged = () => {
     if (placeTimer) clearTimeout(placeTimer);

@@ -16,17 +16,22 @@
   flex: 1;
   flex-direction: column;
   min-width: 0;
-  padding: 10px;
-  gap: 8px;
+  padding: 12px;
+  gap: 12px;
+}
+
+/* The screen: the display with the expression line under it, one panel like a calculator's. */
+.ab-screen {
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--ab-display);
+  box-shadow: inset 0 0 0 0.5px var(--ab-line-strong);
 }
 
 /* Display */
 .ab-display {
   container-type: inline-size;
-  padding: 8px 12px 6px;
-  border: 1px solid var(--ab-line);
-  border-radius: 10px;
-  background: var(--ab-display);
+  padding: 10px 14px 4px;
 }
 .ab-display-flags {
   display: flex;
@@ -53,12 +58,18 @@
   display: block;
   overflow-x: auto;
   overflow-y: hidden;
-  min-height: 56px;
-  font: 300 clamp(18px, calc(100cqw / (var(--ab-chars, 10) * 0.62)), 48px) / 56px var(--ab-font);
+  min-height: 64px;
+  font: 300 clamp(18px, calc(100cqw / (var(--ab-chars, 10) * 0.62)), 56px) / 64px var(--ab-font);
+  letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
   scrollbar-width: none;
+}
+/* The result can be dragged over and copied (PRD §9.1). */
+.ab-value {
+  user-select: text;
+  -webkit-user-select: text;
 }
 .ab-value-pending {
   color: var(--ab-text-3);
@@ -75,17 +86,11 @@
 .ab-line {
   position: relative;
   font: 17px/1 var(--ab-mono);
-  border: 1px solid var(--ab-line-strong);
-  border-radius: 8px;
-  background: var(--ab-field);
-}
-.ab-line:focus-within {
-  border-color: var(--ab-accent);
-  box-shadow: 0 0 0 3px var(--ab-accent-soft);
+  border-top: 1px solid var(--ab-line);
 }
 .ab-line-mirror,
 .ab-line-input {
-  padding: 9px 10px;
+  padding: 11px 14px;
   font: inherit;
   white-space: pre;
 }
@@ -116,7 +121,7 @@
 }
 /* The typed text starts after the greyed `ans `: four characters of the monospace font. */
 .ab-line-input.ab-after-ans {
-  padding-left: calc(10px + 4ch);
+  padding-left: calc(14px + 4ch);
 }
 .ab-line-input::placeholder {
   color: var(--ab-text-3);
@@ -126,13 +131,13 @@
 .ab-keypad {
   display: flex;
   flex: 1;
-  gap: 8px;
+  gap: 10px;
   min-height: 0;
 }
 .ab-keys {
   display: grid;
   flex: 4;
-  gap: 6px;
+  gap: 8px;
   grid-template-columns: repeat(4, 1fr);
   grid-auto-rows: 1fr;
 }
@@ -152,29 +157,36 @@
   min-width: 0;
   min-height: 34px;
   padding: 0 2px;
-  border: 1px solid var(--ab-line);
-  border-radius: 8px;
-  font-size: 19px;
+  border: 0;
+  border-radius: 12px;
+  font-size: 22px;
   background: var(--ab-key);
+  box-shadow: var(--ab-key-shadow);
   cursor: default;
-  transition: filter 0.08s;
+  transition:
+    filter 0.08s,
+    transform 0.08s;
   user-select: none;
 }
 .ab-key:hover {
-  filter: brightness(0.96);
+  filter: brightness(var(--ab-key-hover));
 }
 .ab-key:active {
-  filter: brightness(0.86);
+  filter: brightness(var(--ab-key-down));
+  transform: scale(0.97);
 }
 .ab-key-util,
 .ab-key-fn {
   background: var(--ab-key-fn);
 }
 .ab-key-fn {
-  font-size: 14px;
+  font-size: 15px;
+}
+.ab-keys-sci .ab-key {
+  font-size: 16px;
 }
 .ab-key-op {
-  border-color: transparent;
+  font-size: 26px;
   color: var(--ab-key-op-text);
   background: var(--ab-key-op);
 }
@@ -190,7 +202,7 @@
   width: 260px;
   min-height: 0;
   border-left: 1px solid var(--ab-line);
-  background: var(--ab-raised);
+  background: var(--ab-sidebar);
 }
 @media (max-width: 639px) {
   .ab-session {
@@ -204,8 +216,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--ab-line);
+  min-height: 44px;
+  padding: 8px 14px;
 }
 .ab-session-head h2 {
   margin: 0;
@@ -228,7 +240,7 @@
   background: none;
   color: var(--ab-text);
   font: inherit;
-  cursor: pointer;
+  cursor: default;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -249,6 +261,7 @@
 .ab-session-lines {
   flex: 1;
   overflow-y: auto;
+  scrollbar-width: thin;
   margin: 0;
   padding: 4px 0;
   list-style: none;
@@ -258,7 +271,7 @@
   flex-direction: column;
   align-items: flex-end;
   width: 100%;
-  padding: 5px 12px;
+  padding: 6px 14px;
   border: 0;
   text-align: right;
   background: none;
@@ -270,12 +283,12 @@
   max-width: 100%;
   overflow-wrap: anywhere;
   font: 12px/1.4 var(--ab-mono);
-  color: var(--ab-text-2);
+  color: var(--ab-text-3);
 }
 .ab-session-result {
   max-width: 100%;
   overflow-wrap: anywhere;
-  font-size: 15px;
+  font-size: 16px;
   font-variant-numeric: tabular-nums;
 }
 .ab-session-var {
@@ -329,10 +342,10 @@
   align-items: center;
   gap: 8px;
   min-height: var(--ab-status);
-  padding: 0 6px 0 12px;
+  padding: 0 6px 0 14px;
   border-top: 1px solid var(--ab-line);
-  font-size: 12px;
-  color: var(--ab-text-2);
+  font-size: 11px;
+  color: var(--ab-text-3);
 }
 .ab-notice {
   display: flex;
@@ -428,5 +441,48 @@
   }
   .ab-settings .ab-check {
     grid-column: 1;
+  }
+}
+
+/*
+ * macOS desktop app: no title bar. A 44 px row at the top holds the traffic lights and drags the window; the
+ * window is translucent behind the page, so the panels let the desktop through a little.
+ */
+html.ab-unified {
+  --ab-titlebar: 44px;
+  background: transparent;
+}
+html.ab-unified.ab-fullscreen {
+  --ab-titlebar: 0px;
+}
+html.ab-unified body {
+  background: color-mix(in srgb, var(--ab-window) 78%, transparent);
+}
+html.ab-unified .ab-session {
+  background: color-mix(in srgb, var(--ab-sidebar) 70%, transparent);
+}
+html.ab-unified .ab-calc {
+  position: relative;
+  padding-top: max(12px, var(--ab-titlebar));
+}
+html.ab-unified .ab-calc::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--ab-titlebar);
+  -webkit-app-region: drag;
+}
+html.ab-unified .ab-session-head {
+  min-height: max(44px, var(--ab-titlebar));
+  -webkit-app-region: drag;
+}
+html.ab-unified :is(button, input, select, textarea, a, [role='menu'], [role='dialog']) {
+  -webkit-app-region: no-drag;
+}
+@media (max-width: 639px) {
+  /* The session over the keypad starts below the top row, clear of the traffic lights. */
+  html.ab-unified .ab-session {
+    top: var(--ab-titlebar);
+    background: var(--ab-sidebar);
   }
 }

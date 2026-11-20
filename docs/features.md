@@ -54,4 +54,4 @@ Every key and control is a real button with a name for screen readers, and the k
 
 ## Desktop and browser
 
-The same app runs as a desktop app (Electron) and in any modern browser as static files. The desktop app remembers its window's place and size. Once a day at most, on start, the desktop app checks GitHub for a newer release and says so in the status bar, with Download to open its page. Nothing downloads or installs on its own.
+The same app runs as a desktop app (Electron) and in any modern browser as static files. On macOS the desktop app has no title bar, with the traffic lights in its top row, and a translucent window. The desktop app remembers its window's place and size. Once a day at most, on start, the desktop app checks GitHub for a newer release and says so in the status bar, with Download to open its page. Nothing downloads or installs on its own.

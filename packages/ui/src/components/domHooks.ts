@@ -61,8 +61,13 @@ export function useTakeBackFocus(ref: RefObject<HTMLElement | null>, allowed: ()
         if (document.getSelection()?.isCollapsed === false) return;
         el.focus();
       });
-    const down = () => {
+    const down = (e: PointerEvent) => {
       held = true;
+      // A click on something that can't be selected drops the selection, as in a native app; the page
+      // only does that itself for selectable text.
+      const target = e.target instanceof Element ? e.target : null;
+      if (target && getComputedStyle(target).userSelect === 'none')
+        document.getSelection()?.removeAllRanges();
     };
     const up = () => {
       held = false;

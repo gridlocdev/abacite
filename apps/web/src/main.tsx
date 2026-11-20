@@ -48,6 +48,11 @@ function start(): void {
   );
   if (import.meta.env.DEV) Object.assign(globalThis, { abacite: { app, catalog, folders } });
 
+  if (native?.chrome === 'unified') {
+    document.documentElement.classList.add('ab-unified');
+    native.onFullScreen((full) => document.documentElement.classList.toggle('ab-fullscreen', full));
+  }
+
   if (native) {
     const menu = menuSender((items) => native.setMenu(items));
     native.onCommand((id) => {

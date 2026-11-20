@@ -416,6 +416,26 @@ test.describe('Settings and appearance', () => {
     await other.close();
   });
 
+  test('it behaves like a desktop app: the arrow cursor, and only text fields select text', async ({
+    page,
+  }) => {
+    const feel = await page.evaluate(() => {
+      const style = (el: Element) => getComputedStyle(el);
+      return {
+        bodySelect: style(document.body).userSelect,
+        keyCursor: style(document.querySelector('.ab-key')!).cursor,
+        lineSelect: style(document.querySelector('[data-ab-line]')!).userSelect,
+        overscroll: style(document.documentElement).overscrollBehaviorY,
+      };
+    });
+    expect(feel).toEqual({
+      bodySelect: 'none',
+      keyCursor: 'default',
+      lineSelect: 'text',
+      overscroll: 'none',
+    });
+  });
+
   for (const width of [320, 400, 900]) {
     test(`the settings rows line up and fit a ${width} px window`, async ({ page }) => {
       await page.setViewportSize({ width, height: 700 });

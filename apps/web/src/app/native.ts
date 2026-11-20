@@ -9,6 +9,10 @@ export interface Release {
 
 export interface AbaciteNative {
   readonly version: string;
+  /** `unified` on macOS: no title bar, the traffic lights sit in the page's top row. */
+  readonly chrome: string;
+  /** The window went in or out of full screen. */
+  onFullScreen(fn: (full: boolean) => void): void;
   /** Replaces the menu bar. */
   setMenu(items: readonly NativeMenuItem[]): void;
   /** A menu bar item was chosen. */

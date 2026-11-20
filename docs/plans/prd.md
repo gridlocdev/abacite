@@ -240,6 +240,8 @@ In the browser, a change in one tab reaches the other open tabs at once. Each ta
 ## §12 Desktop
 
 - Electron, with the web build inside. Native menu bar from the command catalog. One window. Closing the window quits on every platform.
+- On macOS the window has no title bar: the traffic lights sit in the app's own top row, which drags the window, and the window is translucent behind the app. Full screen drops the room kept for the lights. Windows and Linux keep their own frame and menu bar.
+- It looks and acts like a desktop app, in the browser too: the arrow cursor over controls, text selection only in text fields and the result, and no page bounce when scrolling.
 - `ABACITE_HEADLESS=1` runs with no visible window, for checks.
 - Updates: the app checks GitHub releases on start (once a day at most) and says "Abacite X.Y is available." with **Download** in the status bar; nothing installs on its own.
 

@@ -9,6 +9,9 @@ const arg = (name: string) =>
 
 contextBridge.exposeInMainWorld('abaciteNative', {
   version: arg('abacite-version'),
+  chrome: arg('abacite-chrome'),
+  onFullScreen: (fn: (full: boolean) => void) =>
+    ipcRenderer.on('abacite:full-screen', (_e, full: boolean) => fn(full)),
   setMenu: (items: readonly NativeMenuItem[]) => ipcRenderer.send('abacite:set-menu', items),
   onCommand: (fn: (id: string) => void) => ipcRenderer.on('abacite:command', (_e, id: string) => fn(id)),
   fitWidth: (width: number) => ipcRenderer.send('abacite:fit-width', width),

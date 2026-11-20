@@ -12,6 +12,7 @@ export const Channels = {
   folder: 'abacite:folder',
   exportSession: 'abacite:export-session',
   latestRelease: 'abacite:latest-release',
+  fullScreen: 'abacite:full-screen',
 } as const;
 
 /** One item of the menu bar the page sends, as `NativeMenuItem` in @abacite/ui. */

@@ -141,8 +141,10 @@ export function App(props: {
         {ready && (
           <>
             <main class="ab-calc">
-              <Display app={app} />
-              {!app.classicEntry() && <ExpressionLine app={app} />}
+              <div class="ab-screen">
+                <Display app={app} />
+                {!app.classicEntry() && <ExpressionLine app={app} />}
+              </div>
               <Keypad app={app} />
             </main>
             {showSession && <SessionPanel app={app} name={current?.name.value ?? null} />}
