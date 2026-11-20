@@ -3,14 +3,14 @@ import { useState } from 'preact/hooks';
 import { Dialog, ListPopup, filterEntries } from '@abacite/ui';
 import type { AppController } from './controller.ts';
 import type { FolderSetup, TapeFolders } from './tapeFolders.ts';
-import type { TapeSession } from './tapeSession.ts';
+import type { OpenTape } from './openTape.ts';
 
 interface Props {
   readonly app: AppController;
   readonly folders: TapeFolders;
 }
 
-/** Runs a session task from a click, reporting a failure in the status bar. */
+/** Runs an open tape task from a click, reporting a failure in the status bar. */
 function run(app: AppController, what: string, task: () => Promise<unknown>): void {
   task().catch((e: unknown) => {
     console.warn(e);
@@ -19,21 +19,21 @@ function run(app: AppController, what: string, task: () => Promise<unknown>): vo
 }
 
 export function TapeDialogs({ app, folders }: Props) {
-  const session = folders.session.value;
+  const current = folders.current.value;
   const kind = app.dialog.value;
   if (kind === 'folder') return <FolderDialog folders={folders} />;
-  if (!session) return null;
+  if (!current) return null;
   switch (kind) {
     case 'tapes':
-      return <TapesDialog app={app} session={session} />;
+      return <TapesDialog app={app} current={current} />;
     case 'rename':
-      return <RenameDialog app={app} session={session} />;
+      return <RenameDialog app={app} current={current} />;
     case 'trash':
-      return <TrashDialog app={app} session={session} />;
+      return <TrashDialog app={app} current={current} />;
     case 'conflict':
-      return <ConflictDialog app={app} session={session} />;
+      return <ConflictDialog app={app} current={current} />;
     case 'recovery':
-      return <RecoveryDialog app={app} session={session} />;
+      return <RecoveryDialog app={app} current={current} />;
     case 'commands':
     case 'shortcuts':
     case 'settings':
@@ -42,23 +42,23 @@ export function TapeDialogs({ app, folders }: Props) {
   }
 }
 
-interface SessionProps {
+interface OpenTapeProps {
   readonly app: AppController;
-  readonly session: TapeSession;
+  readonly current: OpenTape;
 }
 
 /** Open Tape…: the folder's tapes, filtered as you type. */
-function TapesDialog({ app, session }: SessionProps) {
+function TapesDialog({ app, current }: OpenTapeProps) {
   const [query, setQuery] = useState('');
   const [index, setIndex] = useState(0);
-  const open = session.name.value;
-  const entries = session.names.value.map((name) => ({ id: name, title: name, group: '', keywords: '' }));
+  const open = current.name.value;
+  const entries = current.names.value.map((name) => ({ id: name, title: name, group: '', keywords: '' }));
   const results = filterEntries(entries, query, []);
   const pick = (i: number) => {
     const entry = results[i];
     if (!entry) return;
     app.close();
-    if (entry.id !== open) run(app, `open ${entry.id}`, () => session.open(entry.id));
+    if (entry.id !== open) run(app, `open ${entry.id}`, () => current.open(entry.id));
   };
   return (
     <ListPopup
@@ -94,12 +94,12 @@ function TapesDialog({ app, session }: SessionProps) {
 }
 
 /** Rename Tape…: the file's new name, with what's wrong with it. */
-function RenameDialog({ app, session }: SessionProps) {
-  const [name, setName] = useState(session.name.value ?? '');
+function RenameDialog({ app, current }: OpenTapeProps) {
+  const [name, setName] = useState(current.name.value ?? '');
   const [error, setError] = useState<string | null>(null);
   const submit = () =>
     run(app, 'rename the tape', async () => {
-      const problem = await session.rename(name);
+      const problem = await current.rename(name);
       if (problem === null) app.close();
       else setError(problem);
     });
@@ -144,8 +144,8 @@ function RenameDialog({ app, session }: SessionProps) {
 }
 
 /** Open Trash…: deleted tapes, each with Restore. */
-function TrashDialog({ app, session }: SessionProps) {
-  const names = session.trashed.value;
+function TrashDialog({ app, current }: OpenTapeProps) {
+  const names = current.trashed.value;
   const close = () => app.close();
   return (
     <Dialog
@@ -170,7 +170,7 @@ function TrashDialog({ app, session }: SessionProps) {
                 aria-label={`Restore ${name}`}
                 onClick={() => {
                   close();
-                  run(app, `restore ${name}`, () => session.restoreTrashed(name));
+                  run(app, `restore ${name}`, () => current.restoreTrashed(name));
                 }}
               >
                 Restore
@@ -184,8 +184,8 @@ function TrashDialog({ app, session }: SessionProps) {
 }
 
 /** A save found the file changed or deleted elsewhere: nothing is saved until the user picks one (PRD §8.3). */
-function ConflictDialog({ app, session }: SessionProps) {
-  const conflict = session.conflict.value;
+function ConflictDialog({ app, current }: OpenTapeProps) {
+  const conflict = current.conflict.value;
   if (!conflict) return null;
   const choose = (task: () => Promise<void>) => {
     app.close();
@@ -198,17 +198,17 @@ function ConflictDialog({ app, session }: SessionProps) {
       onClose={() => undefined}
       actions={
         <>
-          <button type="button" class="ab-button" onClick={() => choose(() => session.useTheirs())}>
+          <button type="button" class="ab-button" onClick={() => choose(() => current.useTheirs())}>
             Use Theirs
           </button>
-          <button type="button" class="ab-button" onClick={() => choose(() => session.keepMine())}>
+          <button type="button" class="ab-button" onClick={() => choose(() => current.keepMine())}>
             Keep Mine
           </button>
           <button
             type="button"
             class="ab-button ab-button-primary"
             data-autofocus
-            onClick={() => choose(() => session.saveMineAsCopy())}
+            onClick={() => choose(() => current.saveMineAsCopy())}
           >
             Save Mine as a Copy
           </button>
@@ -246,8 +246,8 @@ const timeOf = (at: number) =>
   new Date(at).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
 /** Unsaved changes kept from an earlier visit (PRD §8.3). */
-function RecoveryDialog({ app, session }: SessionProps) {
-  const recovery = session.recovery.value;
+function RecoveryDialog({ app, current }: OpenTapeProps) {
+  const recovery = current.recovery.value;
   if (!recovery) return null;
   return (
     <Dialog
@@ -260,7 +260,7 @@ function RecoveryDialog({ app, session }: SessionProps) {
             class="ab-button"
             onClick={() => {
               app.close();
-              session.discard();
+              current.discard();
             }}
           >
             Discard
@@ -271,7 +271,7 @@ function RecoveryDialog({ app, session }: SessionProps) {
             data-autofocus
             onClick={() => {
               app.close();
-              session.restore();
+              current.restore();
             }}
           >
             Restore

@@ -32,7 +32,7 @@ export interface Recovery {
   readonly snapshot: Snapshot;
 }
 
-export interface SessionOptions {
+export interface OpenTapeOptions {
   readonly app: AppController;
   readonly folder: Folder;
   /** Names this folder in the keep: its path on desktop, `browser` for the browser's storage. */
@@ -46,7 +46,7 @@ export interface SessionOptions {
 
 export const RETRIES = [300, 600] as const;
 
-export class TapeSession {
+export class OpenTape {
   readonly folder: Folder;
   readonly library: TapeLibrary;
   /** The open tape's name, or null before one is open. */
@@ -70,11 +70,11 @@ export class TapeSession {
   #clean = '';
   #saving: Promise<void> | null = null;
   #again = false;
-  /** True while the session itself changes the tape, which is then no change to save. */
+  /** True while this object itself changes the tape, which is then no change to save. */
   #loading = false;
   #stopWatching: (() => void) | null = null;
 
-  constructor(options: SessionOptions) {
+  constructor(options: OpenTapeOptions) {
     this.#app = options.app;
     this.folder = options.folder;
     this.library = new TapeLibrary(options.folder);

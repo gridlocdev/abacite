@@ -1,6 +1,6 @@
 /**
  * Which tape folder is open (PRD §8.2), and switching between them: the desktop app's folder on disk, or in
- * the browser a folder the user picked or the browser's own storage. Each folder gets its own TapeSession.
+ * the browser a folder the user picked or the browser's own storage. Each folder gets its own OpenTape.
  */
 import { signal } from '@preact/signals';
 import {
@@ -18,7 +18,7 @@ import {
 } from '@abacite/ui';
 import type { AppController } from './controller.ts';
 import type { AbaciteNative } from './native.ts';
-import { TapeSession, type SessionOptions } from './tapeSession.ts';
+import { OpenTape, type OpenTapeOptions } from './openTape.ts';
 
 /** A folder ready to open; `key` names it in the app's storage (last tape, snapshots). */
 export interface OpenedFolder {
@@ -60,19 +60,19 @@ export interface FolderPlatform {
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 export class TapeFolders {
-  /** The open folder's session; null until a folder is open, and while another is being picked. */
-  readonly session = signal<TapeSession | null>(null);
+  /** The open folder's open tape; null until a folder is open, and while another is being picked. */
+  readonly current = signal<OpenTape | null>(null);
   readonly setup = signal<FolderSetup | null>(null);
   readonly platform: FolderPlatform;
   readonly #app: AppController;
   readonly #keep: TapeKeep;
-  readonly #options: Partial<SessionOptions>;
+  readonly #options: Partial<OpenTapeOptions>;
 
   constructor(
     app: AppController,
     platform: FolderPlatform,
     keep: TapeKeep,
-    options: Partial<SessionOptions> = {},
+    options: Partial<OpenTapeOptions> = {},
   ) {
     this.#app = app;
     this.platform = platform;
@@ -94,14 +94,14 @@ export class TapeFolders {
 
   /** ⌘O: asks for another folder and opens it, after the open tape's last save. */
   async choose(): Promise<void> {
-    const old = this.session.value;
+    const old = this.current.value;
     const setup = this.setup.value;
     if (old) {
       await old.flush();
       old.snapshot();
     }
     // Nothing is saved or checked while the picker is open: on desktop, the folder changes as it closes.
-    this.session.value = null;
+    this.current.value = null;
     let picked: OpenedFolder | null = null;
     try {
       picked = await this.platform.choose();
@@ -109,14 +109,14 @@ export class TapeFolders {
       this.#app.say(`Couldn’t open the folder: ${message(e)}`, { tone: 'error' });
     }
     if (picked) await this.#use(picked, old);
-    else if (old) this.session.value = old;
+    else if (old) this.current.value = old;
     else this.#ask(setup ?? { kind: 'first' });
   }
 
   /** The folder dialog's first answer. */
   async useDefault(remember = true): Promise<void> {
     try {
-      await this.#use(await this.platform.useDefault(remember), this.session.value);
+      await this.#use(await this.platform.useDefault(remember), this.current.value);
     } catch (e) {
       this.#ask({ kind: 'failed', message: message(e) });
     }
@@ -130,10 +130,10 @@ export class TapeFolders {
 
   /** Export Tape…: the open tape as `<name>.txt`. */
   async exportTape(): Promise<void> {
-    const session = this.session.value;
-    const name = session?.name.value;
-    if (!session || name == null) return;
-    if (await this.platform.exportTape(name, session.text())) this.#app.say(`Exported ${name}.`);
+    const current = this.current.value;
+    const name = current?.name.value;
+    if (!current || name == null) return;
+    if (await this.platform.exportTape(name, current.text())) this.#app.say(`Exported ${name}.`);
   }
 
   /** The folder dialog was closed without an answer: the default folder for now, so the app can start. */
@@ -146,14 +146,14 @@ export class TapeFolders {
     this.#app.open('folder');
   }
 
-  async #use(opened: OpenedFolder, old: TapeSession | null = null): Promise<void> {
+  async #use(opened: OpenedFolder, old: OpenTape | null = null): Promise<void> {
     if (old) {
       await old.flush();
       old.stop();
     }
     this.setup.value = null;
     if (this.#app.dialog.peek() === 'folder') this.#app.close();
-    const session = new TapeSession({
+    const current = new OpenTape({
       ...this.#options,
       app: this.#app,
       folder: opened.folder,
@@ -161,14 +161,14 @@ export class TapeFolders {
       keep: this.#keep,
     });
     try {
-      await session.start();
+      await current.start();
     } catch (e) {
-      session.stop();
-      this.session.value = null;
+      current.stop();
+      this.current.value = null;
       this.#ask({ kind: 'failed', message: message(e) });
       return;
     }
-    this.session.value = session;
+    this.current.value = current;
   }
 }
 
@@ -253,4 +253,4 @@ function download(file: string, text: string): void {
 }
 
 /** True when the open folder is the browser's own storage. */
-export const inBrowserStorage = (session: TapeSession | null) => session?.folder.label === BROWSER_LABEL;
+export const inBrowserStorage = (current: OpenTape | null) => current?.folder.label === BROWSER_LABEL;

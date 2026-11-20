@@ -13,7 +13,7 @@ export interface Snapshot {
   readonly at: number;
 }
 
-/** Small per-folder records the session keeps between visits. */
+/** Small per-folder records the app keeps between visits. */
 export interface TapeKeep {
   lastTape(folder: string): string | null;
   setLastTape(folder: string, name: string): void;

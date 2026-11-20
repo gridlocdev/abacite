@@ -30,12 +30,12 @@ export {
 } from './app/lineEdit.ts';
 export {
   RETRIES,
-  TapeSession,
+  OpenTape,
   type Conflict,
   type Recovery,
   type SaveState,
-  type SessionOptions,
-} from './app/tapeSession.ts';
+  type OpenTapeOptions,
+} from './app/openTape.ts';
 export { editByKey } from './app/lineEdit.ts';
 export {
   BROWSER_KEY,

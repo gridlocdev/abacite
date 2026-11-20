@@ -57,19 +57,19 @@ function StatusBar({
   readonly release?: Release | null;
 }) {
   const notice = app.notice.value;
-  const session = folders?.session.value ?? null;
-  const failed = session?.state.value === 'failed' ? session.name.value : null;
+  const current = folders?.current.value ?? null;
+  const failed = current?.state.value === 'failed' ? current.name.value : null;
   return (
     <footer class="ab-status">
       <div class={`ab-notice${notice?.tone === 'error' || (!notice && failed) ? ' ab-notice-error' : ''}`}>
-        {!notice && failed !== null && session && (
+        {!notice && failed !== null && current && (
           <>
             <span>Couldn’t save {failed}.</span>
             <button
               type="button"
               class="ab-link-button"
               onPointerDown={(e) => e.preventDefault()}
-              onClick={() => void session.save()}
+              onClick={() => void current.save()}
             >
               Try Again
             </button>
@@ -83,7 +83,7 @@ function StatusBar({
             </a>
           </>
         )}
-        {!notice && failed === null && !release && inBrowserStorage(session) && (
+        {!notice && failed === null && !release && inBrowserStorage(current) && (
           <span class="ab-storage-note">Stored in this browser</span>
         )}
         {notice && (
@@ -132,9 +132,9 @@ export function App(props: {
 }) {
   const { app, catalog, folders, release } = props;
   const { mode, showTape } = app.settings.value;
-  const session = folders?.session.value ?? null;
+  const current = folders?.current.value ?? null;
   // Nothing to type into until a tape is open: keys would change a tape about to be replaced.
-  const ready = !folders || session !== null;
+  const ready = !folders || current !== null;
   return (
     <div class={`ab-app ab-mode-${mode}${showTape ? ' ab-with-tape' : ''}`}>
       <div class="ab-body">
@@ -145,7 +145,7 @@ export function App(props: {
               {!app.classicEntry() && <ExpressionLine app={app} />}
               <Keypad app={app} />
             </main>
-            {showTape && <TapePanel app={app} name={session?.name.value ?? null} />}
+            {showTape && <TapePanel app={app} name={current?.name.value ?? null} />}
           </>
         )}
       </div>

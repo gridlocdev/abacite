@@ -1,62 +1,62 @@
 import { describe, expect, it } from 'vitest';
 import { MemoryFolder, type FileRead, type Folder } from '@abacite/ui';
-import { TapeSession } from '../src/index.ts';
+import { OpenTape } from '../src/index.ts';
 import { enter, makeApp, memoryKeep } from './helpers.ts';
 
 const NOW = new Date(2026, 10, 19, 14, 5, 9);
 
-async function startSession(
+async function startOpenTape(
   files: Record<string, string> = {},
   folder: Folder = new MemoryFolder('m', files),
 ) {
   const made = makeApp({ showTape: true });
   const { keep, map } = memoryKeep();
-  const session = new TapeSession({ app: made.app, folder, key: 'm', keep, now: () => NOW, retries: [0, 0] });
-  await session.start();
-  return { ...made, session, keep, map, folder };
+  const current = new OpenTape({ app: made.app, folder, key: 'm', keep, now: () => NOW, retries: [0, 0] });
+  await current.start();
+  return { ...made, current, keep, map, folder };
 }
 
 const disk = (folder: Folder) => (folder as MemoryFolder).files;
 
 describe('the open tape (PRD §8.2)', () => {
   it('gives an empty folder one tape, Tape.txt, and saves each change at once', async () => {
-    const { app, session, folder } = await startSession();
-    expect(session.name.value).toBe('Tape');
+    const { app, current, folder } = await startOpenTape();
+    expect(current.name.value).toBe('Tape');
     expect(disk(folder).get('Tape.txt')).toBe('');
     enter(app, '1 + 1');
-    await session.flush();
+    await current.flush();
     expect(disk(folder).get('Tape.txt')).toBe('1 + 1  # = 2\n');
-    expect(session.state.value).toBe('saved');
+    expect(current.state.value).toBe('saved');
   });
 
   it('reopens the tape last open in the folder, else the first', async () => {
     const files = { 'A.txt': '1\n', 'B.txt': '2\n' };
-    const first = await startSession(files);
-    expect(first.session.name.value).toBe('A');
+    const first = await startOpenTape(files);
+    expect(first.current.name.value).toBe('A');
     const { keep } = memoryKeep();
     keep.setLastTape('m', 'B');
     const made = makeApp();
-    const session = new TapeSession({ app: made.app, folder: new MemoryFolder('m', files), key: 'm', keep });
-    await session.start();
-    expect(session.name.value).toBe('B');
+    const current = new OpenTape({ app: made.app, folder: new MemoryFolder('m', files), key: 'm', keep });
+    await current.start();
+    expect(current.name.value).toBe('B');
     expect(made.app.tape.value.lines[0]?.input).toBe('2');
   });
 
   it('leaves a hand-written file as it is until the tape changes', async () => {
-    const { app, session, folder } = await startSession({ 'Tape.txt': '2 * 3\n' });
+    const { app, current, folder } = await startOpenTape({ 'Tape.txt': '2 * 3\n' });
     expect(app.tape.value.lines[0]?.result).toMatchObject({ kind: 'value' });
-    await session.flush();
+    await current.flush();
     expect(disk(folder).get('Tape.txt')).toBe('2 * 3\n');
     enter(app, '+ 1');
-    await session.flush();
+    await current.flush();
     expect(disk(folder).get('Tape.txt')).toBe('2 * 3  # = 6\n+ 1  # = 7\n');
   });
 
   it('writes the angle unit into the file, and opening a tape takes its unit', async () => {
-    const { app, session, folder } = await startSession({ 'Tape.txt': '# abacite: angle=rad\nsin(pi/2)\n' });
+    const { app, current, folder } = await startOpenTape({ 'Tape.txt': '# abacite: angle=rad\nsin(pi/2)\n' });
     expect(app.settings.value.angle).toBe('rad');
     app.toggleAngle();
-    await session.flush();
+    await current.flush();
     expect(disk(folder).get('Tape.txt')).toMatch(/^sin\(pi\/2\) {2}# = 0\.0274/);
   });
 
@@ -77,11 +77,11 @@ describe('the open tape (PRD §8.2)', () => {
         return inner.write(p, t, v);
       },
     };
-    const { app, session } = await startSession({}, slow);
+    const { app, current } = await startOpenTape({}, slow);
     enter(app, '1');
     enter(app, '2');
     enter(app, '3');
-    await session.flush();
+    await current.flush();
     expect(most).toBe(1);
     expect(inner.files.get('Tape.txt')).toBe('1  # = 1\n2  # = 2\n3  # = 3\n');
   });
@@ -98,14 +98,14 @@ describe('failed saves (PRD §8.3)', () => {
       move: (a, b) => inner.move(a, b),
       write: (p, t, v) => (failures-- > 0 ? Promise.reject(new Error('disk full')) : inner.write(p, t, v)),
     };
-    const { app, session, keep } = await startSession({}, flaky);
+    const { app, current, keep } = await startOpenTape({}, flaky);
     enter(app, '7');
-    await session.flush();
+    await current.flush();
     expect(failures).toBe(0);
-    expect(session.state.value).toBe('failed');
+    expect(current.state.value).toBe('failed');
     expect(keep.snapshot('m', 'Tape')?.text).toBe('7  # = 7\n');
-    await session.save();
-    expect(session.state.value).toBe('saved');
+    await current.save();
+    expect(current.state.value).toBe('saved');
     expect(inner.files.get('Tape.txt')).toBe('7  # = 7\n');
     expect(keep.snapshot('m', 'Tape')).toBeNull();
   });
@@ -113,75 +113,75 @@ describe('failed saves (PRD §8.3)', () => {
 
 describe('conflicts (PRD §8.3)', () => {
   async function conflicted() {
-    const s = await startSession({ 'Rent.txt': '100\n' });
+    const s = await startOpenTape({ 'Rent.txt': '100\n' });
     disk(s.folder).set('Rent.txt', '200\n');
     enter(s.app, '+ 1');
-    await s.session.flush();
+    await s.current.flush();
     return s;
   }
 
   it('stops saving and asks when the file changed somewhere else', async () => {
-    const { app, session, folder } = await conflicted();
-    expect(session.conflict.value).toEqual({ kind: 'changed', name: 'Rent' });
+    const { app, current, folder } = await conflicted();
+    expect(current.conflict.value).toEqual({ kind: 'changed', name: 'Rent' });
     expect(app.dialog.value).toBe('conflict');
     expect(disk(folder).get('Rent.txt')).toBe('200\n');
     enter(app, '+ 2');
-    await session.flush();
+    await current.flush();
     expect(disk(folder).get('Rent.txt')).toBe('200\n');
   });
 
   it('Save Mine as a Copy writes a dated copy and opens the file on disk', async () => {
-    const { app, session, folder } = await conflicted();
-    await session.saveMineAsCopy();
+    const { app, current, folder } = await conflicted();
+    await current.saveMineAsCopy();
     expect(disk(folder).get('Rent copy 2026-11-19-140509.txt')).toBe('100  # = 100\n+ 1  # = 101\n');
     expect(app.tape.value.lines.map((l) => l.input)).toEqual(['200']);
-    expect(session.conflict.value).toBeNull();
+    expect(current.conflict.value).toBeNull();
   });
 
   it('Keep Mine writes over the file', async () => {
-    const { session, folder } = await conflicted();
-    await session.keepMine();
+    const { current, folder } = await conflicted();
+    await current.keepMine();
     expect(disk(folder).get('Rent.txt')).toBe('100  # = 100\n+ 1  # = 101\n');
   });
 
   it('Use Theirs takes the file, and ⌘Z brings mine back', async () => {
-    const { app, session, folder } = await conflicted();
-    await session.useTheirs();
+    const { app, current, folder } = await conflicted();
+    await current.useTheirs();
     expect(app.tape.value.lines.map((l) => l.input)).toEqual(['200']);
     app.stepTape('undo');
-    await session.flush();
+    await current.flush();
     expect(disk(folder).get('Rent.txt')).toBe('100  # = 100\n+ 1  # = 101\n');
   });
 
   it('a file deleted somewhere else asks the same', async () => {
-    const s = await startSession({ 'Rent.txt': '100\n' });
+    const s = await startOpenTape({ 'Rent.txt': '100\n' });
     disk(s.folder).delete('Rent.txt');
     enter(s.app, '+ 1');
-    await s.session.flush();
-    expect(s.session.conflict.value).toEqual({ kind: 'deleted', name: 'Rent' });
-    await s.session.keepMine();
+    await s.current.flush();
+    expect(s.current.conflict.value).toEqual({ kind: 'deleted', name: 'Rent' });
+    await s.current.keepMine();
     expect(disk(s.folder).get('Rent.txt')).toBe('100  # = 100\n+ 1  # = 101\n');
   });
 });
 
 describe('changes made elsewhere (PRD §8.3)', () => {
   it('are picked up as one undo step when nothing is unsaved', async () => {
-    const { app, session, folder } = await startSession({ 'Tape.txt': '1\n' });
+    const { app, current, folder } = await startOpenTape({ 'Tape.txt': '1\n' });
     disk(folder).set('Tape.txt', '1\n2\n');
-    await session.check();
+    await current.check();
     expect(app.tape.value.lines.map((l) => l.input)).toEqual(['1', '2']);
     expect(app.notice.value?.text).toBe('Updated Tape with changes made elsewhere.');
     app.notice.value?.action?.run();
     expect(app.tape.value.lines.map((l) => l.input)).toEqual(['1']);
-    await session.flush();
+    await current.flush();
     expect(disk(folder).get('Tape.txt')).toBe('1  # = 1\n');
   });
 
   it('are not picked up while a save is pending', async () => {
-    const { app, session, folder } = await startSession({ 'Tape.txt': '1\n' });
+    const { app, current, folder } = await startOpenTape({ 'Tape.txt': '1\n' });
     enter(app, '5');
     disk(folder).set('Tape.txt', 'elsewhere\n');
-    await session.check();
+    await current.check();
     expect(app.tape.value.lines.map((l) => l.input)).toEqual(['1', '5']);
   });
 });
@@ -192,12 +192,12 @@ describe('recovery (PRD §8.3)', () => {
     keep.putSnapshot('m', 'Tape', { text: '1\n9\n', base: null, at: 1 });
     const { app } = makeApp();
     const folder = new MemoryFolder('m', { 'Tape.txt': '1\n' });
-    const session = new TapeSession({ app, folder, key: 'm', keep });
-    await session.start();
-    expect(session.recovery.value?.name).toBe('Tape');
+    const current = new OpenTape({ app, folder, key: 'm', keep });
+    await current.start();
+    expect(current.recovery.value?.name).toBe('Tape');
     expect(app.dialog.value).toBe('recovery');
-    session.restore();
-    await session.flush();
+    current.restore();
+    await current.flush();
     expect(folder.files.get('Tape.txt')).toBe('1  # = 1\n9  # = 9\n');
     expect(keep.snapshot('m', 'Tape')).toBeNull();
   });
@@ -206,14 +206,14 @@ describe('recovery (PRD §8.3)', () => {
     const { keep } = memoryKeep();
     keep.putSnapshot('m', 'Tape', { text: '9\n', base: null, at: 1 });
     const { app } = makeApp();
-    const session = new TapeSession({
+    const current = new OpenTape({
       app,
       folder: new MemoryFolder('m', { 'Tape.txt': '' }),
       key: 'm',
       keep,
     });
-    await session.start();
-    session.discard();
+    await current.start();
+    current.discard();
     expect(keep.snapshot('m', 'Tape')).toBeNull();
     expect(app.tape.value.lines).toEqual([]);
   });
@@ -221,28 +221,28 @@ describe('recovery (PRD §8.3)', () => {
 
 describe('the folder’s tapes (PRD §8.2)', () => {
   it('New Tape, Rename and Delete with Undo', async () => {
-    const { app, session, folder } = await startSession();
-    await session.newTape();
-    expect(session.name.value).toBe('Tape 2');
-    expect(await session.rename('Tape')).toBe('There’s already a tape called Tape.');
-    expect(await session.rename('a/b')).toMatch(/can’t have/);
-    expect(await session.rename('Groceries.txt')).toBeNull();
-    expect(session.names.value).toEqual(['Groceries', 'Tape']);
+    const { app, current, folder } = await startOpenTape();
+    await current.newTape();
+    expect(current.name.value).toBe('Tape 2');
+    expect(await current.rename('Tape')).toBe('There’s already a tape called Tape.');
+    expect(await current.rename('a/b')).toMatch(/can’t have/);
+    expect(await current.rename('Groceries.txt')).toBeNull();
+    expect(current.names.value).toEqual(['Groceries', 'Tape']);
     enter(app, '3');
-    await session.trash();
-    expect(session.name.value).toBe('Tape');
+    await current.trash();
+    expect(current.name.value).toBe('Tape');
     expect(app.notice.value?.text).toBe('Moved Groceries to the trash.');
     expect(disk(folder).get('.abacite/trash/Groceries.txt')).toBe('3  # = 3\n');
     expect(app.notice.value?.action?.label).toBe('Undo');
-    await session.restoreTrashed('Groceries');
-    expect(session.name.value).toBe('Groceries');
+    await current.restoreTrashed('Groceries');
+    expect(current.name.value).toBe('Groceries');
     expect(app.tape.value.lines.map((l) => l.input)).toEqual(['3']);
   });
 
   it('deleting the last tape leaves a new one', async () => {
-    const { session, folder } = await startSession();
-    await session.trash();
-    expect(session.name.value).toBe('Tape');
+    const { current, folder } = await startOpenTape();
+    await current.trash();
+    expect(current.name.value).toBe('Tape');
     expect([...disk(folder).keys()].sort()).toEqual(['.abacite/trash/Tape.txt', 'Tape.txt']);
   });
 });

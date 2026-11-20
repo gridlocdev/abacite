@@ -42,7 +42,7 @@ function start(): void {
   listenForKeys(
     window,
     catalog,
-    () => app.blocked() || folders.session.value === null,
+    () => app.blocked() || folders.current.value === null,
     () => document.querySelector<HTMLElement>('[data-ab-line]'),
     (key) => app.typeKey(key),
   );
@@ -64,7 +64,7 @@ function start(): void {
       menu.forget();
       menu.send(nativeMenu(catalog));
     });
-    watchMenuInputs(app, () => menu.send(nativeMenu(catalog)), [folders.session]);
+    watchMenuInputs(app, () => menu.send(nativeMenu(catalog)), [folders.current]);
     menu.send(nativeMenu(catalog));
   }
 }
@@ -76,9 +76,9 @@ function start(): void {
 function watchTapeFolder(folders: TapeFolders): void {
   const inFront = () => document.visibilityState === 'visible' && document.hasFocus();
   const check = () => {
-    folders.session.value?.check().catch((e: unknown) => console.warn('Couldn’t check the tape file:', e));
+    folders.current.value?.check().catch((e: unknown) => console.warn('Couldn’t check the tape file:', e));
   };
-  const snapshot = () => folders.session.value?.snapshot();
+  const snapshot = () => folders.current.value?.snapshot();
   addEventListener('focus', check);
   every(15_000, () => {
     if (inFront()) check();

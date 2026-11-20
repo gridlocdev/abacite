@@ -1,4 +1,4 @@
-// Seeded random-operation runs for engine and save-session tests, and (a copy in e2e/) for random use.
+// Seeded random-operation runs for engine and saving tests, and (a copy in e2e/) for random use.
 // Name every test that uses it "random …" so `just fuzz` finds it, and give it RANDOM_TIMEOUT:
 //   it('random edits keep the invariants', () => runRandomOps({ … }), RANDOM_TIMEOUT);
 //

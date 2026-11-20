@@ -11,7 +11,7 @@ describe('tape folders (PRD §8.2)', () => {
     expect(catalog.run('view.tape')).toBeFalsy();
     expect(app.settings.value.showTape).toBe(true);
     await folders.start();
-    expect(folders.session.value?.name.value).toBe('Sums');
+    expect(folders.current.value?.name.value).toBe('Sums');
     expect(app.tape.value.lines[0]?.input).toBe('1 + 2');
     catalog.run('view.tape');
     expect(app.settings.value.showTape).toBe(false);
@@ -32,7 +32,7 @@ describe('tape folders (PRD §8.2)', () => {
     const { app, folders, state } = makeFolderApp({ kind: 'allow', name: 'Tapes' });
     await folders.start();
     folders.dismissSetup();
-    await folders.session.value?.flush();
+    await folders.current.value?.flush();
     await Promise.resolve();
     expect(state.defaults).toEqual([false]);
     expect(app.dialog.value).toBe(null);
@@ -42,9 +42,9 @@ describe('tape folders (PRD §8.2)', () => {
     const folder = new MemoryFolder('Tapes', {});
     const { folders } = makeFolderApp({ folder, key: '/Tapes' });
     await folders.start();
-    const session = folders.session.value;
+    const current = folders.current.value;
     await folders.choose();
-    expect(folders.session.value).toBe(session);
+    expect(folders.current.value).toBe(current);
 
     const lost = makeFolderApp({ kind: 'missing', folder: '/Volumes/USB/Tapes' });
     await lost.folders.start();
@@ -62,9 +62,9 @@ describe('tape folders (PRD §8.2)', () => {
     state.choice = { folder: next, key: '/New' };
     await folders.choose();
     expect(files(old).get('Tape.txt')).toBe('2 + 2  # = 4\n');
-    expect(folders.session.value?.name.value).toBe('Other');
+    expect(folders.current.value?.name.value).toBe('Other');
     enter(app, '* 2');
-    await folders.session.value?.flush();
+    await folders.current.value?.flush();
     expect(files(old).get('Tape.txt')).toBe('2 + 2  # = 4\n');
     expect(files(next).get('Other.txt')).toBe('7  # = 7\n* 2  # = 14\n');
   });
@@ -79,14 +79,14 @@ describe('the File commands (PRD §8.2)', () => {
 
   it('New Tape, Delete Tape and Open Trash', async () => {
     const { app, catalog, folders } = await started();
-    const session = folders.session.value!;
+    const current = folders.current.value!;
     catalog.run('file.new');
-    await vi.waitFor(() => expect(session.name.value).toBe('Tape 2'));
+    await vi.waitFor(() => expect(current.name.value).toBe('Tape 2'));
     catalog.run('file.delete');
-    await vi.waitFor(() => expect(session.names.value).toEqual(['Tape']));
+    await vi.waitFor(() => expect(current.names.value).toEqual(['Tape']));
     catalog.run('file.trash');
     await vi.waitFor(() => expect(app.dialog.value).toBe('trash'));
-    expect(session.trashed.value).toEqual(['Tape 2']);
+    expect(current.trashed.value).toEqual(['Tape 2']);
   });
 
   it('Export Tape hands the tape text to the platform', async () => {

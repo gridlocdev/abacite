@@ -2,7 +2,7 @@
 import { CommandCatalog, type CommandSpec, type Theme } from '@abacite/ui';
 import type { AppController, DialogKind } from './controller.ts';
 import { inBrowserStorage, type TapeFolders } from './tapeFolders.ts';
-import type { TapeSession } from './tapeSession.ts';
+import type { OpenTape } from './openTape.ts';
 
 const THEME_TITLES: Readonly<Record<Theme, string>> = {
   system: 'System Appearance',
@@ -21,15 +21,15 @@ const DIALOG_TOGGLES = new Set([
 ]);
 
 /**
- * The File menu's tape commands (PRD §8.2). They run on the open folder's session; while no folder is open
+ * The File menu's tape commands (PRD §8.2). They run on the open folder's open tape; while no folder is open
  * (at start, or while another is picked) no command runs at all.
  */
 function tapeCommands(app: AppController, folders: TapeFolders): CommandSpec[] {
-  const session = () => folders.session.value;
+  const current = () => folders.current.value;
   const act =
-    (what: string, task: (s: TapeSession) => Promise<unknown>): (() => void) =>
+    (what: string, task: (s: OpenTape) => Promise<unknown>): (() => void) =>
     () => {
-      const s = session();
+      const s = current();
       if (!s) return;
       task(s).catch((e: unknown) => {
         console.warn(e);
@@ -71,7 +71,7 @@ function tapeCommands(app: AppController, folders: TapeFolders): CommandSpec[] {
       title: platform.defaultTitle,
       description: 'Keep tapes in the browser’s own storage instead of a folder.',
       group: 'File',
-      enabled: () => !inBrowserStorage(session()),
+      enabled: () => !inBrowserStorage(current()),
       run: () => void folders.useDefault(),
     });
   specs.push(
@@ -300,7 +300,7 @@ export function buildCommands(app: AppController, folders?: TapeFolders): Comman
   ];
   const catalog = new CommandCatalog(specs);
   catalog.gate = (c) => {
-    if (folders !== undefined && folders.session.value === null) return false;
+    if (folders !== undefined && folders.current.value === null) return false;
     const open = app.dialog.value;
     return open === null || (DIALOG_TOGGLES.has(c.id) && !QUESTIONS.has(open));
   };
