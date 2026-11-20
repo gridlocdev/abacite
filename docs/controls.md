@@ -4,6 +4,8 @@ Every action is in the menu bar, in the **command menu** (**⌘K** on a Mac, **C
 
 The expression line keeps the keyboard while no window is open: every key you type goes into it.
 
+In a browser tab, **⌘N** and **⌘T** (**Ctrl+N**, **Ctrl+T**) belong to the browser, which opens a new window or tab. Use the command menu there for New Tape and Show Tape.
+
 ## Tapes
 
 | Action                                      | macOS                   | Windows / Linux         |
