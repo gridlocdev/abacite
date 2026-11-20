@@ -199,50 +199,52 @@ function SettingsDialog({ app }: { readonly app: AppController }) {
         </button>
       }
     >
-      <Choice
-        id="ab-theme-label"
-        label="Appearance"
-        items={THEMES}
-        titles={THEME_TITLES}
-        value={s.theme}
-        onPick={(t) => app.update({ theme: t })}
-      />
-      <Choice
-        id="ab-mode-label"
-        label="Keypad"
-        items={MODES}
-        titles={MODE_TITLES}
-        value={s.mode}
-        onPick={(m) => app.setMode(m)}
-      />
-      <Choice
-        id="ab-entry-label"
-        label="Entry"
-        items={ENTRIES}
-        titles={ENTRY_TITLES}
-        value={s.entry}
-        onPick={(e) => app.setEntry(e)}
-      />
-      <Choice
-        id="ab-angle-label"
-        label="Angles"
-        items={ANGLES}
-        titles={ANGLE_TITLES}
-        value={s.angle}
-        onPick={(a) => app.setAngle(a)}
-      />
-      <label class="ab-check">
-        <input
-          type="checkbox"
-          checked={s.groupDigits}
-          onChange={(e) => app.setGroupDigits(e.currentTarget.checked)}
+      <div class="ab-settings">
+        <Choice
+          id="ab-theme-label"
+          label="Appearance"
+          items={THEMES}
+          titles={THEME_TITLES}
+          value={s.theme}
+          onPick={(t) => app.update({ theme: t })}
         />
-        <span>Group digits with commas (1,234,567)</span>
-      </label>
-      <label class="ab-check">
-        <input type="checkbox" checked={s.showSession} onChange={() => app.toggleSession()} />
-        <span>Show the session</span>
-      </label>
+        <Choice
+          id="ab-mode-label"
+          label="Keypad"
+          items={MODES}
+          titles={MODE_TITLES}
+          value={s.mode}
+          onPick={(m) => app.setMode(m)}
+        />
+        <Choice
+          id="ab-entry-label"
+          label="Entry"
+          items={ENTRIES}
+          titles={ENTRY_TITLES}
+          value={s.entry}
+          onPick={(e) => app.setEntry(e)}
+        />
+        <Choice
+          id="ab-angle-label"
+          label="Angles"
+          items={ANGLES}
+          titles={ANGLE_TITLES}
+          value={s.angle}
+          onPick={(a) => app.setAngle(a)}
+        />
+        <label class="ab-check">
+          <input
+            type="checkbox"
+            checked={s.groupDigits}
+            onChange={(e) => app.setGroupDigits(e.currentTarget.checked)}
+          />
+          <span>Group digits with commas (1,234,567)</span>
+        </label>
+        <label class="ab-check">
+          <input type="checkbox" checked={s.showSession} onChange={() => app.toggleSession()} />
+          <span>Show the session</span>
+        </label>
+      </div>
     </Dialog>
   );
 }

@@ -381,10 +381,52 @@
   text-overflow: ellipsis;
 }
 
-/* Settings */
+/* Settings: labels right-aligned in one column, every control and checkbox in the other, at any width. */
+.ab-settings {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 10px 12px;
+}
+.ab-settings .ab-field {
+  display: contents;
+}
+.ab-settings .ab-segmented {
+  display: flex;
+  min-width: 0;
+}
+.ab-settings .ab-segmented button {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0 6px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
 .ab-check {
   display: flex;
   gap: 8px;
   align-items: center;
-  margin-top: 10px;
+}
+.ab-settings .ab-check {
+  grid-column: 2;
+}
+.ab-settings .ab-check:first-of-type {
+  margin-top: 4px;
+}
+/* Too narrow for two columns: each label goes above its control. */
+@media (max-width: 380px) {
+  .ab-settings {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 6px;
+  }
+  .ab-settings .ab-field > span {
+    text-align: left;
+  }
+  .ab-settings .ab-segmented {
+    margin-bottom: 6px;
+  }
+  .ab-settings .ab-check {
+    grid-column: 1;
+  }
 }

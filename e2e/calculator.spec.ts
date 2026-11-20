@@ -414,6 +414,32 @@ test.describe('Settings and appearance', () => {
     await expect(other.locator('html')).toHaveAttribute('data-theme', 'dark');
     await other.close();
   });
+
+  for (const width of [320, 400, 900]) {
+    test(`the settings rows line up and fit a ${width} px window`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 700 });
+      await page.keyboard.press('ControlOrMeta+Comma');
+      await expect(page.getByRole('dialog', { name: 'Settings' })).toBeVisible();
+      const layout = await page.evaluate(() => {
+        const body = document.querySelector('.ab-dialog-body')!;
+        const style = getComputedStyle(body);
+        const right = body.getBoundingClientRect().right - parseFloat(style.paddingRight);
+        const box = (el: Element) => el.getBoundingClientRect();
+        const groups = [...body.querySelectorAll('[role="radiogroup"]')].map(box);
+        const checks = [...body.querySelectorAll('.ab-check')].map(box);
+        const clipped = [...body.querySelectorAll('[role="radio"]')]
+          .filter((b) => b.scrollWidth > b.clientWidth)
+          .map((b) => b.textContent);
+        return {
+          overflow: [...groups, ...checks].some((r) => r.right > right + 0.5),
+          lefts: new Set([...groups, ...checks].map((r) => Math.round(r.left))).size,
+          widths: new Set(groups.map((r) => Math.round(r.width))).size,
+          clipped,
+        };
+      });
+      expect(layout).toEqual({ overflow: false, lefts: 1, widths: 1, clipped: [] });
+    });
+  }
 });
 
 test.describe('Accessibility', () => {
