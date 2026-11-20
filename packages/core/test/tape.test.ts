@@ -70,6 +70,12 @@ describe('committing lines (PRD §7.1)', () => {
     expect(tape.lines[0]!.input).toBe('ans + 1');
     expect(shown(tape.lines[0]!.result)).toBe('2');
     expect(shown(tape.lines.at(-1)!.result)).toBe('1');
+    // Evaluating it again, as deleting a line or reopening the tape does, starts from the new top line, where
+    // `ans` is 0 and `x` was never assigned (PRD §7.1, §7.2).
+    tape = deleteLine(tape, 1, env);
+    expect(shown(tape.lines[0]!.result)).toBe('1');
+    expect(tape.lines.at(-1)!.result.kind).toBe('error');
+    expect(tape.dropped).toBe(true);
   });
 });
 
