@@ -6,7 +6,7 @@
 - Basic and Scientific keypads, with 2nd functions and degrees or radians.
 - A tape of every calculation, with ↑/↓ to bring lines back, repeat on Enter, and Clear Tape with Undo.
 - The command menu (⌘K), the Keyboard Shortcuts window (⌘/), the menu bar, Settings and dark mode.
-- The desktop app (Electron) and the browser build, from one code base.
+- The desktop app (Electron) and the browser build, from one code base, with downloads for macOS, Windows and Linux.
 - The `abacite` command line: an expression, stdin lines or a prompt, with `--rad`, `--full` and `--json`.
 - Memory keys (mc, m+, m−, mr) on the variable `mem`, with M in the display while it is set.
 - Unit conversion: `<expr> <unit> to <unit>` with exact factors.

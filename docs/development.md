@@ -47,3 +47,28 @@ The icon is drawn by hand in `assets/icon.svg`: an abacus on an orange tile, on 
 ```bash
 just icons  # icon.icns (macOS), icon.ico (Windows) and icon.png in apps/desktop/build
 ```
+
+## Packaging
+
+```bash
+just package-desktop      # .dmg and .zip on macOS, .exe on Windows, AppImage on Linux, in apps/desktop/release
+just package-desktop-dir  # an unpacked app only, faster
+just install-desktop      # macOS: package and copy to /Applications; the old copy goes to the Trash
+```
+
+The macOS app gets an ad-hoc signature and isn't notarized, so the first start needs right-click → Open.
+
+## Releasing
+
+Pushing a `vX.Y.Z` tag runs `.github/workflows/release.yml`. It packages the desktop app on macOS (Apple silicon and Intel), Windows and Linux, and publishes them on a GitHub release.
+
+1. Set the same version in every `package.json` (the root, `apps/*` and `packages/*`). The workflow stops if the tag doesn't match `apps/desktop/package.json`.
+2. Add a `## X.Y.Z` section to `CHANGELOG.md`. It becomes the release notes.
+3. Run `just check`, commit, then tag and push:
+
+   ```bash
+   git tag -a vX.Y.Z -m "Abacite X.Y.Z"
+   git push origin main vX.Y.Z
+   ```
+
+The desktop app's update check (PRD §12) reads the latest release from GitHub, so a published release reaches existing installs within a day.

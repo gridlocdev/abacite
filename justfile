@@ -1,6 +1,9 @@
 # Abacite — run `just` to list recipes.
 set shell := ["bash", "-cu"]
 
+app_name := "Abacite"
+release := "apps/desktop/release"
+
 default:
     @just --list --unsorted
 
@@ -50,6 +53,42 @@ build-web:
 [group('build')]
 build-desktop: build-web
     pnpm --filter @abacite/desktop build
+
+# Package the desktop app for this OS into apps/desktop/release (.dmg and .zip on macOS).
+[group('build')]
+package-desktop: build-web
+    pnpm --filter @abacite/desktop package
+
+# Package an unpacked app only (faster; for local testing).
+[group('build')]
+package-desktop-dir: build-web
+    pnpm --filter @abacite/desktop package --dir
+
+# Package and install into /Applications (macOS). The old copy goes to the Trash.
+[group('build')]
+[macos]
+install-desktop: package-desktop-dir
+    #!/usr/bin/env bash
+    set -euo pipefail
+    target="/Applications/{{ app_name }}.app"
+    built=$(ls -d "{{ release }}"/mac*/"{{ app_name }}.app" | head -1)
+    # Anchored, so a shell command that merely mentions the path does not count.
+    if pgrep -f "^$target/Contents/MacOS/" >/dev/null; then
+      echo "{{ app_name }} is running — quit it first, then run this again." >&2
+      exit 1
+    fi
+    trashed=""
+    if [ -d "$target" ]; then
+      trashed="$HOME/.Trash/{{ app_name }} $(date '+%Y-%m-%d %H.%M.%S').app"
+      mv "$target" "$trashed"
+      echo "Moved the old app to the Trash."
+    fi
+    ditto "$built" "$target"
+    lsregister=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+    "$lsregister" -u "$PWD/$built" 2>/dev/null || true
+    if [ -n "$trashed" ]; then "$lsregister" -u "$trashed" 2>/dev/null || true; fi
+    "$lsregister" -f "$target"
+    echo "Installed $target"
 
 # Regenerate the app icon files in apps/desktop/build from assets/icon.svg (needs Inkscape; .icns needs macOS).
 [group('build')]
@@ -126,7 +165,7 @@ setup:
 # Remove build output.
 [group('housekeeping')]
 clean:
-    rm -rf apps/web/dist apps/desktop/out .headless-data .e2e-results .e2e-report .types-e2e .types-test
+    rm -rf apps/web/dist apps/desktop/out "{{ release }}" .headless-data .e2e-results .e2e-report .types-e2e .types-test
     find . -name '*.tsbuildinfo' -not -path '*/node_modules/*' -delete
 
 # Remove build output and every node_modules (run `just setup` after).

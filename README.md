@@ -10,7 +10,9 @@ Abacite is a calculator with exact decimal arithmetic, a tape of every calculati
 
 ## Getting started
 
-Abacite isn't packaged yet. To run it from source you need Node 22.18 or later, pnpm and [just](https://github.com/casey/just):
+Download the desktop app for macOS, Windows or Linux from [Releases](https://github.com/gridlocdev/abacite/releases). The macOS app isn't notarized, so open it the first time with right-click → Open.
+
+To run it from source you need Node 22.18 or later, pnpm and [just](https://github.com/casey/just):
 
 ```bash
 just setup
