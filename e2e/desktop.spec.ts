@@ -100,6 +100,15 @@ test.describe('Desktop and browser', () => {
           Menu.getApplicationMenu()?.getMenuItemById('view.scientific')?.click(),
         );
         await expect.poll(scientificChecked, { message: 'the menu shows the real mode again' }).toBe(true);
+        // The session panel button adds the panel's width to the window, and hiding it gives that width back.
+        const width = () =>
+          app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]!.getBounds().width);
+        const before = await width();
+        const toggle = window.getByRole('button', { name: 'Session panel' });
+        await toggle.click();
+        await expect.poll(width, { message: 'the window grows by the session' }).toBe(before + 260);
+        await toggle.click();
+        await expect.poll(width, { message: 'the window is its old size again' }).toBe(before);
         expect(
           await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().some((w) => w.isVisible())),
           'no window shows on the screen',

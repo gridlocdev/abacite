@@ -18,7 +18,7 @@ function start(): void {
   const app = new AppController({
     settings: localSettings(),
     version: native?.version ?? pkg.version,
-    ...(native ? { fitWidth: (width: number) => native.fitWidth(width) } : {}),
+    ...(native ? { resizeWindow: (from: number, to: number) => native.resizeWindow(from, to) } : {}),
   });
   const folders = new SessionFolders(app, native ? desktopPlatform(native) : browserPlatform(), localKeep());
   const catalog = buildCommands(app, folders);

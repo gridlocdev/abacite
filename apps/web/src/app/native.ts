@@ -17,8 +17,8 @@ export interface AbaciteNative {
   setMenu(items: readonly NativeMenuItem[]): void;
   /** A menu bar item was chosen. */
   onCommand(fn: (id: string) => void): void;
-  /** Grows the window to at least this width, for the Scientific keypad or the session (PRD §9.1). */
-  fitWidth(width: number): void;
+  /** Resizes the window for a layout `from` CSS pixels wide becoming `to` wide: Scientific, the session (PRD §9.1). */
+  resizeWindow(from: number, to: number): void;
   /** The remembered session folder, whether it is there, and the default one (PRD §8.2). */
   folderInfo(): Promise<{ folder: string | null; missing: boolean; defaultFolder: string }>;
   /** Makes Documents/Abacite the session folder, creating it. */

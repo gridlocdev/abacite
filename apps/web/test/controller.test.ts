@@ -249,6 +249,18 @@ describe('settings and the window (PRD §9.1, §11)', () => {
     expect(widths).toEqual([windowWidth('scientific', false), windowWidth('scientific', true)]);
   });
 
+  it('asks the window to shrink by the session when it is hidden', () => {
+    const resizes: [number, number][] = [];
+    const { app } = makeApp({}, { resizeWindow: (from, to) => resizes.push([from, to]) });
+    app.toggleSession();
+    app.toggleSession();
+    app.setMode('basic');
+    expect(resizes).toEqual([
+      [windowWidth('basic', false), windowWidth('basic', true)],
+      [windowWidth('basic', true), windowWidth('basic', false)],
+    ]);
+  });
+
   it('takes settings another window changed, without saving them back, and keeps its own angle', () => {
     const { app, storage, widths } = makeApp({ angle: 'deg' });
     app.setAngle('rad');

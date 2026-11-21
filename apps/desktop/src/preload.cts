@@ -14,7 +14,7 @@ contextBridge.exposeInMainWorld('abaciteNative', {
     ipcRenderer.on('abacite:full-screen', (_e, full: boolean) => fn(full)),
   setMenu: (items: readonly NativeMenuItem[]) => ipcRenderer.send('abacite:set-menu', items),
   onCommand: (fn: (id: string) => void) => ipcRenderer.on('abacite:command', (_e, id: string) => fn(id)),
-  fitWidth: (width: number) => ipcRenderer.send('abacite:fit-width', width),
+  resizeWindow: (from: number, to: number) => ipcRenderer.send('abacite:resize-window', from, to),
   folderInfo: () => ipcRenderer.invoke('abacite:folder-info'),
   useDefaultFolder: () => ipcRenderer.invoke('abacite:use-default-folder'),
   chooseFolder: () => ipcRenderer.invoke('abacite:choose-folder'),

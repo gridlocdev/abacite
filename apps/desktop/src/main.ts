@@ -48,7 +48,7 @@ import {
   placeWindow,
   saveWindow,
   saveWindowSync,
-  widened,
+  resized,
   type SavedWindow,
 } from './windowState.ts';
 
@@ -57,8 +57,13 @@ const webRoot = path.join(here, 'web');
 /** The compact Basic window, and the smallest it may be (PRD §9.1). */
 const DEFAULT_SIZE = { width: 400, height: 620 };
 const MIN_SIZE = { width: 300, height: 460 };
-/** The widest the page may ask the window to grow. */
+/** The widest layout the page may ask the window to fit. */
 const MAX_FIT = 2000;
+
+/** A layout width the page may send: a number from 0 to MAX_FIT. */
+function isWidth(width: unknown): width is number {
+  return typeof width === 'number' && Number.isFinite(width) && width >= 0 && width <= MAX_FIT;
+}
 /**
  * `--headless` or ABACITE_HEADLESS=1 (automated checks): render offscreen, muted, on a throwaway profile, and
  * never put a window, Dock icon, menu or other app on the owner's screen. Native UI it would have shown is
@@ -221,15 +226,17 @@ function createWindow(): BrowserWindow {
 }
 
 /**
- * Grows the window for the Scientific keypad or the session, keeping it on its screen (PRD §9.1). `width` is in
- * the page's CSS pixels.
+ * Resizes the window when the page's layout goes from `from` to `to` CSS pixels wide (PRD §9.1): showing the
+ * session or the Scientific keypad adds its width, and hiding it takes the width away again.
  */
-function fitWidth(width: number): void {
-  if (!win || win.isMaximized() || win.isFullScreen()) return;
+function resizeWindow(from: number, to: number): void {
+  if (!win || win.isMaximized() || win.isFullScreen() || from === to) return;
   const bounds = win.getBounds();
   const area = screen.getDisplayMatching(bounds).workArea;
   const frame = bounds.width - win.getContentBounds().width;
-  const next = widened(bounds, outerWidth(width, win.webContents.getZoomFactor(), frame), area);
+  const zoom = win.webContents.getZoomFactor();
+  const change = Math.sign(to - from) * outerWidth(Math.abs(to - from), zoom, 0);
+  const next = resized(bounds, change, outerWidth(to, zoom, frame), area, MIN_SIZE.width);
   if (next) win.setBounds(next, !headless);
 }
 
@@ -326,9 +333,9 @@ function registerIpc(): void {
       console.warn('Could not build the menu bar:', error);
     }
   });
-  ipcMain.on(Channels.fitWidth, (e, width: unknown) => {
-    if (!trusted(e) || typeof width !== 'number' || !Number.isFinite(width)) return;
-    fitWidth(Math.min(Math.round(width), MAX_FIT));
+  ipcMain.on(Channels.resizeWindow, (e, from: unknown, to: unknown) => {
+    if (!trusted(e) || !isWidth(from) || !isWidth(to)) return;
+    resizeWindow(Math.round(from), Math.round(to));
   });
 }
 

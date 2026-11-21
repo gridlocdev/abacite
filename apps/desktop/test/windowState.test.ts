@@ -8,6 +8,7 @@ import {
   parseSavedWindow,
   placeWindow,
   saveWindowSync,
+  resized,
   widened,
 } from '../src/index.ts';
 
@@ -101,6 +102,30 @@ describe('widened', () => {
 
   it('leaves a wide enough window alone', () => {
     expect(widened({ x: 0, y: 80, width: 800, height: 620 }, 720, area)).toBeNull();
+  });
+});
+
+describe('resized', () => {
+  const area = { x: 0, y: 25, width: 1440, height: 875 };
+  const basic = { x: 100, y: 80, width: 400, height: 620 };
+
+  it('adds the session to a window and takes it away again, back to the size it was', () => {
+    const shown = resized(basic, 260, 660, area, 300);
+    expect(shown).toEqual({ ...basic, width: 660 });
+    expect(resized(shown!, -260, 400, area, 300)).toEqual(basic);
+  });
+
+  it('adds the width to a window the user made wider, and gives it back', () => {
+    const wide = { ...basic, width: 900 };
+    const shown = resized(wide, 260, 660, area, 300);
+    expect(shown).toEqual({ ...wide, width: 1160 });
+    expect(resized(shown!, -260, 400, area, 300)).toEqual(wide);
+  });
+
+  it('stays on the screen when growing, and never shrinks below the smallest window', () => {
+    expect(resized({ ...basic, x: 1200 }, 260, 660, area, 300)).toEqual({ ...basic, x: 780, width: 660 });
+    expect(resized({ ...basic, width: 420 }, -260, 400, area, 300)).toEqual({ ...basic, width: 300 });
+    expect(resized({ ...basic, width: 300 }, -260, 400, area, 300)).toBeNull();
   });
 });
 

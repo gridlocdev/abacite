@@ -16,4 +16,4 @@
 - The desktop app checks for a newer release once a day and says so in the status bar.
 - An app icon.
 - A native look: the display and the expression line share one screen, softer keys, and on macOS a window with no title bar and a translucent background.
-- A panel button in the status bar shows or hides the session.
+- A panel button in the status bar shows or hides the session. In the desktop app, hiding the session or going back to Basic narrows the window again.

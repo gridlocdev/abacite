@@ -121,3 +121,20 @@ export function widened(bounds: Rect, width: number, area: Rect): Rect | null {
   const x = Math.max(area.x, Math.min(bounds.x, area.x + area.width - wanted));
   return { x, y: bounds.y, width: wanted, height: bounds.height };
 }
+
+/**
+ * The window after the page's layout grew or shrank by `change` window pixels (PRD §9.1): showing the session or
+ * the Scientific keypad adds its width, at least up to `atLeast`, kept on the screen; hiding it takes that width
+ * away again, down to `minWidth`, keeping the left edge. Null when nothing changes.
+ */
+export function resized(
+  bounds: Rect,
+  change: number,
+  atLeast: number,
+  area: Rect,
+  minWidth: number,
+): Rect | null {
+  if (change > 0) return widened(bounds, Math.max(bounds.width + change, atLeast), area);
+  const width = Math.max(bounds.width + change, minWidth);
+  return width < bounds.width ? { ...bounds, width } : null;
+}

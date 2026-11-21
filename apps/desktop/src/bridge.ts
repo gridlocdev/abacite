@@ -5,7 +5,7 @@
 export const Channels = {
   setMenu: 'abacite:set-menu',
   command: 'abacite:command',
-  fitWidth: 'abacite:fit-width',
+  resizeWindow: 'abacite:resize-window',
   folderInfo: 'abacite:folder-info',
   useDefaultFolder: 'abacite:use-default-folder',
   chooseFolder: 'abacite:choose-folder',

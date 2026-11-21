@@ -59,8 +59,8 @@ export interface ControllerOptions {
   readonly random?: () => Decimal;
   /** Writes text to the clipboard. */
   readonly copy?: (text: string) => Promise<void>;
-  /** Grows the desktop window to at least this width. */
-  readonly fitWidth?: (width: number) => void;
+  /** Resizes the desktop window for a change of layout from `from` to `to` CSS pixels wide (PRD §9.1). */
+  readonly resizeWindow?: (from: number, to: number) => void;
 }
 
 export class AppController {
@@ -84,7 +84,7 @@ export class AppController {
   readonly #storage: SettingsStorage;
   readonly #random: () => Decimal;
   readonly #copy: (text: string) => Promise<void>;
-  readonly #fitWidth: ((width: number) => void) | undefined;
+  readonly #resizeWindow: ((from: number, to: number) => void) | undefined;
   /** The last result the display shows while the line is empty; AC clears it. */
   #last: Decimal | null = null;
   /** The unit of the last result, after a conversion (PRD §6). */
@@ -107,16 +107,18 @@ export class AppController {
     this.settings = signal(options.settings.load());
     this.#random = options.random ?? defaultRandom;
     this.#copy = options.copy ?? ((text) => navigator.clipboard.writeText(text));
-    this.#fitWidth = options.fitWidth;
+    this.#resizeWindow = options.resizeWindow;
     options.settings.watch?.((next) => this.#takeOutside(next));
   }
 
   // Settings (PRD §11)
 
   update(change: Partial<Settings>): void {
-    const next = { ...this.settings.value, ...change };
+    const before = this.settings.value;
+    const next = { ...before, ...change };
     this.settings.value = next;
     this.#storage.save(next);
+    this.#fit(before);
   }
 
   /** Another window changed the settings: take them without saving them back. The angle stays the session's own. */
@@ -131,17 +133,15 @@ export class AppController {
       }
       if (next.entry !== before.entry || next.groupDigits !== before.groupDigits) this.#refresh();
     });
-    if (next.mode !== before.mode || next.showSession !== before.showSession) this.#fit();
+    this.#fit(before);
   }
 
   setMode(mode: Mode): void {
     this.update({ mode });
-    this.#fit();
   }
 
   toggleSession(): void {
     this.update({ showSession: !this.settings.value.showSession });
-    this.#fit();
   }
 
   /** Expression or classic entry (PRD §9.3). Each starts afresh; the expression line keeps its text. */
@@ -186,10 +186,15 @@ export class AppController {
     this.#refresh();
   }
 
-  /** Asks the desktop window to be wide enough for the mode and session. */
-  #fit(): void {
+  /**
+   * Resizes the desktop window when the mode or the session changed: it grows by what was added and shrinks by
+   * what was taken away, so hiding the session gives back the window it had before (PRD §9.1).
+   */
+  #fit(before: Settings): void {
     const { mode, showSession } = this.settings.value;
-    this.#fitWidth?.(windowWidth(mode, showSession));
+    const from = windowWidth(before.mode, before.showSession);
+    const to = windowWidth(mode, showSession);
+    if (from !== to) this.#resizeWindow?.(from, to);
   }
 
   // Dialogs and notices

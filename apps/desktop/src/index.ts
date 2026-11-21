@@ -20,6 +20,7 @@ export {
   saveWindow,
   saveWindowSync,
   outerWidth,
+  resized,
   widened,
   type Rect,
   type SavedWindow,

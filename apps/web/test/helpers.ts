@@ -29,7 +29,7 @@ export function makeApp(settings: Partial<Settings> = {}, options: Partial<Contr
       copied.push(text);
       return Promise.resolve();
     },
-    fitWidth: (w) => widths.push(w),
+    resizeWindow: (_from, to) => widths.push(to),
     ...options,
   });
   const catalog = buildCommands(app);
