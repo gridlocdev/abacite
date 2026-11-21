@@ -10,6 +10,7 @@ Abacite is a calculator with exact decimal arithmetic and a session. One UI runs
 - When the owner corrects something, turn the correction into a rule in `test/architecture.test.ts` or a test, not a comment or a line here.
 - Never add a `test/architecture-baseline.json`: fix the violation. A comment is never permission: a deliberate exception (`ignoreError(promise, 'why')`, an `eslint-disable`, a `@ts-expect-error`) goes in `test/architecture-exceptions.json` only after the owner agrees.
 - Features are named as in [docs/features.md](docs/features.md); every section has a `test.describe` with its name in `e2e/`, and `test/features.test.ts` keeps them in step.
+- Use the terms in [GLOSSARY.md](GLOSSARY.md) in code, docs and commit messages, and add a term there when a new concept appears.
 - Reports on UI changes include the screenshots that show the change, and what wasn't checked.
 - Check UI changes headlessly: Playwright in the background for the web build, or the desktop app with `--headless`, which runs muted on a throwaway profile and puts no window, menu or dialog on the screen. Never open a visible window or browser to check your work. Any native UI you add (a dialog, a menu, a notification, a prompt) is skipped in headless mode and recorded in `globalThis.abaciteHeadless` for the checks. When a run ends, make sure no Electron process it started is left.
 
