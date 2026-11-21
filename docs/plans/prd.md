@@ -179,10 +179,10 @@ Abacite is a calculator for one person, replacing the macOS Calculator. It runs 
 
 ### §9.1 Layout
 
-- From top to bottom: the **display**, the **expression line**, the **keypad**. The **session panel** sits to the right of them, shown or hidden with ⌘T. It sits beside the keypad when the window is at least 640 px wide; below that it overlays the keypad.
+- From top to bottom: the **display**, the **expression line**, the **keypad**. The **session panel** sits to the right of them, shown or hidden with ⌘T or the panel button at the right of the status bar. It sits beside the keypad when the window is at least 640 px wide; below that it overlays the keypad.
 - The display shows the live result of the expression line, right-aligned in a large font that shrinks to fit up to 32 digits, then scrolls. Above it in small text: "DEG"/"RAD", "M" when memory is set, and the entry mode in classic mode. While the line is empty, the display shows the last result.
 - Live results appear as you type, after each keystroke; an incomplete expression (`2 +`) shows the last complete result greyed, not an error. Errors show only on commit or when the expression is complete and fails (`1/0`).
-- The status bar at the bottom holds notices and, in the browser, the storage note.
+- The status bar at the bottom holds notices and, in the browser, the storage note, then the session panel button and the Settings button.
 - Desktop: a compact default window, about 400 × 620 in Basic with the session hidden; minimum 300 × 460. Switching to Scientific (⌘2) or showing the session widens the window to fit when it is too narrow. The window remembers its size and position, and the mode.
 
 ### §9.2 Keypads

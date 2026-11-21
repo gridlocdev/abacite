@@ -4,7 +4,7 @@ Every action is in the menu bar, in the **command menu** (**⌘K** on a Mac, **C
 
 The expression line keeps the keyboard while no window is open: every key you type goes into it.
 
-In a browser tab, **⌘N** and **⌘T** (**Ctrl+N**, **Ctrl+T**) belong to the browser, which opens a new window or tab. Use the command menu there for New Session and Show Session.
+In a browser tab, **⌘N** and **⌘T** (**Ctrl+N**, **Ctrl+T**) belong to the browser, which opens a new window or tab. Use the command menu there for New Session, and the panel button at the right of the status bar for the session.
 
 ## Sessions
 
@@ -39,7 +39,7 @@ The session panel's header names the open session: click it to open another.
 | Basic keypad                     | **⌘1**                     | **Ctrl+1**                          |
 | Scientific keypad                | **⌘2**                     | **Ctrl+2**                          |
 | Classic entry on or off          | **⌘E**                     | **Ctrl+E**                          |
-| Show or hide the session         | **⌘T**                     | **Ctrl+T**                          |
+| Show or hide the session         | **⌘T** or the panel button | **Ctrl+T** or the panel button      |
 | Switch degrees and radians       | **⇧⌘R** or the **Rad** key | **Ctrl+Shift+R** or the **Rad** key |
 | System, Light or Dark appearance | **View** menu or Settings  | **View** menu or Settings           |
 

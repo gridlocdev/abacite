@@ -28,7 +28,7 @@ Type a value with a unit, then `to` or `in` and another unit: `5 km to mi`, `100
 
 ## Session
 
-**⌘T** shows the session: every line you committed, with its result or its error. **↑** and **↓** bring earlier lines back into the expression line. Click a line to insert its result, or **⌥-click** (Alt-click) to insert its expression. Right-click a line to copy or insert its result or expression, or to delete it; the lines after it are worked out again. **⇧⌘⌫** clears the session, with Undo in the status bar. With the expression line empty, **⌘Z** and **⇧⌘Z** undo and redo session changes: a new line, a deleted line or a cleared session.
+**⌘T**, or the panel button at the right of the status bar, shows or hides the session: every line you committed, with its result or its error. **↑** and **↓** bring earlier lines back into the expression line. Click a line to insert its result, or **⌥-click** (Alt-click) to insert its expression. Right-click a line to copy or insert its result or expression, or to delete it; the lines after it are worked out again. **⇧⌘⌫** clears the session, with Undo in the status bar. With the expression line empty, **⌘Z** and **⇧⌘Z** undo and redo session changes: a new line, a deleted line or a cleared session.
 
 ## Session files
 

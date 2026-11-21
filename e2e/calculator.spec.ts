@@ -218,6 +218,21 @@ test.describe('Session', () => {
     await expect(expression(page)).toHaveValue('8');
   });
 
+  test('the panel button in the status bar shows and hides the session, and keeps the line focused', async ({
+    page,
+  }) => {
+    const toggle = page.getByRole('button', { name: 'Session panel' });
+    await expect(toggle).toHaveAttribute('aria-pressed', 'false');
+    await expect(toggle).toHaveAttribute('title', /^Show Session \(.+T\)$/);
+    await toggle.click();
+    await expect(session(page)).toBeVisible();
+    await expect(toggle).toHaveAttribute('aria-pressed', 'true');
+    await expect(toggle).toHaveAttribute('title', /^Hide Session/);
+    await expect(expression(page)).toBeFocused();
+    await toggle.click();
+    await expect(session(page)).toBeHidden();
+  });
+
   test('Clear Session can be undone', async ({ page }) => {
     await page.keyboard.press('ControlOrMeta+KeyT');
     await page.keyboard.type('2+2');

@@ -49,10 +49,12 @@ function Display({ app }: { readonly app: AppController }) {
  */
 function StatusBar({
   app,
+  catalog,
   folders,
   release,
 }: {
   readonly app: AppController;
+  readonly catalog: CommandCatalog;
   readonly folders?: SessionFolders;
   readonly release?: Release | null;
 }) {
@@ -106,6 +108,7 @@ function StatusBar({
           </>
         )}
       </div>
+      <SessionToggle app={app} catalog={catalog} />
       <button
         type="button"
         class="ab-icon-button ab-small"
@@ -119,6 +122,27 @@ function StatusBar({
         {app.announcement.value}
       </div>
     </footer>
+  );
+}
+
+/** Shows or hides the session pane with the mouse; the same command as ⌘T (PRD §9.1). */
+function SessionToggle({ app, catalog }: { readonly app: AppController; readonly catalog: CommandCatalog }) {
+  const shown = app.settings.value.showSession;
+  const command = catalog.get('view.session');
+  const keys = command ? catalog.keys(command).join('') : '';
+  const label = shown ? 'Hide Session' : 'Show Session';
+  return (
+    <button
+      type="button"
+      class="ab-icon-button ab-small"
+      aria-label="Session panel"
+      aria-pressed={shown}
+      title={keys ? `${label} (${keys})` : label}
+      onPointerDown={(e) => e.preventDefault()}
+      onClick={() => catalog.run('view.session')}
+    >
+      <Icon name={shown ? 'panel-right-close' : 'panel-right-open'} />
+    </button>
   );
 }
 
@@ -151,7 +175,12 @@ export function App(props: {
           </>
         )}
       </div>
-      <StatusBar app={app} release={release?.value ?? null} {...(folders ? { folders } : {})} />
+      <StatusBar
+        app={app}
+        catalog={catalog}
+        release={release?.value ?? null}
+        {...(folders ? { folders } : {})}
+      />
       <Dialogs app={app} catalog={catalog} />
       {folders && <SessionDialogs app={app} folders={folders} />}
     </div>
