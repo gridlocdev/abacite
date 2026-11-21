@@ -6,7 +6,7 @@ Abacite runs as a desktop app on macOS, Windows and Linux, in a modern browser, 
 
 Download the desktop app from [Releases](https://github.com/gridlocdev/abacite/releases): a `.dmg` or `.zip` for macOS (Apple silicon or Intel), an `.exe` installer for Windows, or an AppImage for Linux.
 
-The macOS app has no Apple notarization, so macOS won't open it with a double-click the first time. Right-click it in Finder, choose **Open**, then **Open** again. After that it opens normally.
+Drag Abacite to Applications. The macOS app isn't notarized by Apple, so the first time macOS won't open it: open System Settings → Privacy & Security and choose **Open Anyway** next to the message about Abacite. After that it opens normally.
 
 ## Run from source
 

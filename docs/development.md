@@ -56,7 +56,7 @@ just package-desktop-dir  # an unpacked app only, faster
 just install-desktop      # macOS: package and copy to /Applications; the old copy goes to the Trash
 ```
 
-The macOS app gets an ad-hoc signature and isn't notarized, so the first start needs right-click → Open.
+The macOS app gets an ad-hoc signature and isn't notarized, so the first start needs **Open Anyway** in System Settings → Privacy & Security.
 
 ## Releasing
 

@@ -10,7 +10,7 @@ Abacite is a calculator that gets decimals right. You type the whole calculation
 
 ## Getting started
 
-Download the desktop app for macOS, Windows or Linux from [Releases](https://github.com/gridlocdev/abacite/releases). The macOS app isn't notarized, so open it the first time with right-click → Open. [Getting started](docs/getting-started.md) covers running it in the browser, on the command line and from source.
+Download the desktop app for macOS, Windows or Linux from [Releases](https://github.com/gridlocdev/abacite/releases). The macOS app isn't notarized by Apple, so the first time you open it, choose **Open Anyway** in System Settings → Privacy & Security. [Getting started](docs/getting-started.md) covers running it in the browser, on the command line and from source.
 
 ## Learn more
 
