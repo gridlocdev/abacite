@@ -2,7 +2,7 @@
 
 Abacite is a calculator that gets decimals right. You type the whole calculation, see the result as you type, and every calculation stays in a session you can come back to. It runs as a desktop app, in the browser and on the command line.
 
-![Abacite with the Scientific keypad beside the Basic one. The display shows 2.8284271247461900976033774484194 for the line "ans * 4" being typed. The session panel on the right lists earlier calculations with their results: 0.1 + 0.2 is 0.3, rent = 1450, rent * 12 is 17,400, 5 km to mi is 3.1068559611866698480871709218166 mi, and sqrt(2) / 2. The status bar at the bottom says "Stored in this browser" and has the session panel and Settings buttons.](docs/images/screenshot.webp)
+![Abacite with the Scientific keypad beside the Basic one. The display shows 5,220 for the line "rent * 12 * 0.3" being typed. The session panel on the right lists earlier calculations with their results: 0.1 + 0.2 is 0.3, rent = 1450, rent * 12 is 17,400, 26.2 mi to km is 42.1648128 km, and 19.99 * 3 is 59.97. The status bar at the bottom says "Stored in this browser" and has the session panel and Settings buttons.](docs/images/screenshot.webp)
 
 - **Exact decimals.** `0.1 + 0.2` is `0.3`, to 34 significant digits, with no floating-point noise.
 - **Type the whole calculation.** The result shows as you type, and the Basic and Scientific keypads type into the same line.
