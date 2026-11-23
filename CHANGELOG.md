@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0
+
+Abacite 1.1.0 lets Firefox and Safari open a session folder.
+
+### What's new
+
+- **Open a session folder in Firefox and Safari.** **Open Session Folder…** now works in browsers without Chrome's folder access. The folder opens read-only: you can read its sessions, keep calculating and export a session with **Export Session…**. New lines stay in the tab and aren't saved to the folder, and the browser asks before you close a tab that has some. You pick the folder again on each visit. To save to a folder on disk, use Chrome, Edge or the desktop app.
+- **The command menu says why a command is off.** A disabled command in **⌘K** shows the reason under its name. In a read-only folder, that covers **New Session**, **Rename Session…**, **Delete Session** and **Open Trash…**.
+
 ## 1.0.0
 
 The first release of Abacite, a calculator that gets decimals right. You type the whole calculation, see the result as you type, and every calculation stays in a session you can come back to. It runs on macOS, Windows and Linux, in the browser and on the command line.
