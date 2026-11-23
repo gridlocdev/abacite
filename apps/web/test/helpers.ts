@@ -73,6 +73,8 @@ export function memoryPlatform(first: OpenedFolder | FolderSetup = { kind: 'firs
   const platform: FolderPlatform = {
     first: () => Promise.resolve(first),
     canChoose: true,
+    whyCantChoose: null,
+    openWhilePicking: false,
     choose: () => Promise.resolve(state.choice),
     defaultTitle: 'Use Documents/Abacite',
     offersDefault: true,
@@ -90,9 +92,11 @@ export function memoryPlatform(first: OpenedFolder | FolderSetup = { kind: 'firs
 }
 
 /** An app with session folders on a memory platform; every session command is in its catalog. */
-export function makeFolderApp(first?: OpenedFolder | FolderSetup) {
+export function makeFolderApp(first?: OpenedFolder | FolderSetup, browser?: FolderPlatform) {
   const made = makeApp({ showSession: true });
-  const { platform, state } = memoryPlatform(first);
+  const memory = memoryPlatform(first);
+  const { state } = memory;
+  const platform = browser ?? memory.platform;
   const folders = new SessionFolders(made.app, platform, memoryKeep().keep, {
     retries: [0, 0],
     now: () => new Date(2026, 10, 19, 14, 5, 9),

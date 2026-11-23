@@ -405,6 +405,11 @@ kbd {
 .ab-palette-title {
   flex: 1;
 }
+.ab-palette-reason {
+  display: block;
+  font-size: 12px;
+  color: var(--ab-text-2);
+}
 .ab-palette-group {
   color: var(--ab-text-3);
   font-size: 12px;

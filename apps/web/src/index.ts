@@ -39,10 +39,12 @@ export {
 export { editByKey } from './app/lineEdit.ts';
 export {
   BROWSER_KEY,
+  NO_FOLDER_IN_BROWSER,
   SessionFolders,
   browserPlatform,
   desktopPlatform,
   inBrowserStorage,
+  type BrowserPickers,
   type FolderPlatform,
   type FolderSetup,
   type OpenedFolder,

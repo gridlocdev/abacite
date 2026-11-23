@@ -18,7 +18,9 @@ export type StoreErrorKind =
   /** A move's source is gone. */
   | 'missing'
   /** A bad name: empty, or with a `/`, `\` or a leading `.`. */
-  | 'name';
+  | 'name'
+  /** The folder can only be read (a folder picked with the file input, in Firefox and Safari). */
+  | 'readonly';
 
 export class StoreError extends Error {
   readonly kind: StoreErrorKind;
@@ -33,6 +35,8 @@ export class StoreError extends Error {
 export interface Folder {
   /** What the app calls the place: the folder's name, or "this browser". */
   readonly label: string;
+  /** True when nothing can be written: `write` and `move` throw a `readonly` StoreError. */
+  readonly readOnly?: boolean;
   /** The names of the files directly in `dir` (`''` is the folder itself); none when `dir` is missing. */
   list(dir: string): Promise<string[]>;
   /** The file's text and version, or null when there is no such file. */

@@ -9,6 +9,7 @@ export {
   type StoreErrorKind,
 } from './folder.ts';
 export { HandleFolder } from './handleFolder.ts';
+export { FileListFolder, canPickFolderFiles, pickFolderFiles } from './fileListFolder.ts';
 export { MemoryFolder } from './memoryFolder.ts';
 export {
   TRASH,

@@ -8,7 +8,7 @@ import { classicPending } from './classic.ts';
 import { Keypad } from './Keypad.tsx';
 import type { Release } from './native.ts';
 import { SessionDialogs } from './SessionDialogs.tsx';
-import { inBrowserStorage, type SessionFolders } from './sessionFolders.ts';
+import { inBrowserStorage, inReadOnlyFolder, type SessionFolders } from './sessionFolders.ts';
 import { SessionPanel } from './SessionPanel.tsx';
 
 /** The display (PRD §9.1): the angle unit, then the result, right-aligned, shrinking to fit. */
@@ -45,7 +45,7 @@ function Display({ app }: { readonly app: AppController }) {
 
 /**
  * The status bar: the latest notice with its action, a failed save until a save works, and in the browser's
- * own storage the storage note (PRD §8.2, §8.3), and the live region for screen readers (PRD §14).
+ * own storage or a read-only folder the storage note (PRD §8.2, §8.3), and the live region for screen readers (PRD §14).
  */
 function StatusBar({
   app,
@@ -87,6 +87,9 @@ function StatusBar({
         )}
         {!notice && failed === null && !release && inBrowserStorage(current) && (
           <span class="ab-storage-note">Stored in this browser</span>
+        )}
+        {!notice && failed === null && !release && current && inReadOnlyFolder(current) && (
+          <span class="ab-storage-note">{current.folder.label} is read-only: new lines aren’t saved</span>
         )}
         {notice && (
           <>

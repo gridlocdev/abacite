@@ -90,6 +90,10 @@ function watchSessionFolder(folders: SessionFolders): void {
   });
   every(30_000, snapshot);
   addEventListener('pagehide', snapshot);
+  // A read-only folder's new lines live only in this tab: the browser asks before they go.
+  addEventListener('beforeunload', (e) => {
+    if (folders.current.value?.hasHeldLines()) e.preventDefault();
+  });
 }
 
 try {

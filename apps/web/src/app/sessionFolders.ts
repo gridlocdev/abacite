@@ -1,17 +1,22 @@
 /**
  * Which session folder is open (PRD §8.2), and switching between them: the desktop app's folder on disk, or in
- * the browser a folder the user picked or the browser's own storage. Each folder gets its own OpenSession.
+ * the browser a folder the user picked or the browser's own storage. Each folder gets its own OpenSession. Where
+ * the browser has no `showDirectoryPicker` (Firefox, Safari), a folder picked with the file input opens read-only.
  */
 import { signal } from '@preact/signals';
 import {
   BROWSER_LABEL,
+  FileListFolder,
   NativeFolder,
+  SessionLibrary,
   after,
   allowFolder,
   browserFolder,
   canPickFolder,
+  canPickFolderFiles,
   forgetPickedFolder,
   pickFolder,
+  pickFolderFiles,
   pickedFolder,
   type Folder,
   type SessionKeep,
@@ -43,6 +48,13 @@ export interface FolderPlatform {
   first(): Promise<OpenedFolder | FolderSetup>;
   /** True when the user can pick a folder of their own. */
   readonly canChoose: boolean;
+  /** Where the user can't pick a folder, why, and where they can: Open Session Folder… shows it. */
+  readonly whyCantChoose: string | null;
+  /**
+   * True when the session stays open while the user picks: the file input's pick may never settle (a browser
+   * without its `cancel` event), so it must not leave the app without a session.
+   */
+  readonly openWhilePicking: boolean;
   /** Asks the user for a folder; null when they cancel. */
   choose(): Promise<OpenedFolder | null>;
   /** The folder dialog's first answer: Documents/Abacite, or the browser's own storage. */
@@ -96,20 +108,26 @@ export class SessionFolders {
   async choose(): Promise<void> {
     const old = this.current.value;
     const setup = this.setup.value;
-    if (old) {
+    // Nothing is saved or checked while the picker is open: on desktop, the folder changes as it closes. The file
+    // input's pick keeps the session open, and opens the input before anything else, while the click still counts.
+    if (old && !this.platform.openWhilePicking) {
       await old.flush();
       old.snapshot();
+      this.current.value = null;
     }
-    // Nothing is saved or checked while the picker is open: on desktop, the folder changes as it closes.
-    this.current.value = null;
     let picked: OpenedFolder | null = null;
     try {
       picked = await this.platform.choose();
     } catch (e) {
       this.#app.say(`Couldn’t open the folder: ${message(e)}`, { tone: 'error' });
     }
-    if (picked) await this.#use(picked, old);
-    else if (old) this.current.value = old;
+    if (picked) {
+      await this.#use(picked, old);
+      if (picked.folder.readOnly && this.current.value?.folder === picked.folder)
+        this.#app.say(
+          `Opened ${picked.folder.label} read-only. New lines aren’t saved; Export Session keeps a copy.`,
+        );
+    } else if (old) this.current.value = old;
     else this.#ask(setup ?? { kind: 'first' });
   }
 
@@ -187,6 +205,8 @@ export function desktopPlatform(native: AbaciteNative): FolderPlatform {
       return info.missing ? { kind: 'missing', folder: info.folder } : opened(info.folder);
     },
     canChoose: true,
+    whyCantChoose: null,
+    openWhilePicking: false,
     async choose() {
       const path = await native.chooseFolder();
       return path === null ? null : opened(path);
@@ -204,10 +224,31 @@ export function desktopPlatform(native: AbaciteNative): FolderPlatform {
 /** The key of the browser's own storage. */
 export const BROWSER_KEY = 'browser';
 
-/** The browser's folders: one the user picked, where the browser can, or its own storage. */
-export function browserPlatform(): FolderPlatform {
+/** How this browser can pick a folder; tests pass their own. */
+export interface BrowserPickers {
+  /** The File System Access API (`showDirectoryPicker`): a folder the app can write to and remember. */
+  readonly folder: boolean;
+  /** The `webkitdirectory` file input: a read-only snapshot of the folder's files; null without one. */
+  readonly files: (() => Promise<File[] | null>) | null;
+}
+
+const browserPickers = (): BrowserPickers => ({
+  folder: canPickFolder(),
+  files: canPickFolderFiles() ? () => pickFolderFiles() : null,
+});
+
+/** Where no browser way to pick a folder exists. */
+export const NO_FOLDER_IN_BROWSER =
+  'This browser can’t open a folder. The Abacite desktop app keeps sessions in a folder on disk.';
+
+/**
+ * The browser's folders: one the user picked, or the browser's own storage. The picker is chosen by feature:
+ * `showDirectoryPicker` first, then the file input, which gives a read-only folder.
+ */
+export function browserPlatform(pickers: BrowserPickers = browserPickers()): FolderPlatform {
   let remembered: FileSystemDirectoryHandle | null = null;
   const picked = (folder: Folder): OpenedFolder => ({ folder, key: `picked:${folder.label}` });
+  const canChoose = pickers.folder || pickers.files !== null;
   return {
     async first() {
       const found = await pickedFolder();
@@ -218,13 +259,24 @@ export function browserPlatform(): FolderPlatform {
       }
       return { folder: await browserFolder(), key: BROWSER_KEY };
     },
-    canChoose: canPickFolder(),
+    canChoose,
+    whyCantChoose: canChoose ? null : NO_FOLDER_IN_BROWSER,
+    openWhilePicking: !pickers.folder,
     async choose() {
-      const folder = await pickFolder();
-      return folder ? picked(folder) : null;
+      if (pickers.folder) {
+        const folder = await pickFolder();
+        return folder ? picked(folder) : null;
+      }
+      const files = await pickers.files?.();
+      if (!files) return null;
+      const folder = new FileListFolder(files);
+      // Checked before the open session closes, so a folder with nothing to open leaves it open.
+      if (!(await new SessionLibrary(folder).names()).length)
+        throw new Error(`${folder.label} has no sessions (.txt files).`);
+      return { folder, key: `files:${folder.label}` };
     },
     defaultTitle: 'Keep Sessions in This Browser',
-    offersDefault: canPickFolder(),
+    offersDefault: canChoose,
     exportSession: (name, text) => {
       download(`${name}.txt`, text);
       return Promise.resolve(true);
@@ -251,6 +303,13 @@ function download(file: string, text: string): void {
   // Some browsers read the file a little after the click.
   after(10_000, () => URL.revokeObjectURL(url));
 }
+
+/** True when the open folder can only be read (picked with the file input). */
+export const inReadOnlyFolder = (current: OpenSession | null) => current?.readOnly === true;
+
+/** Why the commands that write are disabled in a read-only folder. */
+export const readOnlyReason = (current: OpenSession | null) =>
+  `${current?.folder.label ?? 'This folder'} is read-only in this browser. The Abacite desktop app can change it.`;
 
 /** True when the open folder is the browser's own storage. */
 export const inBrowserStorage = (current: OpenSession | null) => current?.folder.label === BROWSER_LABEL;

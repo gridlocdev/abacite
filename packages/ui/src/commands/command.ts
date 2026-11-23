@@ -26,6 +26,8 @@ export interface CommandSpec {
   readonly keywords?: string;
   readonly run: () => void | Promise<void>;
   readonly enabled?: () => boolean;
+  /** Why the command is disabled, in one sentence the command menu shows; null when there is no reason to give. */
+  readonly disabledReason?: () => string | null;
   /** Left out of the command menu (the command menu itself, say). */
   readonly hidden?: boolean;
   /** A ticked menu item (the current theme, say). */
@@ -87,6 +89,11 @@ export class CommandCatalog {
 
   isEnabled(c: Command): boolean {
     return c.enabled?.() ?? true;
+  }
+
+  /** Why `c` is disabled; null while it is enabled or gives no reason. */
+  whyDisabled(c: Command): string | null {
+    return this.isEnabled(c) ? null : (c.disabledReason?.() ?? null);
   }
 
   /** Runs `id` if it is enabled and the gate lets it. */

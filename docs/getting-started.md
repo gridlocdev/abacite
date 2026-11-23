@@ -32,7 +32,7 @@ With no expression it reads one calculation per line from stdin, or shows a `> `
 
 The desktop app asks where to keep your sessions: **Use Documents/Abacite**, or **Choose Folder…** for another folder. **⌘O** (**Ctrl+O**) picks another folder later.
 
-The browser keeps sessions in its own storage, and the status bar says "Stored in this browser". In Chrome and Edge, **Open Session Folder…** in the command menu (**⌘K**) keeps them in a folder on disk instead.
+The browser keeps sessions in its own storage, and the status bar says "Stored in this browser". In Chrome and Edge, **Open Session Folder…** in the command menu (**⌘K**) keeps them in a folder on disk instead. In Firefox and Safari it opens a folder read-only, to read and export its sessions; to save to a folder on disk there, use the desktop app.
 
 ## Where your data lives
 

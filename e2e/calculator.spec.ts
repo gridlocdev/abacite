@@ -1,5 +1,5 @@
 // Scenarios for the calculator in the browser: each test.describe names a feature in docs/features.md.
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { Page } from '@playwright/test';
@@ -285,6 +285,49 @@ test.describe('Session files', () => {
     await page.reload();
     await waitForApp(page);
     await expect(session(page).getByRole('listitem')).toHaveText([/1\+2\s*3/]);
+  });
+
+  test('without showDirectoryPicker, a folder picked with the file input opens read-only', async ({
+    page,
+  }) => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'abacite-e2e-'));
+    const folder = path.join(dir, 'Sessions');
+    try {
+      mkdirSync(folder);
+      writeFileSync(path.join(folder, 'Sums.txt'), '1 + 2  # = 3\n');
+      writeFileSync(path.join(folder, 'Rent.txt'), 'rent = 1450\n');
+      // Firefox and Safari have no showDirectoryPicker: the app picks by feature, so this is their path.
+      await page.addInitScript(() => {
+        Object.defineProperty(window, 'showDirectoryPicker', { value: undefined });
+      });
+      await page.reload();
+      await waitForApp(page);
+      await page.keyboard.press('ControlOrMeta+KeyT');
+      const chooser = page.waitForEvent('filechooser');
+      await runCommand(page, 'Open Session Folder');
+      await (await chooser).setFiles(folder);
+      await expect(notice(page)).toHaveText(
+        'Opened Sessions read-only. New lines aren’t saved; Export Session keeps a copy.',
+      );
+      await expect(sessionName(page)).toHaveText('Rent');
+
+      // Calculating still works; the line stays in the tab, and the file is unchanged.
+      await page.keyboard.type('rent*12');
+      await page.keyboard.press('Enter');
+      await expect(display(page)).toHaveText('17,400');
+      expect(readFileSync(path.join(folder, 'Rent.txt'), 'utf8')).toBe('rent = 1450\n');
+
+      // A command that writes is disabled, and the command menu says why.
+      await page.keyboard.press('ControlOrMeta+KeyK');
+      await page.keyboard.type('New Session');
+      const option = page.getByRole('option', { name: /New Session/ });
+      await expect(option).toHaveAttribute('aria-disabled', 'true');
+      await expect(option).toContainText('Sessions is read-only in this browser.');
+      await page.keyboard.press('Escape');
+      await expect(page.getByText('Sessions is read-only: new lines aren’t saved')).toBeVisible();
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   test('committing a line stays quick with a full session of 10,000 lines', async ({ page }) => {

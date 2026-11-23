@@ -1,7 +1,7 @@
 /** Every command, for the keyboard, ⌘K, the menu bar and the Keyboard Shortcuts window (PRD §10). */
 import { CommandCatalog, type CommandSpec, type Theme } from '@abacite/ui';
 import type { AppController, DialogKind } from './controller.ts';
-import { inBrowserStorage, type SessionFolders } from './sessionFolders.ts';
+import { inBrowserStorage, inReadOnlyFolder, readOnlyReason, type SessionFolders } from './sessionFolders.ts';
 import type { OpenSession } from './openSession.ts';
 
 const THEME_TITLES: Readonly<Record<Theme, string>> = {
@@ -37,6 +37,11 @@ function sessionCommands(app: AppController, folders: SessionFolders): CommandSp
       });
     };
   const platform = folders.platform;
+  /** Commands that change the folder: disabled, with the reason, in a read-only folder. */
+  const writes = {
+    enabled: () => !inReadOnlyFolder(current()),
+    disabledReason: () => readOnlyReason(current()),
+  };
   const specs: CommandSpec[] = [
     {
       id: 'file.new',
@@ -44,6 +49,7 @@ function sessionCommands(app: AppController, folders: SessionFolders): CommandSp
       description: 'Start a new session in the session folder.',
       group: 'File',
       shortcuts: ['mod+n'],
+      ...writes,
       run: act('make a new session', (s) => s.newSession()),
     },
     {
@@ -55,7 +61,7 @@ function sessionCommands(app: AppController, folders: SessionFolders): CommandSp
       run: () => app.toggle('sessions'),
     },
   ];
-  if (platform.canChoose)
+  if (platform.canChoose || platform.whyCantChoose)
     specs.push({
       id: 'file.folder',
       title: 'Open Session Folder…',
@@ -63,6 +69,8 @@ function sessionCommands(app: AppController, folders: SessionFolders): CommandSp
       group: 'File',
       shortcuts: ['mod+o'],
       keywords: 'choose directory location',
+      enabled: () => platform.canChoose,
+      disabledReason: () => platform.whyCantChoose,
       run: () => void folders.choose(),
     });
   if (platform.offersDefault)
@@ -80,6 +88,7 @@ function sessionCommands(app: AppController, folders: SessionFolders): CommandSp
       title: 'Rename Session…',
       description: 'Give the open session another name.',
       group: 'File',
+      ...writes,
       run: () => app.toggle('rename'),
     },
     {
@@ -89,6 +98,7 @@ function sessionCommands(app: AppController, folders: SessionFolders): CommandSp
       group: 'File',
       keywords: 'remove trash',
       danger: true,
+      ...writes,
       run: act('delete the session', (s) => s.trash()),
     },
     {
@@ -110,6 +120,7 @@ function sessionCommands(app: AppController, folders: SessionFolders): CommandSp
       description: 'See deleted sessions and restore them.',
       group: 'File',
       keywords: 'restore deleted',
+      ...writes,
       run: () => {
         if (app.dialog.value === 'trash') app.close();
         else

@@ -161,7 +161,7 @@ Abacite is a calculator for one person, replacing the macOS Calculator. It runs 
 ### §8.2 The session folder
 
 - The desktop app and the browser keep sessions in a folder the user picks; each `*.txt` directly in it is a session. First start on desktop asks **Use Documents/Abacite** (created when chosen) or **Choose Folder…**; a missing remembered folder (an unplugged drive) is named in the same question and nothing is created in its place.
-- The browser starts with sessions in its own storage, and the status bar says "Stored in this browser". Where the browser has the File System Access API, **Open Session Folder…** (⌘O) picks a folder on disk, which is remembered (the browser may ask to allow it again on a later visit), and **Keep Sessions in This Browser** goes back. **Export Session…** downloads the `.txt`; on desktop it asks where to save it.
+- The browser starts with sessions in its own storage, and the status bar says "Stored in this browser". Where the browser has the File System Access API, **Open Session Folder…** (⌘O) picks a folder on disk, which is remembered (the browser may ask to allow it again on a later visit), and **Keep Sessions in This Browser** goes back. Without the File System Access API (Firefox, Safari), **Open Session Folder…** picks a folder with the `webkitdirectory` file input, chosen by feature, never by browser name. That folder is read-only and not remembered: its sessions open and can be exported, new lines stay in the tab (the browser asks before the tab closes with any) and are never written, and New Session, Rename, Delete and Open Trash… are disabled, with the reason in the command menu. A browser with neither way disables **Open Session Folder…** and points to the desktop app. **Export Session…** downloads the `.txt`; on desktop it asks where to save it.
 - A new session is named for when it was made, date first so the list sorts by day: `2026-11-19 at 2.05 PM.txt`. The time uses a dot, as macOS screenshots do, because a file name can't hold a colon everywhere. A second session from the same minute adds the seconds (`2026-11-19 at 2.05.09 PM`), then ` 2`. **Rename Session…** gives it any other name.
 - An empty folder gets one new session on first start (no welcome card).
 - The session panel's header names the open session and opens a list of the folder's sessions (also **Open Session…**). Opening a session sets the angle unit to the session's. **New Session** (⌘N) makes a new session and opens it; **Rename Session…** renames the file; **Delete Session** moves it to `.abacite/trash/` with the notice "Moved Groceries to the trash." and **Undo**. **Open Trash…** lists trashed sessions with **Restore**; restoring a name that's taken adds ` 2`.
@@ -207,7 +207,7 @@ All commands are in one catalog, which feeds the keyboard, ⌘K, the menu bar, c
 | --- | --- | --- |
 | File | New Session | ⌘N |
 | File | Open Session… |  |
-| File | Open Session Folder… (desktop, and browsers with the File System Access API) | ⌘O |
+| File | Open Session Folder… (desktop, and browsers with the File System Access API or a folder file input) | ⌘O |
 | File | Keep Sessions in This Browser (those browsers) |  |
 | File | Rename Session…, Delete Session, Export Session…, Open Trash… |  |
 | File | Settings… | ⌘, |

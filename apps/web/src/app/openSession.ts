@@ -1,7 +1,8 @@
 /**
  * The open session and its file (PRD §8.2, §8.3): every change is saved at once, one save at a time; a failed
  * save is retried, then reported; a save against a file changed elsewhere stops and asks; changes made
- * elsewhere are picked up when nothing is unsaved; unsaved text is kept in snapshots for recovery.
+ * elsewhere are picked up when nothing is unsaved; unsaved text is kept in snapshots for recovery. In a read-only
+ * folder nothing is saved: each session's new lines stay in memory, for this visit only.
  */
 import { effect, signal } from '@preact/signals';
 import { defaultRandom, readSession, writeSessionText, type Decimal } from '@abacite/core';
@@ -73,6 +74,8 @@ export class OpenSession {
   /** True while this object itself changes the session, which is then no change to save. */
   #loading = false;
   #stopWatching: (() => void) | null = null;
+  /** Read-only folder: each session's text where it differs from its file, kept while the tab is open. */
+  readonly #held = new Map<string, string>();
 
   constructor(options: OpenSessionOptions) {
     this.#app = options.app;
@@ -88,6 +91,7 @@ export class OpenSession {
   /** Opens the session last open in this folder, or the first, or a new `Session` in an empty folder. */
   async start(): Promise<void> {
     let names = await this.#refreshNames();
+    if (!names.length && this.readOnly) throw new Error(`${this.folder.label} has no sessions (.txt files).`);
     if (!names.length) {
       await this.library.createAt(this.#now());
       names = await this.#refreshNames();
@@ -106,6 +110,16 @@ export class OpenSession {
   stop(): void {
     this.#stopWatching?.();
     this.#stopWatching = null;
+  }
+
+  /** True when the folder can only be read (a folder picked with the file input). */
+  get readOnly(): boolean {
+    return this.folder.readOnly === true;
+  }
+
+  /** Read-only folder: true while any session has lines its file doesn't. */
+  hasHeldLines(): boolean {
+    return this.#held.size > 0;
   }
 
   /** The text the open session would be written as. */
@@ -128,6 +142,8 @@ export class OpenSession {
       return false;
     }
     this.#show(name, read.text, read.version, false);
+    const held = this.#held.get(name);
+    if (held !== undefined) this.#showHeld(held);
     this.#keep.setLastSession(this.#key, name);
     this.conflict.value = null;
     const snapshot = this.#keep.snapshot(this.#key, name);
@@ -145,6 +161,10 @@ export class OpenSession {
 
   /** Saves the session if it has changes; a change during a save is saved right after it. */
   save(): Promise<void> {
+    if (this.readOnly) {
+      this.#hold();
+      return Promise.resolve();
+    }
     if (this.#saving) {
       this.#again = true;
       return this.#saving;
@@ -211,7 +231,8 @@ export class OpenSession {
   /** Keeps the unsaved text in the app's storage (PRD §8.3); nothing when everything is saved. */
   snapshot(): void {
     const name = this.name.value;
-    if (name === null || !this.unsaved()) return;
+    // A read-only folder has no save to recover: its sessions' new lines live only in this tab.
+    if (name === null || !this.unsaved() || this.readOnly) return;
     const snapshot = { text: this.text(), base: this.#version, at: this.#now().getTime() };
     try {
       this.#keep.putSnapshot(this.#key, name, snapshot);
@@ -264,6 +285,8 @@ export class OpenSession {
   async check(): Promise<void> {
     const name = this.name.value;
     if (name === null || this.#saving || this.conflict.value || this.recovery.value || this.unsaved()) return;
+    // A read-only folder is a snapshot the browser took when it was picked: nothing changes it.
+    if (this.readOnly) return;
     const read = await this.library.read(name);
     // Something changed meanwhile: the next check looks again.
     if (this.name.value !== name || this.#saving || this.unsaved()) return;
@@ -387,6 +410,25 @@ export class OpenSession {
       this.#version = version;
       this.#clean = this.text();
       this.state.value = 'saved';
+    } finally {
+      this.#loading = false;
+    }
+  }
+
+  /** Read-only folder: keeps the open session's text in memory while it differs from its file. */
+  #hold(): void {
+    const name = this.name.value;
+    if (name === null) return;
+    if (this.unsaved()) this.#held.set(name, this.text());
+    else this.#held.delete(name);
+  }
+
+  /** Read-only folder: puts back the lines a session had when another was opened. */
+  #showHeld(text: string): void {
+    const { session, angle } = readSession(text, this.#env());
+    this.#loading = true;
+    try {
+      this.#app.loadSession(session, angle);
     } finally {
       this.#loading = false;
     }

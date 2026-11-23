@@ -42,6 +42,8 @@ export function Dialogs({ app, catalog }: { readonly app: AppController; readonl
 interface Entry extends MenuEntry {
   readonly keys: string;
   readonly enabled: boolean;
+  /** Why it is disabled, shown under its title. */
+  readonly reason: string | null;
 }
 
 /** ⌘K: every command, recent ones first (PRD §10). */
@@ -59,12 +61,14 @@ function CommandMenu({ app, catalog }: { readonly app: AppController; readonly c
           keywords: `${c.keywords ?? ''} ${c.description}`,
           keys: catalog.keys(c).join(' '),
           enabled: catalog.isEnabled(c),
+          reason: catalog.whyDisabled(c),
         })),
     [catalog],
   );
   const results = filterEntries(entries, query, catalog.recentIds).slice(0, 80);
   const pick = (i: number) => {
     const entry = results[i];
+    if (entry && !entry.enabled && entry.reason) app.say(entry.reason);
     if (!entry?.enabled) return;
     app.close();
     // Let the menu close (and focus go back) before the command runs.
@@ -96,7 +100,10 @@ function CommandMenu({ app, catalog }: { readonly app: AppController; readonly c
           onPointerMove={() => setIndex(i)}
           onClick={() => pick(i)}
         >
-          <span class="ab-palette-title">{e.title}</span>
+          <span class="ab-palette-title">
+            {e.title}
+            {e.reason && <span class="ab-palette-reason">{e.reason}</span>}
+          </span>
           <span class="ab-palette-group">{e.group}</span>
           {e.keys && <kbd>{e.keys}</kbd>}
         </li>
