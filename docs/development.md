@@ -53,7 +53,7 @@ just icons  # icon.icns (macOS), icon.ico (Windows) and icon.png in apps/desktop
 ```bash
 just package-desktop      # .dmg and .zip on macOS, .exe on Windows, AppImage on Linux, in apps/desktop/release
 just package-desktop-dir  # an unpacked app only, faster
-just install-desktop      # macOS: package and copy to /Applications; the old copy goes to the Trash
+just install-desktop      # macOS: package and copy to /Applications; the old copy goes to the Trash; asks to quit a running copy and reopens it
 ```
 
 The macOS app gets an ad-hoc signature and isn't notarized, so the first start needs **Open Anyway** in System Settings → Privacy & Security.
