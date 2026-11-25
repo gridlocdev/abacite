@@ -147,6 +147,25 @@ export function matchRank(s: Shortcut, e: ShortcutEvent, mac = isMac): number {
   return (NAMES[k] ?? k) === s.key && e.shiftKey === s.shift ? 1 : 0;
 }
 
+/**
+ * The shortcut a key press spells, for showing it back to the user: ⇧/ for ?, the physical key for a
+ * character outside ASCII. The inverse of `matchRank` for the keys a shortcut can name.
+ */
+export function pressedShortcut(e: ShortcutEvent, mac = isMac): Shortcut {
+  const base = { mod: mac ? e.metaKey : e.ctrlKey, shift: e.shiftKey, alt: e.altKey, ctrl: mac && e.ctrlKey };
+  if (/^[\x21-\x7e]$/.test(e.key)) {
+    const ch = e.key.toLowerCase();
+    return { ...base, key: (e.shiftKey ? UNSHIFTED[ch] : undefined) ?? ch };
+  }
+  if ([...e.key].length === 1 && e.key !== ' ') {
+    if (/^Key[A-Z]$/.test(e.code)) return { ...base, key: e.code.slice(3).toLowerCase() };
+    if (/^Digit\d$/.test(e.code)) return { ...base, key: e.code.slice(5) };
+    return { ...base, key: PUNCTUATION[e.code] ?? e.key };
+  }
+  const k = e.key.toLowerCase();
+  return { ...base, key: NAMES[k] ?? k };
+}
+
 export function matches(s: Shortcut, e: ShortcutEvent, mac = isMac): boolean {
   return matchRank(s, e, mac) > 0;
 }

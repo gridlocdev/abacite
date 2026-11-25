@@ -3,7 +3,8 @@
  * model (a field's text and caret, focus, a scroll position); none copies one piece of state into another.
  */
 import type { RefObject } from 'preact';
-import { useEffect, useLayoutEffect, useRef } from 'preact/hooks';
+import { useEffect, useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { probeKeys } from '../commands/keys.ts';
 import { nextFrame } from '../schedule.ts';
 
 /** Puts `text` and the selection `start`–`end` into the field whenever they change in the model. */
@@ -117,4 +118,37 @@ export function usePopupFocus(ref: RefObject<HTMLElement | null>, onClose: () =>
       previous?.focus();
     };
   }, [ref, onClose]);
+}
+
+/**
+ * "Press a shortcut" (PRD §10): while `on`, every key but Escape goes to `onKey` instead of the app. It ends on
+ * Escape, `stop()`, an error in `onKey`, or when the component goes away, so no key stays taken.
+ */
+export function useKeyProbe(onKey: (e: KeyboardEvent) => void): {
+  readonly on: boolean;
+  start(): void;
+  stop(): void;
+} {
+  const [on, setOn] = useState(false);
+  const stopRef = useRef<(() => void) | null>(null);
+  const handler = useRef(onKey);
+  handler.current = onKey;
+  const stop = () => stopRef.current?.();
+  useEffect(() => stop, []);
+  return {
+    on,
+    stop,
+    start() {
+      stop();
+      setOn(true);
+      stopRef.current = probeKeys(
+        window,
+        (e) => handler.current(e),
+        () => {
+          stopRef.current = null;
+          setOn(false);
+        },
+      );
+    },
+  };
 }

@@ -1,5 +1,12 @@
 /** What the Keyboard Shortcuts window lists (PRD §10): every command with a key, plus keys that aren't commands. */
-import { COMMAND_GROUPS, type CommandCatalog, type CommandGroup } from '@abacite/ui';
+import {
+  COMMAND_GROUPS,
+  formatShortcut,
+  pressedShortcut,
+  type CommandCatalog,
+  type CommandGroup,
+  type ShortcutEvent,
+} from '@abacite/ui';
 
 export interface ShortcutLine {
   readonly title: string;
@@ -44,4 +51,19 @@ export function shortcutGroups(catalog: CommandCatalog, mac: boolean): ShortcutG
       }));
     return { title: GROUP_TITLES[group], lines: [...lines, ...(more[group] ?? [])] };
   }).filter((g) => g.lines.length > 0);
+}
+
+/** What "Press a shortcut" shows for one key press: the keys as pressed, and the command they run, if any. */
+export interface PressedKey {
+  readonly keys: string;
+  /** The command's title as the list shows it, or null when the key runs no command. */
+  readonly title: string | null;
+}
+
+export function describePress(catalog: CommandCatalog, e: ShortcutEvent, mac: boolean): PressedKey {
+  const command = catalog.commandFor(e, mac);
+  return {
+    keys: formatShortcut(pressedShortcut(e, mac), mac),
+    title: command ? command.title.replace(/…$/, '') : null,
+  };
 }

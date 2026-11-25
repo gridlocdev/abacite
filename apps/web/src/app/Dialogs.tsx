@@ -8,6 +8,7 @@ import {
   THEMES,
   filterEntries,
   isMac,
+  useKeyProbe,
   type Angle,
   type Entry as EntryMode,
   type CommandCatalog,
@@ -16,7 +17,7 @@ import {
   type Theme,
 } from '@abacite/ui';
 import type { AppController } from './controller.ts';
-import { shortcutGroups } from './shortcuts.ts';
+import { describePress, shortcutGroups, type PressedKey } from './shortcuts.ts';
 
 /** The open dialog, if any; one at a time. */
 export function Dialogs({ app, catalog }: { readonly app: AppController; readonly catalog: CommandCatalog }) {
@@ -112,7 +113,10 @@ function CommandMenu({ app, catalog }: { readonly app: AppController; readonly c
   );
 }
 
-/** ⌘/: every shortcut, made from the catalog (PRD §10). */
+/**
+ * ⌘/: every shortcut, made from the catalog (PRD §10). **Press a Shortcut** shows which command a key runs
+ * instead of running it, until Escape, **Stop** or the window closes.
+ */
 function ShortcutsDialog({
   app,
   catalog,
@@ -121,24 +125,63 @@ function ShortcutsDialog({
   readonly catalog: CommandCatalog;
 }) {
   const groups = shortcutGroups(catalog, isMac);
+  const [pressed, setPressed] = useState<PressedKey | null>(null);
+  const probe = useKeyProbe((e) => setPressed(describePress(catalog, e, isMac)));
+  const probing = probe.on;
+  const start = () => {
+    setPressed(null);
+    probe.start();
+  };
   return (
     <Dialog
       title="Keyboard Shortcuts"
       class="ab-dialog-wide"
       onClose={() => app.close()}
       actions={
-        <button type="button" class="ab-button ab-button-primary" onClick={() => app.close()}>
-          Close
-        </button>
+        <>
+          <button
+            type="button"
+            class="ab-button"
+            aria-pressed={probing}
+            data-ab-probe
+            onClick={probing ? probe.stop : start}
+          >
+            {probing ? 'Stop' : 'Press a Shortcut'}
+          </button>
+          <button type="button" class="ab-button ab-button-primary" onClick={() => app.close()}>
+            Close
+          </button>
+        </>
       }
     >
+      {probing && (
+        <p class="ab-probe" role="status" data-ab-probe-answer>
+          {pressed ? (
+            <>
+              <kbd>{pressed.keys}</kbd>{' '}
+              {pressed.title ? (
+                <>
+                  runs <strong>{pressed.title}</strong>.
+                </>
+              ) : (
+                'runs no command.'
+              )}
+            </>
+          ) : (
+            <>Press a key to see which command it runs. {isMac ? '⎋' : 'Esc'} stops.</>
+          )}
+        </p>
+      )}
       <div class="ab-shortcuts">
         {groups.map((g) => (
           <section key={g.title}>
             <h3>{g.title}</h3>
             <dl>
               {g.lines.map((l) => (
-                <div key={l.title} class="ab-shortcut">
+                <div
+                  key={l.title}
+                  class={`ab-shortcut${probing && pressed?.title === l.title ? ' ab-shortcut-hit' : ''}`}
+                >
                   <dt>{l.title}</dt>
                   <dd>
                     {l.keys.map((way, i) => (

@@ -1,5 +1,6 @@
 /** The page's one keyboard listener: every key goes through the command catalog (PRD §10). */
 import type { CommandCatalog, KeyFocus } from './command.ts';
+import { isComposingKey } from './shortcut.ts';
 
 /** Where keyboard focus is, for deciding which keys are commands. */
 export function keyFocus(el: Element | null): KeyFocus {
@@ -61,4 +62,57 @@ export function listenForKeys(
 /** A key that types a character: one character, not a space (which presses the button), no ⌘, Ctrl or ⌥. */
 function isTyping(e: KeyboardEvent): boolean {
   return [...e.key].length === 1 && e.key !== ' ' && !e.metaKey && !e.ctrlKey && !e.altKey && !e.isComposing;
+}
+
+/** Keys that only change another key: pressing one alone waits for the rest of the chord. */
+const MODIFIERS = new Set([
+  'Shift',
+  'Control',
+  'Alt',
+  'AltGraph',
+  'Meta',
+  'OS',
+  'Fn',
+  'CapsLock',
+  'Hyper',
+  'Super',
+]);
+
+/**
+ * "Press a shortcut" in the Keyboard Shortcuts window (PRD §10): every key press on `target` goes to `onKey`
+ * instead of the app, until Escape, the returned stop function, or an error in `onKey`. Escape is never taken:
+ * it ends the mode and goes on to the page as usual. The listener comes off in a `finally`, so a throwing
+ * `onKey` can't leave every key swallowed; the error still propagates. `onEnd` runs once when the mode ends.
+ */
+export function probeKeys(
+  target: Pick<EventTarget, 'addEventListener' | 'removeEventListener'>,
+  onKey: (e: KeyboardEvent) => void,
+  onEnd: () => void = () => {},
+): () => void {
+  let listening = true;
+  const stop = () => {
+    if (!listening) return;
+    listening = false;
+    target.removeEventListener('keydown', listen, true);
+    onEnd();
+  };
+  function listen(event: Event) {
+    const e = event as KeyboardEvent;
+    let keep = false;
+    try {
+      if (e.key === 'Escape') return;
+      keep = true;
+      if (MODIFIERS.has(e.key) || isComposingKey(e)) return;
+      keep = false;
+      e.preventDefault();
+      e.stopPropagation();
+      onKey(e);
+      keep = true;
+    } finally {
+      if (!keep) stop();
+    }
+  }
+  // Capture on the window, so the key is taken before the page's own listener or the dialog sees it.
+  target.addEventListener('keydown', listen, true);
+  return stop;
 }

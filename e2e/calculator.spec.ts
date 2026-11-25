@@ -5,6 +5,7 @@ import path from 'node:path';
 import type { Page } from '@playwright/test';
 import {
   cli,
+  commandMenu,
   display,
   expect,
   FIRST_SESSION,
@@ -448,6 +449,29 @@ test.describe('Commands and shortcuts', () => {
     await page.keyboard.press('Escape');
     await expect(dialog).toBeHidden();
     await expect(expression(page)).toBeFocused();
+  });
+
+  test('Press a Shortcut names the command a key runs without running it, and Escape always lets go', async ({
+    page,
+  }) => {
+    await page.keyboard.press('ControlOrMeta+Slash');
+    const dialog = page.getByRole('dialog', { name: 'Keyboard Shortcuts' });
+    await dialog.getByRole('button', { name: 'Press a Shortcut' }).click();
+    const answer = dialog.getByRole('status');
+    await page.keyboard.press('ControlOrMeta+K');
+    await expect(answer).toContainText('runs Command Menu.');
+    await expect(page.getByRole('dialog', { name: 'Keyboard Shortcuts' })).toBeVisible();
+    await page.keyboard.press('ControlOrMeta+Shift+Y');
+    await expect(answer).toContainText('runs no command.');
+    // The visible way out.
+    await dialog.getByRole('button', { name: 'Stop' }).click();
+    await expect(answer).toBeHidden();
+    // Escape, from the mode, leaves it and closes the window as usual; keys then reach the app again.
+    await dialog.getByRole('button', { name: 'Press a Shortcut' }).click();
+    await page.keyboard.press('Escape');
+    await expect(dialog).toBeHidden();
+    await page.keyboard.press('ControlOrMeta+K');
+    await expect(commandMenu(page)).toBeVisible();
   });
 });
 

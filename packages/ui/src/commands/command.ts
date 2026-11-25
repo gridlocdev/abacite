@@ -172,6 +172,25 @@ export class CommandCatalog {
     return null;
   }
 
+  /**
+   * The command a key press is bound to, whether or not it can run now, without running it or starting a
+   * sequence: what the Keyboard Shortcuts window shows when you press a key (PRD §10). A two-key sequence
+   * counts by its first key.
+   */
+  commandFor(e: ShortcutEvent, mac = isMac): Command | null {
+    let best: Command | null = null;
+    let bestRank = Infinity;
+    for (const c of this.all)
+      for (const [first] of c.sequences) {
+        const rank = first ? matchRank(first, e, mac) : 0;
+        if (rank > 0 && rank < bestRank) {
+          best = c;
+          bestRank = rank;
+        }
+      }
+    return best;
+  }
+
   /** Disabled commands let their keys through, so two commands can share a key . */
   #allowed(c: Command, focus: KeyFocus): boolean {
     return (focus !== 'text' || c.global === true) && this.isEnabled(c);

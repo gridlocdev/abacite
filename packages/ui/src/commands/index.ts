@@ -22,10 +22,11 @@ export {
   matchRank,
   parseSequence,
   parseShortcut,
+  pressedShortcut,
   sequenceAccelerator,
   toAccelerator,
   type KeySequence,
   type Shortcut,
   type ShortcutEvent,
 } from './shortcut.ts';
-export { keyFocus, listenForKeys } from './keys.ts';
+export { keyFocus, listenForKeys, probeKeys } from './keys.ts';
