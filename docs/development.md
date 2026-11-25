@@ -58,6 +58,8 @@ just install-desktop      # macOS: package and copy to /Applications; the old co
 
 The macOS app gets an ad-hoc signature and isn't notarized, so the first start needs **Open Anyway** in System Settings → Privacy & Security.
 
+Packaging flips the Electron fuses before signing (`apps/desktop/scripts/fuses.mjs`): the app can't be run as plain Node, ignores `NODE_OPTIONS` and `--inspect`, and loads its code only from its asar. Check a build with `npx @electron/fuses read --app apps/desktop/release/mac-arm64/Abacite.app`.
+
 ## Releasing
 
 Pushing a `vX.Y.Z` tag runs `.github/workflows/release.yml`. It packages the desktop app on macOS (Apple silicon and Intel), Windows and Linux, and publishes them on a GitHub release.
