@@ -20,7 +20,7 @@ Abacite is a calculator with exact decimal arithmetic. These are the words it us
 
 **Angle unit**: Degrees or radians for trigonometry, shown as DEG or RAD in the **display** and kept with each **session**. _Avoid_: angle mode
 
-**Unit conversion**: A calculation of the form `<expression> <unit> to <unit>`, such as `5 km to mi`, with exact factors.
+**Unit conversion**: A calculation of the form `<expression> <unit> to <unit>` or `<expression> <unit> in <unit>`, such as `5 km to mi`, with exact factors.
 
 ### Keypads and entry
 
@@ -42,7 +42,7 @@ Abacite is a calculator with exact decimal arithmetic. These are the words it us
 
 **Trash**: Where a deleted **session** goes, `.abacite/trash/` in the **session folder**, until **Open Trash…** restores it. _Avoid_: recycle bin
 
-**Conflict**: A **session file** that changed or was deleted elsewhere while the **session** had unsaved changes. Abacite asks whether to save yours as a copy, keep yours or use theirs.
+**Conflict**: A **session file** that changed or was deleted elsewhere while the **session** had unsaved changes. Abacite stops saving it and asks you to pick **Save Mine as a Copy**, **Keep Mine** or **Use Theirs**.
 
 **Snapshot**: A copy of an unsaved **session** kept in the app's storage, offered for restoring on the next start. _Avoid_: backup, autosave file
 
@@ -52,7 +52,7 @@ Abacite is a calculator with exact decimal arithmetic. These are the words it us
 
 **Command menu**: The search box opened with **⌘K** that finds and runs a **command**. _Avoid_: command palette
 
-**Status bar**: The strip at the bottom of the window with **notices**, the session panel button and the Settings button.
+**Status bar**: The strip at the bottom of the window with **notices**, the session panel button and the Settings button. In the browser it also says when sessions are stored in the browser's own storage.
 
 **Notice**: A short message in the **status bar**, sometimes with an action such as **Undo**. _Avoid_: toast, snackbar
 
