@@ -9,8 +9,17 @@ files:
   # The window icon on Linux and Windows (macOS takes the bundle's icon.icns).
   - build/icon.png
 asar: true
-# Flips the Electron fuses before signing.
-afterPack: scripts/fuses.mjs
+# Electron fuses, flipped before signing: no running as plain Node, no NODE_OPTIONS or --inspect, code only from
+# the checked asar, and no extra privileges for file:// pages (the app's pages load from app://).
+electronFuses:
+  runAsNode: false
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  enableCookieEncryption: true
+  enableEmbeddedAsarIntegrityValidation: true
+  onlyLoadAppFromAsar: true
+  grantFileProtocolExtraPrivileges: false
+  resetAdHocDarwinSignature: true
 # One naming scheme on every system: Abacite-0.1.0-mac-arm64.dmg, Abacite-0.1.0-win-x64.exe, …
 artifactName: ${productName}-${version}-${os}-${arch}.${ext}
 mac:
