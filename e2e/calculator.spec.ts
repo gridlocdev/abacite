@@ -574,6 +574,151 @@ test.describe('Accessibility', () => {
     expect([...reached]).toEqual(expect.arrayContaining(['basic', 'scientific', 'session']));
   });
 
+  test('the browser’s own focus ring never shows: the keyboard gets the theme’s ring, a click gets none', async ({
+    page,
+  }) => {
+    await page.keyboard.press('ControlOrMeta+2');
+    await page.keyboard.press('ControlOrMeta+KeyT');
+    await page.keyboard.type('2+2');
+    await page.keyboard.press('Enter');
+    for (const scheme of ['light', 'dark'] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      const unringed = new Set<string>();
+      for (let i = 0; i < 60; i++) {
+        await page.keyboard.press('Tab');
+        const problem = await page.evaluate(() => {
+          const el = document.activeElement as HTMLElement | null;
+          if (!el || el === document.body) return null;
+          // The expression line shows its caret instead of a ring.
+          if (el.hasAttribute('data-ab-line')) return null;
+          const probe = document.createElement('i');
+          probe.style.color = 'var(--ab-accent)';
+          document.body.append(probe);
+          const accent = getComputedStyle(probe).color;
+          probe.remove();
+          const style = getComputedStyle(el);
+          const ringed = style.outlineStyle === 'solid' && style.outlineColor === accent;
+          return ringed
+            ? null
+            : `${el.tagName} ${el.getAttribute('aria-label') ?? el.textContent} (${style.outlineStyle})`;
+        });
+        if (problem) unringed.add(problem);
+      }
+      expect([...unringed], scheme).toEqual([]);
+    }
+    await page.keyboard.press('ControlOrMeta+Comma');
+    const dark = page.getByRole('dialog', { name: 'Settings' }).getByRole('radio', { name: 'Dark' });
+    await dark.click();
+    await expect(dark).toBeFocused();
+    expect(await dark.evaluate((el) => getComputedStyle(el).outlineStyle)).toBe('none');
+  });
+
+  test('arrow keys move along the session and the keypad, and the ring goes with the keyboard', async ({
+    page,
+  }) => {
+    for (const line of ['1', '2', '3']) {
+      await page.keyboard.type(line);
+      await page.keyboard.press('Enter');
+    }
+    await showSession(page);
+    await tabTo(page, '.ab-session-lines');
+    await expect.poll(() => focusState(page)).toEqual({ active: '33', marked: ['33'], same: true });
+    await page.keyboard.press('ArrowUp');
+    await expect.poll(() => focusState(page)).toEqual({ active: '22', marked: ['22'], same: true });
+    await page.keyboard.press('Home');
+    await expect.poll(() => focusState(page)).toEqual({ active: '11', marked: ['11'], same: true });
+    await page.keyboard.press('End');
+    await expect.poll(() => focusState(page)).toEqual({ active: '33', marked: ['33'], same: true });
+    // ↑ in the list moved the list, not the session's inputs into the expression line.
+    await expect(expression(page)).toHaveValue('');
+    await expect(session(page).locator('[tabindex="0"]')).toHaveCount(1);
+
+    await tabTo(page, '[aria-label="Keys"]');
+    await expect.poll(() => focusState(page)).toEqual({ active: '(', marked: ['('], same: true });
+    await page.keyboard.press('ArrowDown');
+    await expect.poll(() => focusState(page)).toEqual({ active: 'AC', marked: ['AC'], same: true });
+    await page.keyboard.press('End');
+    await expect.poll(() => focusState(page)).toEqual({ active: '÷', marked: ['÷'], same: true });
+    await page.keyboard.press('ArrowRight');
+    await expect.poll(() => focusState(page)).toEqual({ active: '7', marked: ['7'], same: true });
+    await expect(page.locator('[aria-label="Keys"] [tabindex="0"]')).toHaveCount(1);
+    // The session's ring went when the keyboard left it.
+    await expect(session(page).locator('[data-ab-focused]')).toHaveCount(0);
+
+    // Each keypad is one Tab stop, which starts at its first key.
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Shift+Tab');
+    await expect.poll(() => focusState(page)).toEqual({ active: '(', marked: ['('], same: true });
+    await page.reload();
+    await waitForApp(page);
+    await expect(expression(page)).toBeFocused();
+    await expect.poll(async () => (await focusState(page)).marked).toEqual([]);
+  });
+
+  test('focus goes back to the right line when its menu or a window closes', async ({ page }) => {
+    for (const line of ['1', '2', '3']) {
+      await page.keyboard.type(line);
+      await page.keyboard.press('Enter');
+    }
+    await showSession(page);
+    await tabTo(page, '.ab-session-lines');
+    await page.keyboard.press('ArrowUp');
+    const menu = page.getByRole('menu', { name: 'Session line' });
+    // The menu key gives no point, as a keyboard-opened menu does.
+    await page.evaluate(() =>
+      document.activeElement?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true })),
+    );
+    await expect(menu).toBeVisible();
+    await expect
+      .poll(() => focusState(page))
+      .toEqual({ active: 'Copy Result', marked: ['Copy Result'], same: true });
+    await page.keyboard.press('ArrowDown');
+    await expect
+      .poll(() => focusState(page))
+      .toEqual({
+        active: 'Copy Expression',
+        marked: ['Copy Expression'],
+        same: true,
+      });
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect.poll(() => focusState(page)).toEqual({ active: '22', marked: ['22'], same: true });
+
+    await page.evaluate(() =>
+      document.activeElement?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true })),
+    );
+    await page.keyboard.press('End');
+    await page.keyboard.press('Enter');
+    await expect(session(page).getByRole('listitem')).toHaveCount(2);
+    await expect.poll(() => focusState(page)).toEqual({ active: '33', marked: ['33'], same: true });
+
+    await page.keyboard.press('ControlOrMeta+Comma');
+    const settings = page.getByRole('dialog', { name: 'Settings' });
+    await expect(settings).toBeVisible();
+    await expect.poll(async () => (await focusState(page)).marked).toEqual([]);
+    await page.keyboard.press('Escape');
+    await expect(settings).toBeHidden();
+    await expect.poll(() => focusState(page)).toEqual({ active: '33', marked: ['33'], same: true });
+
+    await page.keyboard.press('ControlOrMeta+KeyZ');
+    await expect(session(page).getByRole('listitem')).toHaveCount(3);
+    await expect.poll(() => focusState(page)).toEqual({ active: '33', marked: ['33'], same: true });
+  });
+
+  test('arrow keys pick a setting, and the keyboard stays on the picked one', async ({ page }) => {
+    await page.keyboard.press('ControlOrMeta+Comma');
+    const dialog = page.getByRole('dialog', { name: 'Settings' });
+    const theme = dialog.getByRole('radiogroup', { name: 'Appearance' });
+    await theme.getByRole('radio', { checked: true }).focus();
+    const before = await theme.getByRole('radio', { checked: true }).textContent();
+    await page.keyboard.press('ArrowRight');
+    const picked = theme.getByRole('radio', { checked: true });
+    await expect(picked).not.toHaveText(before ?? '');
+    await expect(picked).toBeFocused();
+    await expect(picked).toHaveAttribute('tabindex', '0');
+    await expect(theme.locator('[tabindex="0"]')).toHaveCount(1);
+  });
+
   test('reduced motion turns off key animations', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const transition = await key(page, '7').evaluate((el) => getComputedStyle(el).transitionProperty);
@@ -601,3 +746,32 @@ test.describe('Command line', () => {
     }
   });
 });
+
+/** Shows the session panel if the window is too narrow to show it already. */
+async function showSession(page: Page): Promise<void> {
+  if (!(await session(page).isVisible())) await page.keyboard.press('ControlOrMeta+KeyT');
+  await expect(session(page)).toBeVisible();
+}
+
+/** Tabs until the keyboard is inside `selector`. */
+async function tabTo(page: Page, selector: string): Promise<void> {
+  for (let i = 0; i < 80; i++) {
+    await page.keyboard.press('Tab');
+    if (await page.evaluate((s) => document.activeElement?.closest(s) !== null, selector)) return;
+  }
+  throw new Error(`Tab never reached ${selector}`);
+}
+
+/** What has the keyboard, what is drawn as focused, and whether they are the same one element. */
+function focusState(page: Page): Promise<{ active: string; marked: string[]; same: boolean }> {
+  return page.evaluate(() => {
+    const text = (el: Element | null) => el?.textContent?.replace(/\s+/g, ' ').trim() ?? '';
+    const active = document.activeElement;
+    const marked = [...document.querySelectorAll('[data-ab-focused]')];
+    return {
+      active: text(active),
+      marked: marked.map(text),
+      same: marked.length === 1 && marked[0] === active,
+    };
+  });
+}

@@ -15,7 +15,7 @@ export function ExpressionLine({ app }: { readonly app: AppController }) {
 
   // The controller's text and selection win over the field's (a keypad key changed them).
   useFieldValue(input, line.text, line.start, line.end);
-  // Focus comes back to the line when a dialog closes.
+  // Focus comes back to the line when a dialog closes and has nowhere else to go.
   useFocusWhen(input, dialog === null);
   useFieldSelection(input, app.select);
   useTakeBackFocus(input, () => app.dialog.peek() === null);

@@ -13,6 +13,7 @@ import {
   type Decimal,
   type Env,
   type Session,
+  type SessionLine,
 } from '@abacite/core';
 import { type Angle, type Entry, type Mode, type Settings, type SettingsStorage } from '@abacite/ui';
 import {
@@ -76,6 +77,10 @@ export class AppController {
   /** The 2nd key is on (PRD §9.2). */
   readonly second = signal(false);
   readonly dialog = signal<DialogKind | null>(null);
+  /** The session line the keyboard is on, or null when it is elsewhere (PRD §14). */
+  readonly sessionFocus = signal<SessionLine | null>(null);
+  /** The keypad key the keyboard is on, by its id, or null when it is elsewhere (PRD §14). */
+  readonly keyFocus = signal<string | null>(null);
   readonly #notices = new Notices();
   readonly notice = this.#notices.notice;
   /** What the screen reader's live region says (PRD §14). */

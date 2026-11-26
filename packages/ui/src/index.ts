@@ -55,8 +55,10 @@ export {
   useKeyProbe,
   useTakeBackFocus,
   usePopupFocus,
+  useRovingFocus,
   useScrollToEnd,
 } from './components/domHooks.ts';
+export { gridStep, rovingStep, type GridCell } from './components/roving.ts';
 export { Dialog } from './components/Dialog.tsx';
 export { focusables, trapIndex, trapTab } from './components/focusTrap.ts';
 export { Icon } from './components/Icon.tsx';

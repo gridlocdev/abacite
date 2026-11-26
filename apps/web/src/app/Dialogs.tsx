@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'preact/hooks';
+import { useMemo, useRef, useState } from 'preact/hooks';
 import {
   ANGLES,
   ENTRIES,
@@ -8,7 +8,9 @@ import {
   THEMES,
   filterEntries,
   isMac,
+  rovingStep,
   useKeyProbe,
+  useRovingFocus,
   type Angle,
   type Entry as EntryMode,
   type CommandCatalog,
@@ -216,16 +218,37 @@ function Choice<T extends string>(props: {
   readonly value: T;
   readonly onPick: (value: T) => void;
 }) {
+  const group = useRef<HTMLDivElement>(null);
+  // The checked item is the group's Tab stop, and the keyboard follows it when an arrow key picks another.
+  useRovingFocus(
+    group,
+    props.value,
+    () => group.current?.querySelectorAll<HTMLElement>('[role="radio"]')[props.items.indexOf(props.value)],
+  );
   return (
     <div class="ab-field">
       <span id={props.id}>{props.label}</span>
-      <div class="ab-segmented" role="radiogroup" aria-labelledby={props.id}>
+      <div
+        ref={group}
+        class="ab-segmented"
+        role="radiogroup"
+        aria-labelledby={props.id}
+        onKeyDown={(e) => {
+          if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+          const next = rovingStep(e.key, props.items.indexOf(props.value), props.items.length, true);
+          const item = next === undefined ? undefined : props.items[next];
+          if (item === undefined) return;
+          e.preventDefault();
+          props.onPick(item);
+        }}
+      >
         {props.items.map((item) => (
           <button
             key={item}
             type="button"
             role="radio"
             aria-checked={props.value === item}
+            tabIndex={props.value === item ? 0 : -1}
             onClick={() => props.onPick(item)}
           >
             {props.titles[item]}

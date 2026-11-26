@@ -38,10 +38,14 @@ export function useFieldSelection(
   }, [ref, onSelect]);
 }
 
-/** Focuses the element each time `when` turns true, before the next key can land anywhere else. */
+/**
+ * Focuses the element each time `when` turns true, before the next key can land anywhere else, unless the keyboard
+ * is already on something (a closing dialog gave it back to where it was).
+ */
 export function useFocusWhen(ref: RefObject<HTMLElement | null>, when: boolean): void {
   useLayoutEffect(() => {
-    if (when) ref.current?.focus();
+    const active = document.activeElement;
+    if (when && (active === null || active === document.body)) ref.current?.focus();
   }, [ref, when]);
 }
 
@@ -101,9 +105,16 @@ export function useScrollToEnd(ref: RefObject<HTMLElement | null>, key: unknown)
 
 /**
  * Keeps the keyboard in a popup menu: focuses its first enabled button when it opens, calls `onClose` on a
- * pointer press outside it or when the window loses focus, and gives focus back to where it was on closing.
+ * pointer press outside it or when the window loses focus, and gives focus back to where it was on closing, or
+ * hands that to `restore` when the place it came from may have changed.
  */
-export function usePopupFocus(ref: RefObject<HTMLElement | null>, onClose: () => void): void {
+export function usePopupFocus(
+  ref: RefObject<HTMLElement | null>,
+  onClose: () => void,
+  restore?: (previous: HTMLElement | null) => void,
+): void {
+  const back = useRef(restore);
+  back.current = restore;
   useLayoutEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
     ref.current?.querySelector<HTMLButtonElement>('button:not(:disabled)')?.focus();
@@ -115,7 +126,8 @@ export function usePopupFocus(ref: RefObject<HTMLElement | null>, onClose: () =>
     return () => {
       window.removeEventListener('pointerdown', away, true);
       window.removeEventListener('blur', onClose);
-      previous?.focus();
+      if (back.current) back.current(previous);
+      else previous?.focus();
     };
   }, [ref, onClose]);
 }
@@ -151,4 +163,29 @@ export function useKeyProbe(onKey: (e: KeyboardEvent) => void): {
       );
     },
   };
+}
+
+/**
+ * Keeps the keyboard on the item app state says is focused (roving focus): when `focused` changes, `item()` takes
+ * focus, as long as the keyboard is in `group` or nowhere. Nothing moves while the keyboard is somewhere else.
+ */
+export function useRovingFocus(
+  group: RefObject<HTMLElement | null>,
+  focused: unknown,
+  item: () => HTMLElement | null | undefined,
+): void {
+  const find = useRef(item);
+  find.current = item;
+  const was = useRef(focused);
+  useLayoutEffect(() => {
+    // Only a change moves the keyboard: an item drawn as focused when the group appears leaves it where it is.
+    if (was.current === focused) return;
+    was.current = focused;
+    if (focused === null || focused === undefined) return;
+    const el = find.current();
+    const active = document.activeElement;
+    if (!el || el === active || !group.current) return;
+    if (active && active !== document.body && !group.current.contains(active)) return;
+    el.focus();
+  }, [group, focused]);
 }

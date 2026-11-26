@@ -258,6 +258,7 @@ In the browser, a change in one tab reaches the other open tabs at once. Each ta
 
 - The display is a live region announcing the committed result ("Result 14") and errors, not every keystroke.
 - Every keypad key is a real button with an accessible name; the keypad and session are reachable with Tab; reduced-motion turns off key-press animation.
+- Focus is always visible and never the browser's own ring. Plain buttons and fields show one ring in the accent colour when the keyboard reaches them. The session list, each keypad, each settings choice and a line's menu are one Tab stop each: ↑ ↓ (← → on the keypads and choices), Home and End move inside them, and the ring is drawn from the app's own record of which line, key or item the keyboard is on, so what you see and what the app knows always agree. When a window or menu closes, the keyboard goes back to the line or key it came from; if that line was deleted, to the line now in its place; after undo or redo, to the same line.
 
 ## §15 Decisions
 

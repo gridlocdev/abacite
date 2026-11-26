@@ -145,7 +145,22 @@ img,
 svg {
   -webkit-user-drag: none;
 }
+/*
+ * Focus. The browser's own ring never shows: plain buttons and fields get one ring from the theme when the
+ * keyboard reaches them, and lists, keypads and menus (data-ab-roving) draw it on the item app state says the
+ * keyboard is on (data-ab-focused).
+ */
+:focus {
+  outline: none;
+}
 :focus-visible {
+  outline: 2px solid var(--ab-accent);
+  outline-offset: 1px;
+}
+[data-ab-roving]:focus-visible {
+  outline: none;
+}
+[data-ab-roving][data-ab-focused] {
   outline: 2px solid var(--ab-accent);
   outline-offset: 1px;
 }

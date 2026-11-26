@@ -46,7 +46,7 @@ Every action has a command. **⌘K** opens the command menu to search and run th
 
 ## Accessibility
 
-Every key and control is a real button with a name for screen readers, and the keypad and the session are reachable with Tab. The display announces each committed result ("Result 14") and errors, not every keystroke. With reduced motion turned on in the system, keys don't animate.
+Every key and control is a real button with a name for screen readers. Tab reaches each keypad and the session as one stop, and the arrow keys, **Home** and **End** move inside them. The keyboard's place always shows as a ring in the accent colour, and it goes back to where it was when a window or menu closes. The display announces each committed result ("Result 14") and errors, not every keystroke. With reduced motion turned on in the system, keys don't animate.
 
 ## Command line
 

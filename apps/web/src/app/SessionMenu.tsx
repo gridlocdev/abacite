@@ -1,5 +1,5 @@
-import { usePopupFocus } from '@abacite/ui';
-import { useRef } from 'preact/hooks';
+import { rovingStep, usePopupFocus, useRovingFocus } from '@abacite/ui';
+import { useCallback, useRef, useState } from 'preact/hooks';
 import type { AppController } from './controller.ts';
 
 /** Where a session line's menu opened: the line, and the point in the window. */
@@ -7,6 +7,8 @@ export interface SessionMenuPlace {
   readonly index: number;
   readonly x: number;
   readonly y: number;
+  /** The keyboard was on the line when the menu opened, so it goes back there. */
+  readonly focused: boolean;
 }
 
 const WIDTH = 190;
@@ -15,16 +17,27 @@ const HEIGHT = 170;
 /**
  * A session line's right-click menu (PRD §7.1): Copy Result, Copy Expression, Insert Result, Insert Expression
  * and Delete Line. ↑ and ↓ move, Enter picks, Escape or a click elsewhere closes it, and the keyboard goes
- * back to where it was.
+ * back to where it was (`onRestore`). The highlighted item is the menu's own state; the keyboard follows it.
  */
 export function SessionMenu(props: {
   readonly app: AppController;
   readonly place: SessionMenuPlace;
   readonly onClose: () => void;
+  readonly onRestore: (place: SessionMenuPlace, previous: HTMLElement | null) => void;
 }) {
-  const { app, place, onClose } = props;
+  const { app, place, onClose, onRestore } = props;
   const menu = useRef<HTMLDivElement>(null);
-  usePopupFocus(menu, onClose);
+  const restore = useCallback(
+    (previous: HTMLElement | null) => onRestore(place, previous),
+    [onRestore, place],
+  );
+  usePopupFocus(menu, onClose, restore);
+  const [active, setActive] = useState(-1);
+  useRovingFocus(
+    menu,
+    active,
+    () => menu.current?.querySelectorAll<HTMLElement>('[role="menuitem"]')[active],
+  );
 
   const line = app.session.value.lines[place.index];
   if (!line) return null;
@@ -38,10 +51,11 @@ export function SessionMenu(props: {
     ['Delete Line', () => app.deleteLine(place.index)],
   ];
 
-  const move = (step: number) => {
-    const buttons = [...(menu.current?.querySelectorAll<HTMLButtonElement>('button:not(:disabled)') ?? [])];
-    const at = buttons.indexOf(document.activeElement as HTMLButtonElement);
-    buttons[(at + step + buttons.length) % buttons.length]?.focus();
+  const enabled = items.flatMap(([, run], i) => (run === null ? [] : [i]));
+  const current = enabled.includes(active) ? active : (enabled[0] ?? 0);
+  const move = (key: string) => {
+    const next = rovingStep(key, enabled.indexOf(current), enabled.length, true);
+    if (next !== undefined) setActive(enabled[next] ?? current);
   };
   return (
     <div
@@ -56,8 +70,7 @@ export function SessionMenu(props: {
       onKeyDown={(e) => {
         // The app's own keys (Escape clears the line, ↑ walks the session) wait while the menu is open.
         if (e.key === 'Escape' || e.key === 'Tab') onClose();
-        else if (e.key === 'ArrowDown') move(1);
-        else if (e.key === 'ArrowUp') move(-1);
+        else if (['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(e.key)) move(e.key);
         else if (e.key === 'Enter' || e.key === ' ') return;
         e.preventDefault();
       }}
@@ -69,6 +82,11 @@ export function SessionMenu(props: {
           role="menuitem"
           class={i === items.length - 1 ? 'ab-menu-item ab-menu-break' : 'ab-menu-item'}
           disabled={run === null}
+          tabIndex={i === current ? 0 : -1}
+          data-ab-roving
+          data-ab-focused={i === current || undefined}
+          onPointerMove={() => run !== null && setActive(i)}
+          onFocus={() => setActive(i)}
           onClick={() => {
             onClose();
             run?.();

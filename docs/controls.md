@@ -2,7 +2,7 @@
 
 Every action is in the menu bar, in the **command menu** (**⌘K** on a Mac, **Ctrl+K** on Windows and Linux) and in the **Keyboard Shortcuts** window (**⌘/** or **Ctrl+/**, or **Help → Keyboard Shortcuts**). That window is built from the same list as the menus, so it is always up to date.
 
-The expression line keeps the keyboard while no window is open: every key you type goes into it.
+The expression line keeps the keyboard while no window is open: every key you type goes into it. To use the keypad or the session from the keyboard, press **Tab** until the ring reaches it, then move with the arrow keys, **Home** and **End**; **Enter** or **Space** presses the key or inserts the line.
 
 In a browser tab, **⌘N** and **⌘T** (**Ctrl+N**, **Ctrl+T**) belong to the browser, which opens a new window or tab. Use the command menu there for New Session, and the panel button at the right of the status bar for the session.
 
