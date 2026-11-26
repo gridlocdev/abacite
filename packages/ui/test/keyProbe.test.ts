@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   CommandCatalog,
   formatShortcut,
   listenForKeys,
   pressedShortcut,
+  PROBE_IDLE_MS,
   probeKeys,
   type ShortcutEvent,
 } from '../src/index.ts';
@@ -187,6 +188,51 @@ describe('press a shortcut', () => {
     expect(ran).toEqual(['clear']);
     win.press({ key: 'o', metaKey: true });
     expect(ran).toEqual(['clear', 'open']);
+  });
+
+  describe('left alone', () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('lets go of the keyboard once no key has been pressed for a while', () => {
+      vi.useFakeTimers();
+      const { ran, win } = app();
+      const seen: string[] = [];
+      let ended = 0;
+      probeKeys(
+        win,
+        (e) => seen.push(e.key),
+        () => ended++,
+      );
+      vi.advanceTimersByTime(PROBE_IDLE_MS - 1);
+      win.press({ key: 'o', metaKey: true });
+      expect(seen).toEqual(['o']);
+      // The key started the wait again.
+      vi.advanceTimersByTime(PROBE_IDLE_MS - 1);
+      expect(ended).toBe(0);
+      vi.advanceTimersByTime(1);
+      expect(ended).toBe(1);
+      expect(win.count).toBe(1);
+      win.press({ key: 'o', metaKey: true });
+      expect(seen).toEqual(['o']);
+      expect(ran).toEqual(['open']);
+    });
+
+    it('leaves no wait behind when it ends another way', () => {
+      vi.useFakeTimers();
+      const { win } = app();
+      let ended = 0;
+      const stop = probeKeys(
+        win,
+        () => {},
+        () => ended++,
+      );
+      stop();
+      expect(vi.getTimerCount()).toBe(0);
+      vi.advanceTimersByTime(PROBE_IDLE_MS);
+      expect(ended).toBe(1);
+    });
   });
 
   it('lets go of the keyboard when its handler throws', () => {

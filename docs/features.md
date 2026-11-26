@@ -38,7 +38,7 @@ Saving never overwrites changes made somewhere else. If the file changed or was 
 
 ## Commands and shortcuts
 
-Every action has a command. **⌘K** opens the command menu to search and run them, and **⌘/** opens the Keyboard Shortcuts window, built from the same list as the menu bar. In that window, **Press a Shortcut** shows which command a key runs without running it; **Stop** or **Esc** ends it.
+Every action has a command. **⌘K** opens the command menu to search and run them, and **⌘/** opens the Keyboard Shortcuts window, built from the same list as the menu bar. In that window, **Press a Shortcut** shows which command a key runs without running it; **Stop** or **Esc** ends it, and it ends by itself after 15 seconds with no key pressed.
 
 ## Settings and appearance
 

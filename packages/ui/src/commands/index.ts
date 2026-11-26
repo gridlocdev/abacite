@@ -29,4 +29,4 @@ export {
   type Shortcut,
   type ShortcutEvent,
 } from './shortcut.ts';
-export { keyFocus, listenForKeys, probeKeys } from './keys.ts';
+export { keyFocus, listenForKeys, PROBE_IDLE_MS, probeKeys } from './keys.ts';

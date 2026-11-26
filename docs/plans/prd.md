@@ -201,7 +201,7 @@ Abacite is a calculator for one person, replacing the macOS Calculator. It runs 
 
 ## §10 Commands and keys
 
-All commands are in one catalog, which feeds the keyboard, ⌘K, the menu bar, context menus, the Keyboard Shortcuts window (⌘/) and `docs/controls.md`. The Keyboard Shortcuts window has **Press a Shortcut**: each key pressed shows the command it is bound to (enabled or not), or "runs no command", without running it. Escape always ends it and goes on as usual (it closes the window); **Stop** ends it too, and so does closing the window or an error, so keys can never stay taken.
+All commands are in one catalog, which feeds the keyboard, ⌘K, the menu bar, context menus, the Keyboard Shortcuts window (⌘/) and `docs/controls.md`. The Keyboard Shortcuts window has **Press a Shortcut**: each key pressed shows the command it is bound to (enabled or not), or "runs no command", without running it. Escape always ends it and goes on as usual (it closes the window); **Stop** ends it too, and so does closing the window, an error, or 15 seconds with no key pressed, so keys can never stay taken.
 
 | Group | Command | Keys |
 | --- | --- | --- |

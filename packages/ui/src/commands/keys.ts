@@ -1,5 +1,6 @@
 /** The page's one keyboard listener: every key goes through the command catalog (PRD §10). */
 import type { CommandCatalog, KeyFocus } from './command.ts';
+import { debounce } from '../schedule.ts';
 import { isComposingKey } from './shortcut.ts';
 
 /** Where keyboard focus is, for deciding which keys are commands. */
@@ -78,9 +79,13 @@ const MODIFIERS = new Set([
   'Super',
 ]);
 
+/** How long "Press a shortcut" waits for a key before it ends by itself. */
+export const PROBE_IDLE_MS = 15_000;
+
 /**
  * "Press a shortcut" in the Keyboard Shortcuts window (PRD §10): every key press on `target` goes to `onKey`
- * instead of the app, until Escape, the returned stop function, or an error in `onKey`. Escape is never taken:
+ * instead of the app, until Escape, the returned stop function, an error in `onKey`, or `idleMs` with no key
+ * pressed (each key starts the wait again), so a forgotten mode can't keep the keyboard. Escape is never taken:
  * it ends the mode and goes on to the page as usual. The listener comes off in a `finally`, so a throwing
  * `onKey` can't leave every key swallowed; the error still propagates. `onEnd` runs once when the mode ends.
  */
@@ -88,16 +93,20 @@ export function probeKeys(
   target: Pick<EventTarget, 'addEventListener' | 'removeEventListener'>,
   onKey: (e: KeyboardEvent) => void,
   onEnd: () => void = () => {},
+  idleMs: number = PROBE_IDLE_MS,
 ): () => void {
   let listening = true;
+  const idle = debounce(idleMs, () => stop());
   const stop = () => {
     if (!listening) return;
     listening = false;
+    idle.cancel();
     target.removeEventListener('keydown', listen, true);
     onEnd();
   };
   function listen(event: Event) {
     const e = event as KeyboardEvent;
+    idle.call();
     let keep = false;
     try {
       if (e.key === 'Escape') return;
@@ -114,5 +123,6 @@ export function probeKeys(
   }
   // Capture on the window, so the key is taken before the page's own listener or the dialog sees it.
   target.addEventListener('keydown', listen, true);
+  idle.call();
   return stop;
 }

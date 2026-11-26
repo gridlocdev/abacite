@@ -12,6 +12,7 @@ export {
   isUndoKey,
   keyFocus,
   listenForKeys,
+  PROBE_IDLE_MS,
   probeKeys,
   matchRank,
   parseSequence,
