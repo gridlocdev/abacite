@@ -58,7 +58,7 @@ just install-desktop      # macOS: package and copy to /Applications; the old co
 
 The macOS app gets an ad-hoc signature and isn't notarized, so the first start needs **Open Anyway** in System Settings → Privacy & Security.
 
-Packaging flips the Electron fuses before signing (`electronFuses` in `apps/desktop/electron-builder.yml`): the app can't be run as plain Node, ignores `NODE_OPTIONS` and `--inspect`, encrypts its cookies, loads its code only from its asar and checks the asar's integrity, and gives file:// pages no extra privileges. Check a build with `npx @electron/fuses read --app apps/desktop/release/mac-arm64/Abacite.app`.
+Packaging flips the Electron fuses before signing (`electronFuses` in `apps/desktop/electron-builder.yml`): the app can't be run as plain Node, ignores `NODE_OPTIONS` and `--inspect`, loads its code only from its asar and checks the asar's integrity, and gives file:// pages no extra privileges. Check a build with `npx @electron/fuses read --app apps/desktop/release/mac-arm64/Abacite.app`.
 
 ## Releasing
 
