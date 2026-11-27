@@ -3,6 +3,7 @@ import type { CommandCatalog } from '@abacite/ui';
 import { Icon } from '@abacite/ui';
 import type { AppController } from './controller.ts';
 import { Dialogs } from './Dialogs.tsx';
+import { ErrorText } from './ErrorText.tsx';
 import { ExpressionLine } from './ExpressionLine.tsx';
 import { classicPending } from './classic.ts';
 import { Keypad } from './Keypad.tsx';
@@ -37,7 +38,7 @@ function Display({ app }: { readonly app: AppController }) {
         data-testid="display"
         style={long ? { '--ab-chars': String(Math.max(long, 10)) } : undefined}
       >
-        {shown.text}
+        {shown.kind === 'error' ? <ErrorText message={shown.text} /> : shown.text}
       </output>
     </section>
   );

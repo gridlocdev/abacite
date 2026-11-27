@@ -4,6 +4,7 @@ import { Component } from 'preact';
 import { useCallback, useRef, useState } from 'preact/hooks';
 import type { AppController } from './controller.ts';
 import { SessionMenu, type SessionMenuPlace } from './SessionMenu.tsx';
+import { ErrorText } from './ErrorText.tsx';
 
 /**
  * The session (PRD §7.1): every committed line with its result, newest at the bottom. Clicking a line puts its
@@ -209,7 +210,7 @@ class SessionRow extends Component<RowProps> {
                 {r.unit && <span class="ab-session-unit"> {r.unit}</span>}
               </>
             ) : r.kind === 'error' ? (
-              r.message
+              <ErrorText message={r.message} />
             ) : null}
           </span>
         </button>

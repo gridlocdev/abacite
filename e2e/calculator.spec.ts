@@ -50,7 +50,9 @@ test.describe('Expression line', () => {
     await page.keyboard.type('2+');
     await expect(display(page)).toHaveClass(/ab-value-pending/);
     await page.keyboard.type('foo ');
-    await expect(display(page)).toHaveText('`foo` isn’t defined.');
+    // The quoted name shows in code style, without the backticks.
+    await expect(display(page)).toHaveText('foo isn’t defined.');
+    await expect(display(page).locator('code')).toHaveText('foo');
     await page.keyboard.press('Escape');
     await expect(expression(page)).toHaveValue('');
   });
@@ -263,7 +265,7 @@ test.describe('Session', () => {
     await page.keyboard.press('ArrowUp');
     await page.keyboard.press('Enter');
     await expect(menu).toBeHidden();
-    await expect(lines).toHaveText([/x \* 2\s*`x` isn’t defined\./]);
+    await expect(lines).toHaveText([/x \* 2\s*x isn’t defined\./]);
     await expect(expression(page)).toBeFocused();
     await page.keyboard.press('ControlOrMeta+KeyZ');
     await expect(lines).toHaveText([/x = 4/, /x \* 2\s*8/]);
