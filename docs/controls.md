@@ -19,18 +19,18 @@ The session panel's header names the open session: click it to open another.
 
 ## Calculating
 
-| Action                                          | macOS                   | Windows / Linux               |
-| ----------------------------------------------- | ----------------------- | ----------------------------- |
-| Calculate: put the line in the session          | **↩** or the **=** key  | **Enter** or the **=** key    |
-| Repeat the last operation on the result         | **↩** on an empty line  | **Enter** on an empty line    |
-| Clear the line, then the last result            | **⎋** or the **AC** key | **Esc** or the **AC** key     |
-| Previous / next session line                    | **↑** / **↓**           | **Up** / **Down**             |
-| Insert a session line's result / its expression | click / **⌥-click**     | click / **Alt-click**         |
-| Copy, insert or delete a session line           | right-click the line    | right-click the line          |
-| Copy the result                                 | **⇧⌘C**                 | **Ctrl+Shift+C**              |
-| Paste, dropping grouping commas from numbers    | **⌘V**                  | **Ctrl+V**                    |
-| Undo / redo typing, then session changes        | **⌘Z** / **⇧⌘Z**        | **Ctrl+Z** / **Ctrl+Shift+Z** |
-| Clear the session                               | **⇧⌘⌫**                 | **Ctrl+Shift+Backspace**      |
+| Action | macOS | Windows / Linux |
+| --- | --- | --- |
+| Calculate: put the line in the session | **↩** or the **=** key | **Enter** or the **=** key |
+| Repeat the last operation on the result | **↩** on an empty line | **Enter** on an empty line |
+| Clear the line, then the last result | **Esc** or the **AC** key | **Esc** or the **AC** key |
+| Previous / next session line | **↑** / **↓** | **Up** / **Down** |
+| Insert a session line's result / its expression | click / **⌥-click** | click / **Alt-click** |
+| Copy, insert or delete a session line | right-click the line | right-click the line |
+| Copy the result | **⇧⌘C** | **Ctrl+Shift+C** |
+| Paste, dropping grouping commas from numbers | **⌘V** | **Ctrl+V** |
+| Undo / redo typing, then session changes | **⌘Z** / **⇧⌘Z** | **Ctrl+Z** / **Ctrl+Shift+Z** |
+| Clear the session | **⇧⌘⌫** | **Ctrl+Shift+Backspace** |
 
 ## View
 
@@ -45,9 +45,9 @@ The session panel's header names the open session: click it to open another.
 
 ## App
 
-| Action                 | macOS  | Windows / Linux |
-| ---------------------- | ------ | --------------- |
-| Settings               | **⌘,** | **Ctrl+,**      |
-| Command menu           | **⌘K** | **Ctrl+K**      |
-| Keyboard Shortcuts     | **⌘/** | **Ctrl+/**      |
-| Close a window or menu | **⎋**  | **Esc**         |
+| Action                 | macOS   | Windows / Linux |
+| ---------------------- | ------- | --------------- |
+| Settings               | **⌘,**  | **Ctrl+,**      |
+| Command menu           | **⌘K**  | **Ctrl+K**      |
+| Keyboard Shortcuts     | **⌘/**  | **Ctrl+/**      |
+| Close a window or menu | **Esc** | **Esc**         |

@@ -35,7 +35,7 @@ function extras(mac: boolean): Partial<Record<CommandGroup, ShortcutLine[]>> {
         title: 'Next / previous command in the command menu',
         keys: mac ? [['↓'], ['↑'], ['⇥'], ['⇧⇥']] : [['Down'], ['Up'], ['Tab'], ['Shift+Tab']],
       },
-      { title: 'Close a window or menu', keys: [[mac ? '⎋' : 'Esc']] },
+      { title: 'Close a window or menu', keys: [['Esc']] },
     ],
   };
 }

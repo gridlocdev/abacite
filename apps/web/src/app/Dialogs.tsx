@@ -170,7 +170,7 @@ function ShortcutsDialog({
               )}
             </>
           ) : (
-            <>Press a key to see which command it runs. {isMac ? '⎋' : 'Esc'} stops.</>
+            <>Press a key to see which command it runs. Esc stops.</>
           )}
         </p>
       )}

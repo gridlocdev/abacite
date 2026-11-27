@@ -115,6 +115,9 @@ describe('the key a press spells', () => {
       formatShortcut(pressedShortcut(key({ key: 'Z', ctrlKey: true, shiftKey: true }), false), false),
     ).toBe('Ctrl+Shift+Z');
     expect(formatShortcut(pressedShortcut(key({ key: 'ArrowUp' }), true), true)).toBe('↑');
+    // ⎋ reads as a refresh arrow, so Escape is written out on every platform.
+    expect(formatShortcut(pressedShortcut(key({ key: 'Escape' }), true), true)).toBe('Esc');
+    expect(formatShortcut(pressedShortcut(key({ key: 'Escape' }), false), false)).toBe('Esc');
     // A Cyrillic layout's Я is the Z key.
     expect(formatShortcut(pressedShortcut(key({ key: 'я', code: 'KeyZ', metaKey: true }), true), true)).toBe(
       '⌘Z',

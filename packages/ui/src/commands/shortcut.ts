@@ -172,7 +172,7 @@ export function matches(s: Shortcut, e: ShortcutEvent, mac = isMac): boolean {
 
 const MAC_SYMBOLS: Record<string, string> = {
   enter: '↩',
-  esc: '⎋',
+  esc: 'Esc',
   backspace: '⌫',
   delete: '⌦',
   tab: '⇥',
