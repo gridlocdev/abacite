@@ -724,6 +724,36 @@ test.describe('Accessibility', () => {
     const transition = await key(page, '7').evaluate((el) => getComputedStyle(el).transitionProperty);
     expect(transition).toBe('none');
   });
+
+  test('with reduced motion, a menu opened from the keyboard takes the keyboard at once and Esc closes it', async ({
+    page,
+  }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    for (const line of ['1', '2']) {
+      await page.keyboard.type(line);
+      await page.keyboard.press('Enter');
+    }
+    await showSession(page);
+    await tabTo(page, '.ab-session-lines');
+    const menu = page.getByRole('menu', { name: 'Session line' });
+    // The menu key gives no point, as a keyboard-opened menu does.
+    await page.evaluate(() =>
+      document.activeElement?.dispatchEvent(new MouseEvent('contextmenu', { bubbles: true })),
+    );
+    // No transition on any property, `visibility` included, so nothing is still on its way in.
+    expect(await menu.evaluate((el) => getComputedStyle(el).transitionDuration)).toBe('0s');
+    await expect(menu.getByRole('menuitem', { name: 'Copy Result' })).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(menu).toBeHidden();
+    await expect(session(page).getByRole('listitem')).toHaveCount(2);
+
+    await page.keyboard.press('ControlOrMeta+KeyK');
+    const search = page.getByPlaceholder('Type a command…');
+    expect(await search.evaluate((el) => getComputedStyle(el).transitionDuration)).toBe('0s');
+    await expect(search).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(search).toBeHidden();
+  });
 });
 
 test.describe('Command line', () => {
