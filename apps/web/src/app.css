@@ -494,3 +494,14 @@ html.ab-unified :is(button, input, select, textarea, a, [role='menu'], [role='di
     background: var(--ab-sidebar);
   }
 }
+
+/* A finger needs a target of at least 44 px: on a touch screen the status bar's buttons grow to that size. */
+@media (pointer: coarse) {
+  .ab-status {
+    min-height: 44px;
+  }
+  .ab-status .ab-icon-button.ab-small {
+    width: 44px;
+    height: 44px;
+  }
+}

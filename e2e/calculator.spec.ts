@@ -424,6 +424,18 @@ test.describe('Session files', () => {
 });
 
 test.describe('Commands and shortcuts', () => {
+  test('the status bar buttons name their shortcuts', async ({ page }) => {
+    const mod = process.platform === 'darwin' ? '⌘' : 'Ctrl+';
+    await expect(page.getByRole('button', { name: 'Settings' })).toHaveAttribute(
+      'title',
+      `Settings (${mod},)`,
+    );
+    await expect(page.getByRole('button', { name: 'Session panel' })).toHaveAttribute(
+      'title',
+      new RegExp(`Session \\(${mod.replace('+', '\\+')}T\\)$`),
+    );
+  });
+
   test('⌘K finds and runs a command', async ({ page }) => {
     await runCommand(page, 'Scientific');
     await expect(page.getByRole('group', { name: 'Scientific keys' })).toBeVisible();
@@ -548,6 +560,25 @@ test.describe('Settings and appearance', () => {
 });
 
 test.describe('Accessibility', () => {
+  test('on a touch screen the status bar buttons are big enough for a finger', async ({ browser }) => {
+    const context = await browser.newContext({
+      viewport: { width: 375, height: 812 },
+      hasTouch: true,
+      isMobile: true,
+    });
+    try {
+      const phone = await context.newPage();
+      await openApp(phone);
+      for (const name of ['Settings', 'Session panel']) {
+        const box = await phone.getByRole('button', { name }).boundingBox();
+        expect(box?.width, name).toBeGreaterThanOrEqual(44);
+        expect(box?.height, name).toBeGreaterThanOrEqual(44);
+      }
+    } finally {
+      await context.close();
+    }
+  });
+
   test('every button has a name, results are announced, and Tab reaches the keypad and the session', async ({
     page,
   }) => {

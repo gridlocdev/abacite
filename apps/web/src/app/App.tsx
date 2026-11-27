@@ -117,7 +117,7 @@ function StatusBar({
         type="button"
         class="ab-icon-button ab-small"
         aria-label="Settings"
-        title="Settings"
+        title={labelWithKeys(catalog, 'app.settings', 'Settings')}
         onClick={() => app.open('settings')}
       >
         <Icon name="settings" />
@@ -129,11 +129,16 @@ function StatusBar({
   );
 }
 
+/** A button's tooltip: its label, then the shortcut of the command it runs, as in "Settings (⌘,)". */
+function labelWithKeys(catalog: CommandCatalog, id: string, label: string): string {
+  const command = catalog.get(id);
+  const keys = command ? catalog.keys(command).join('') : '';
+  return keys ? `${label} (${keys})` : label;
+}
+
 /** Shows or hides the session pane with the mouse; the same command as ⌘T (PRD §9.1). */
 function SessionToggle({ app, catalog }: { readonly app: AppController; readonly catalog: CommandCatalog }) {
   const shown = app.settings.value.showSession;
-  const command = catalog.get('view.session');
-  const keys = command ? catalog.keys(command).join('') : '';
   const label = shown ? 'Hide Session' : 'Show Session';
   return (
     <button
@@ -141,7 +146,7 @@ function SessionToggle({ app, catalog }: { readonly app: AppController; readonly
       class="ab-icon-button ab-small"
       aria-label="Session panel"
       aria-pressed={shown}
-      title={keys ? `${label} (${keys})` : label}
+      title={labelWithKeys(catalog, 'view.session', label)}
       onPointerDown={(e) => e.preventDefault()}
       onClick={() => catalog.run('view.session')}
     >
